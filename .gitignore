@@ -1,0 +1,4 @@
+.refs/
+.build/
+
+*.exe
