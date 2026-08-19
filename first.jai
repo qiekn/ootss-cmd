@@ -1,13 +1,13 @@
 #import "Compiler";
 
 build :: () {
-    w := compiler_create_workspace("Jailor");
+    write_string("Hello, Jailor!\n\n");
+
+    w := compiler_create_workspace("Jail");
     if !w {
         write_string("The world is not ready for Jai!\n");
         return;
     }
-
-    write_string("Hello, Jailor!\n\n");
 
     options := get_build_options(w);
     options.output_executable_name = "ootss-helper";
