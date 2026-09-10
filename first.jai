@@ -5,7 +5,7 @@ build :: () {
 
     w := compiler_create_workspace("Jail");
     if !w {
-        write_string("The world is not ready for Jai!\n");
+        write_string("The world is not ready yet!\n");
         return;
     }
 
