@@ -1,6 +1,8 @@
-first_window  : Window_Type;
-window_width  : s32 = 1920;
-window_height : s32 = 1080;
+the_window  : Window_Type;
+saved_window_info : Saved_Window_Info;
+
+window_width  : s32 = 1200;
+window_height : s32 = 800;
 
 image_cup: Simp.Texture;
 
@@ -19,18 +21,20 @@ main :: () {
 
     WANTED_MSAA :: 8;
     // On Linux, we need to pass the MSAA value to create_window
-    first_window = create_window(window_width, window_height, "A Window", wanted_msaa = WANTED_MSAA);
+    the_window = create_window(window_width, window_height, "A Window", wanted_msaa = WANTED_MSAA);
 
 
     // On other operating systems, the MSAA value needs to be passed to *_create_context, so we
     // need to have an extra step here if you want MSAA.
-    msaa := Simp.prepare_window(first_window, wanted_msaa = WANTED_MSAA);
+    msaa := Simp.prepare_window(the_window, wanted_msaa = WANTED_MSAA);
     log("Wanted MSAA: %\nChosen MSAA: %", WANTED_MSAA, msaa);
 
     // Actual render size in pixels can be different from the window dimensions we specified above (for example on high-resolution displays on macOS/iOS).
-    window_width, window_height = Simp.get_render_dimensions(first_window);
+    window_width, window_height = Simp.get_render_dimensions(the_window);
 
-    Simp.set_render_target(first_window, .LEFT_HANDED);
+    Simp.set_render_target(the_window, .LEFT_HANDED);
+
+    toggle_fullscreen(the_window, true, *saved_window_info);
 
     success := Simp.texture_load_from_file(*image_cup, "images/cup.jpg");
     assert(success);
@@ -45,7 +49,7 @@ main :: () {
         for Input.get_window_resizes() {
             Simp.update_window(it.window);  // Simp will do nothing if it doesn't care about this window.
 
-            if it.window == first_window {
+            if it.window == the_window {
                 should_reinit := (it.width != window_width) || (it.height != window_height);
 
                 window_width  = it.width;
@@ -72,11 +76,11 @@ main :: () {
                 if it.window_event_type == {
                   case .MOVED_TO_BACKGROUND;
                     Simp.disable_window(it.window);
-                    first_window = WT.INVALID_WINDOW;
+                    the_window = WT.INVALID_WINDOW;
 
                   case .MOVED_TO_FOREGROUND;
                     Simp.enable_window(it.window);
-                    first_window = it.window;
+                    the_window = it.window;
                 }
             }
         }
@@ -198,7 +202,7 @@ draw_one_frame :: () {
     }
 
     Simp.immediate_flush();
-    Simp.swap_buffers(first_window);
+    Simp.swap_buffers(the_window);
 }
 
 my_init_fonts :: () {
