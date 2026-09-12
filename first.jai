@@ -1,11 +1,11 @@
 #run {
+    write_string("Hello, Jailor!\n\n");
+
     set_build_options_dc(.{do_output=false});
-    if build_windows_helper("ootss-cmd") {
-        build_windows_helper("ootss-cmd", console_program = true);
-    }
+    build_windows_helper("ootss-cmd");
 }
 
-build_windows_helper :: (name: string, console_program := false) -> bool {
+build_windows_helper :: (name: string) -> bool {
     icon := create_ico_file_from_bitmap_filename(tprint("%/data/images/icon.png", #filepath));
     defer free(icon);
     if !icon.count {
@@ -13,25 +13,26 @@ build_windows_helper :: (name: string, console_program := false) -> bool {
         return false;
     }
 
-    workspace_name := ifx console_program then tprint("%-terminal", name) else name;
-    workspace := compiler_create_workspace(workspace_name);
+    workspace := compiler_create_workspace("Jail");
     if !workspace {
         log_error("The world is not ready yet!");
         return false;
     }
 
-    if !workspace return false;
-    options := get_build_options(workspace);
+    // Inherit command-line settings, including optimization and module search paths.
+    options := get_build_options();
+    optimized := options.llvm_options.bitcode_optimization_setting > .O0;
     options.output_type = .EXECUTABLE;
     options.output_executable_name = name;
-    options.output_path = ifx console_program then tprint("%/.build", #filepath) else #filepath;
-    import_paths := NewArray(options.import_path.count + 1, string);
-    import_paths[0] = tprint("%/modules", #filepath);
-    for path: options.import_path import_paths[it_index + 1] = path;
-    options.import_path = import_paths;
+    options.output_path = ifx optimized then tprint("%/bin", #filepath) else #filepath;
     options.prevent_compile_time_calls_from_runtime = false;
+    if !make_directory_if_it_does_not_exist(options.output_path) {
+        compiler_report(tprint("Could not create output directory %.", options.output_path));
+        return false;
+    }
     set_build_options(options, workspace);
-    if !console_program Windows_Resources.disable_runtime_console(workspace);
+
+    Windows_Resources.disable_runtime_console(workspace);
 
     compiler_begin_intercept(workspace);
     add_build_file(tprint("%/src/main.jai", #filepath), workspace);
@@ -58,19 +59,47 @@ build_windows_helper :: (name: string, console_program := false) -> bool {
         compiler_report(tprint("Could not embed the application icon in %.", executable));
         return false;
     }
-    if console_program {
-        // Windows shells prefer .com over .exe and wait for this console build.
-        destination := tprint("%/%.com", #filepath, name);
-        if !copy_file(executable, destination) {
-            compiler_report(tprint("Could not write the terminal executable %. Close it before rebuilding.", destination));
+    if optimized {
+        destination := tprint("%/data", options.output_path);
+        if !copy_helper_data(tprint("%/data", #filepath), destination) {
+            compiler_report(tprint("Could not copy data to %.", destination));
+            return false;
+        }
+        license_destination := tprint("%/LICENSE", options.output_path);
+        if !copy_file(tprint("%/LICENSE", #filepath), license_destination) {
+            compiler_report(tprint("Could not copy LICENSE to %.", license_destination));
             return false;
         }
     }
     return true;
 }
 
+copy_helper_data :: (source: string, destination: string) -> bool {
+    Copy_Data :: struct { source, destination: string; success := true; }
+    copy: Copy_Data = .{source = source, destination = destination};
+    visitor :: (info: *File_Visit_Info, copy: *Copy_Data) {
+        if !copy.success return;
+        relative := slice(info.full_name, copy.source.count, info.full_name.count - copy.source.count);
+        // Runtime saves belong to each installation. Rebuilding must not replace a player's bin/data/zork saves.
+        if !info.is_directory && info.short_name.count >= 4 &&
+           equal_nocase(slice(info.short_name, info.short_name.count - 4, 4), ".sav") {
+            if equal_nocase(relative, tprint("/zork/%", info.short_name)) return;
+        }
+        target := tprint("%%", copy.destination, relative);
+        if info.is_directory {
+            copy.success = make_directory_if_it_does_not_exist(target);
+            if !copy.success info.descend_into_directory = false;
+        } else copy.success = copy_file(info.full_name, target);
+    }
+    if !make_directory_if_it_does_not_exist(destination) return false;
+    visited := visit_files(source, true, *copy, visitor, visit_directories = true);
+    return visited && copy.success;
+}
+
 #import "Basic";
+#import "File";
 #import "Compiler";
 #import "File_Utilities";
+#import "String";
 Windows_Resources :: #import "Windows_Resources";
 #import "Ico_File";

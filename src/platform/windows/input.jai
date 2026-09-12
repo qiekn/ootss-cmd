@@ -1,10 +1,19 @@
 // GPT generates this file at 2026-09-11 06:13
 
-DEFAULT_DELAY    :: 75; // milliseconds
-DEFAULT_HOLD     :: (DEFAULT_DELAY / 2).(s32);
+DEFAULT_\         DELAY :: 250; // milliseconds
+SEND_FAST_\       DELAY :: 175;
+SEND_SLOW_\       DELAY :: 500;
+SEND_SUPERFAST_\  DELAY :: 75;
+SEND_SUPERSLOW_\  DELAY :: 750;
+DEFAULT_HOLD     :: 50;
 DEFUALT_INTERVAL :: DEFAULT_DELAY - DEFAULT_HOLD;
 
-// Letter suffixes repeat the key; whitespace separates literal digit keys.
+send_hold_for_delay :: (delay_ms: s32) -> s32 {
+    // Keep the preferred 50 ms hold, shortening it for cycles too small to leave a release gap.
+    return cast(s32) min(DEFAULT_HOLD, max(1, delay_ms / 2));
+}
+
+// Suffixes repeat letters or parenthesized groups; whitespace separates literal digit keys.
 // Uppercase letters do not hold Shift.
 send :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL) -> bool {
     return send_with_mode(commands, false, hold_ms, interval_ms);
@@ -24,32 +33,49 @@ SEND_KEY_LIMIT :: 65536;
 
 // Returns owned, fully expanded key presses. Parse before removing whitespace:
 // w3 means www, while w 3 means the W key followed by the digit 3.
+// (ad)3 repeats the whole group; groups may nest and contain letter repeats.
 expand_send :: (commands: string, alternate := false) -> (expanded: string, error: string) {
     keys: [..] u8;
     defer array_free(keys);
+    groups: [..] s64;
+    defer array_free(groups);
     position: s64;
     while position < commands.count {
         c := commands[position];
         position += 1;
         if is_separator(c) continue;
+        if c == #char "(" {
+            array_add(*groups, keys.count);
+            continue;
+        }
+        if c == #char ")" {
+            if !groups.count return "", "Unmatched ')' in the send sequence.";
+            first := groups[groups.count - 1];
+            groups.count -= 1;
+            length := keys.count - first;
+            if !length return "", "Repeat groups cannot be empty (example: (ad)3).";
+            count, error := send_repeat_count(commands, *position);
+            if error.count return "", error;
+            if count - 1 > (SEND_KEY_LIMIT - keys.count) / length {
+                return "", tprint("Expanded sequence exceeds % keys.", SEND_KEY_LIMIT);
+            }
+            extra := length * (count - 1);
+            // Refer to the original group by index: appending can reallocate keys.data.
+            for i: 0..extra-1 array_add(*keys, keys[first + i % length]);
+            continue;
+        }
         if c >= #char "A" && c <= #char "Z" c += #char "a" - #char "A";
         letter := c >= #char "a" && c <= #char "z";
-        if !letter && (c < #char "0" || c > #char "9") {
-            return "", "Use letters with optional repeat counts, digit keys, or whitespace (example: w3 2 d).";
+        wait := c == #char "_";
+        if !letter && !wait && (c < #char "0" || c > #char "9") {
+            return "", "Use letters, repeat groups, _ waits, digit keys, or whitespace (example: w3 (ad)3 _2 2).";
         }
 
         count: s64 = 1;
-        if letter && position < commands.count && commands[position] >= #char "0" && commands[position] <= #char "9" {
-            count = 0;
-            while position < commands.count && commands[position] >= #char "0" && commands[position] <= #char "9" {
-                digit := cast(s64)(commands[position] - #char "0");
-                if count > (SEND_KEY_LIMIT - digit) / 10 {
-                    return "", tprint("Expanded sequence exceeds % keys.", SEND_KEY_LIMIT);
-                }
-                count = count * 10 + digit;
-                position += 1;
-            }
-            if count == 0 return "", "Repeat counts must be positive (example: R4).";
+        if letter || wait {
+            error: string;
+            count, error = send_repeat_count(commands, *position);
+            if error.count return "", error;
         }
         if count > SEND_KEY_LIMIT - keys.count {
             return "", tprint("Expanded sequence exceeds % keys.", SEND_KEY_LIMIT);
@@ -64,6 +90,7 @@ expand_send :: (commands: string, alternate := false) -> (expanded: string, erro
         }
         for 0..count-1 array_add(*keys, key);
     }
+    if groups.count return "", "Unmatched '(' in the send sequence.";
     return copy_string(.{data = keys.data, count = keys.count}), "";
 }
 
@@ -76,19 +103,26 @@ validate_send :: (commands: string) -> (key_count: s64, error: string) {
     key_count: s64;
     for c: commands {
         if is_separator(c) continue;
-        if !scan_code_for_char(c) {
-            return 0, tprint("Unsupported command byte %. Use a-z, 0-9, or whitespace.", c);
+        if c != #char "_" && !scan_code_for_char(c) {
+            return 0, tprint("Unsupported command byte %. Use a-z, 0-9, _ waits, or whitespace.", c);
         }
         key_count += 1;
     }
     return key_count, "";
 }
 
+// Single nonblocking event for the editor's frame-driven transport.
+send_key_event :: (scan: u16, key_up := false, extended := false) -> (success: bool, error: string) {
+    success, error := send_scan_code(scan, key_up, extended);
+    return success, error;
+}
+
 // Receives literal key presses, already expanded by the caller. Do not parse these again:
 // a digit next to a letter here may have come from a whitespace-separated character selection.
 // A specified target must stay in the foreground. poll lets the caller process cancellation events.
 send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL,
-                  target_window: Windows.HWND = null, poll: () -> bool = null) -> Send_Result {
+                  target_window: Windows.HWND = null, poll: () -> bool = null,
+                  modifier_scan: u16 = 0, modifier_extended := false) -> Send_Result {
     result: Send_Result;
     if hold_ms <= 0 || interval_ms < 0 {
         result.error = "hold_ms must be positive and interval_ms must be nonnegative.";
@@ -112,10 +146,68 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
         return result;
     }
 
+    if modifier_scan {
+        for c: commands {
+            if scan_code_for_char(c) == modifier_scan && !modifier_extended {
+                result.error = "The time modifier is also a sequence key. Choose another speed or change its game binding.";
+                return result;
+            }
+        }
+        result.error = send_abort_reason(target, poll);
+        if result.error.count return result;
+        pressed, error := send_scan_code(modifier_scan, extended = modifier_extended);
+        if !pressed { result.error = error; return result; }
+    }
+
+    result = send_sequence_keys(commands, hold_ms, interval_ms, target, poll);
+    if modifier_scan {
+        released, error := send_scan_code(modifier_scan, key_up = true, extended = modifier_extended);
+        if !released {
+            send_scan_code(modifier_scan, key_up = true, extended = modifier_extended);
+            result.success = false;
+            result.error = error;
+        }
+    }
+    return result;
+}
+
+#scope_file
+
+#import "Basic";
+Windows :: #import "Windows";
+
+send_repeat_count :: (commands: string, position: *s64) -> (count: s64, error: string) {
+    if position.* >= commands.count || commands[position.*] < #char "0" || commands[position.*] > #char "9" {
+        return 1, "";
+    }
+    count: s64;
+    while position.* < commands.count && commands[position.*] >= #char "0" && commands[position.*] <= #char "9" {
+        digit := cast(s64)(commands[position.*] - #char "0");
+        if count > (SEND_KEY_LIMIT - digit) / 10 {
+            return 0, tprint("Expanded sequence exceeds % keys.", SEND_KEY_LIMIT);
+        }
+        count = count * 10 + digit;
+        position.* += 1;
+    }
+    if count == 0 return 0, "Repeat counts must be positive (examples: w3, (ad)3).";
+    return count, "";
+}
+
+send_sequence_keys :: (commands: string, hold_ms: s32, interval_ms: s32,
+                       target: Windows.HWND, poll: () -> bool) -> Send_Result {
+    result: Send_Result;
+
     for c: commands {
         if is_separator(c) continue;
         result.error = send_abort_reason(target, poll);
         if result.error.count return result;
+
+        if c == #char "_" {
+            result.error = send_wait(hold_ms, target, poll);
+            if !result.error.count result.error = send_wait(interval_ms, target, poll);
+            if result.error.count return result;
+            continue;
+        }
 
         scan := scan_code_for_char(c);
         pressed, press_error := send_scan_code(scan);
@@ -144,11 +236,6 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
     result.success = true;
     return result;
 }
-
-#scope_file
-
-#import "Basic";
-Windows :: #import "Windows";
 
 send_with_mode :: (commands: string, alternate: bool, hold_ms: s32, interval_ms: s32) -> bool {
     expanded, error := expand_send(commands, alternate);
@@ -207,11 +294,12 @@ scan_code_for_char :: (c: u8) -> u16 {
     return 0;
 }
 
-send_scan_code :: (scan: u16, key_up := false) -> (success: bool, error: string) {
+send_scan_code :: (scan: u16, key_up := false, extended := false) -> (success: bool, error: string) {
     input: Win_Input;
     input.type = INPUT_KEYBOARD;
     input.keyboard.scan = scan;
     input.keyboard.flags = KEYEVENTF_SCANCODE;
+    if extended input.keyboard.flags |= 0x0001;
     if key_up input.keyboard.flags |= KEYEVENTF_KEYUP;
 
     sent := SendInput(1, *input, cast(s32) size_of(Win_Input));

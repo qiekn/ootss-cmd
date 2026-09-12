@@ -12,6 +12,7 @@ Naysayer :: struct {
     keyword         :: 0xffffff;
     constant        :: 0x87ffde;
     white           :: 0xffffff;
+    red             :: 0xf92672;
     error           :: 0xff0000;
     warning         :: 0xffaa00;
     highlight       :: 0x0b3335;
@@ -29,6 +30,10 @@ console_color :: inline (rgb: u32) -> Vector4 {
         1
     };
 }
+
+// All subtitle speakers use the trader's dark green.
+SUBTITLE_SPEAKER_COLOR :: 0x398e82;
+SUBTITLE_COMMENT_COLOR :: 0xe6cb6f;
 
 #scope_file
 #import "Math";

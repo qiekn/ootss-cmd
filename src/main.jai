@@ -4,18 +4,38 @@
 #import "Math";
 #import "Windows_Utf8";
 
-Simp :: #import "Simp";
+Simp  :: #import "Simp";
 Input :: #import "Input";
-Win :: #import "Windows";
+Win   :: #import "Windows";
 
-#load "console.jai";
-#load "win/clipboard_windows.jai";
-#load "keyboard.jai";
-#load "game_commands.jai";
-#load "win/process_console_windows.jai";
-#load "console_view.jai";
-#load "win/overlay_windows.jai";
-#load "win/tray_windows.jai";
+#load "platform/windows/clipboard.jai";
+#load "platform/windows/input.jai";
+#load "platform/windows/console.jai";
+#load "platform/windows/process.jai";
+#load "platform/windows/subtitles.jai";
+#load "platform/windows/overlay.jai";
+#load "platform/windows/image.jai";
+#load "platform/windows/tray.jai";
+#load "platform/windows/send_monitor.jai";
+#load "platform/windows/editor.jai";
+#load "platform/windows/zork.jai";
+
+#load "game/commands.jai";
+#load "game/keymap.jai";
+#load "game/memory.jai";
+#load "game/state.jai";
+#load "game/subtitles.jai";
+
+#load "solution/solution.jai";
+#load "solution/timeline.jai";
+#load "solution/transport.jai";
+#load "solution/editor.jai";
+#load "solution/editor_save.jai";
+#load "solution/editor_view.jai";
+
+#load "ui/console.jai";
+#load "ui/console_view.jai";
+#load "ui/subtitles_view.jai";
 
 console: Console_State;
 pending_high_surrogate: u32;
@@ -35,6 +55,7 @@ main :: () {
     }
     defer overlay_destroy();
     defer console_deinit(*console);
+    defer zork_deinit();
     if !tray_init(overlay.window) {
         show_error("Unable to create the system tray icon.");
         return;
@@ -48,38 +69,40 @@ main :: () {
     Simp.set_render_target(overlay.window, .LEFT_HANDED);
     render_dc := Win.wglGetCurrentDC();
     if !console_load_fonts() return;
+    defer console_images_deinit();
+    defer subtitles_view_free(*subtitles_view);
+    defer editor_deinit();
     if process_console_should_exit() return;
 
-    console_write(*console, "Console ready.", .INFO);
-    console_write(*console, "Commands: send, send_alt, clear/cl, ls, echo, print, help, xyzzy, hello sailor", .INFO);
-    console_write(*console, "Hide: q/quit   Exit: exit/terminate", .INFO);
-    if !overlay.global_hotkey_registered {
-        console_write(*console, "Ctrl+` is already in use. Use ` while the game is active.", .ERROR);
-    }
+    command_blow(*console, "wave");
     draw_console();
     Win.SwapBuffers(render_dc);
     if overlay.game overlay_show();
 
     next_game_check := seconds_since_init() + 0.5;
-    while !overlay.quit_requested {
-        if process_console_should_exit() break;
+    next_editor_frame: float64;
+    while true {
+        if process_console_should_exit() overlay.quit_requested = true;
+        if overlay.quit_requested {
+            overlay.quit_requested = false;
+            process_console_acknowledge_exit();
+            if editor_request_program_exit() break;
+        }
         Input.update_window_events();
         // A tray menu may block, so process it only after playback has released its held key.
         tray_process_requests();
 
-        if overlay.toggle_requested || overlay.show_requested {
-            show := overlay.show_requested || !overlay.visible;
+        if overlay.toggle_requested || overlay.show_requested || overlay.quick_requested {
+            show := overlay.show_requested || overlay.quick_requested || !overlay.visible;
+            mode := ifx overlay.quick_requested && !overlay.show_requested then Console_Mode.MINI else overlay.full_mode;
+            overlay.opening_punctuation = (overlay.show_requested || overlay.quick_requested) &&
+                                          Win.GetAsyncKeyState(Win.VK_OEM_1) < 0;
             overlay.toggle_requested = false;
             overlay.show_requested = false;
+            overlay.quick_requested = false;
             pending_high_surrogate = 0;
-            if show overlay_show();
+            if show overlay_show(mode);
             else overlay_hide();
-        }
-
-        if overlay.visible && Win.GetForegroundWindow() != overlay.window {
-            // Alt-Tab or clicking the game closes the console without taking focus back.
-            overlay_hide(restore_game = false);
-            pending_high_surrogate = 0;
         }
 
         now := seconds_since_init();
@@ -88,27 +111,78 @@ main :: () {
             overlay_update_game();
             next_game_check = now + 0.5;
         }
+        overlay_update_focus();
         overlay_update_hotkey();
+        if Win.GetForegroundWindow() != overlay.window pending_high_surrogate = 0;
+        zork_update(*console);
 
         for event: Input.events_this_frame {
             if event.type == .QUIT overlay.quit_requested = true;
-            if !overlay.visible continue;
+            if !overlay.visible || Win.GetForegroundWindow() != overlay.window continue;
             if event.type == .TEXT_INPUT {
                 console_text_input(event.utf32);
             } else if event.type == .KEYBOARD && event.key_pressed {
                 console_key_input(event);
             } else if event.type == .MOUSE_WHEEL {
-                if event.wheel_delta > 0 console.scroll += 3;
-                if event.wheel_delta < 0 console.scroll = max(0, console.scroll - 3);
+                if overlay.mode == .MINI continue;
+                if console.show_subtitles {
+                    ticks := cast(float64) event.wheel_delta / max(1, event.typical_wheel_delta);
+                    subtitles_view_scroll(-ticks * 3 * subtitles_view.line_height);
+                } else {
+                    if event.wheel_delta > 0 console.scroll += 3;
+                    if event.wheel_delta < 0 console.scroll = max(0, console.scroll - 3);
+                }
             }
         }
 
         if console.pending_action == .HIDE overlay_hide();
         if console.pending_action == .EXIT overlay.quit_requested = true;
+        if console.pending_action == .SHOW_POSITION {
+            position, error := game_read_position();
+            if error.count console_write(*console, error, .ERROR);
+            else console_write(*console, game_position_text(position));
+        }
+        if console.pending_action == .SHOW_SUBTITLES console_open_subtitles(*console);
+        if console.pending_action == .CONSOLE_MODE overlay_set_mode(console.pending_mode);
+        if console.pending_action == .EDIT_SOLUTION editor_open_solution(console.pending_edit_level, console.pending_edit_custom);
+        if console.pending_action == .PLAY_SOLUTION console_play_saved_solution(*console);
+        if console.pending_action == .JUMP editor_jump_solution(console.pending_jump_step);
+        if console.pending_action == .ZORK_START zork_start(*console);
+        if console.pending_action == .ZORK_INPUT zork_send_input(*console);
+        if console.pending_action == .ZORK_BACK zork_back(*console);
+        editor_run_console_action(console.pending_action);
         console.pending_action = .NONE;
-        console_run_pending_send(*console);
+        free(console.pending_zork_input);
+        console.pending_zork_input = "";
+        free(console.pending_play.source);
+        console.pending_play = .{};
+        free(console.pending_edit_level);
+        console.pending_edit_level = "";
+        console.pending_edit_custom = false;
+        free(console.pending_subtitle_level);
+        console.pending_subtitle_level = "";
+        console.pending_subtitle_comments = false;
+        console.pending_subtitle_hide_speakers = false;
+        console.pending_subtitle_language = .BOTH;
+        editor_update(now);
+        if editor.open && console.pending_reset editor_pause();
+        if editor.open && console.pending_send.count && !console.pending_reset {
+            console_write(*console, "Use the editor controls, or close it with Exit before send/play/undo.", .ERROR);
+            free(console.pending_send);
+            console.pending_send = "";
+            console.pending_send_hold_ms = DEFAULT_HOLD;
+            console.pending_send_interval_ms = DEFUALT_INTERVAL;
+            console.pending_send_time_mode = .NORMAL;
+            console.pending_send_interruptible = false;
+        }
+        reset_requested := console.pending_reset;
+        sent_keys := console_run_pending_send(*console);
+        if reset_requested && sent_keys > 0 editor_on_game_reset();
+        zork_update(*console);
+        overlay_present_output(*console);
 
         if overlay.visible && overlay_update_bounds() {
+            Simp.set_render_target(overlay.window, .LEFT_HANDED);
             Simp.update_window(overlay.window);
             if !console_load_fonts() break;
             draw_console();
@@ -117,7 +191,13 @@ main :: () {
             Win.SwapBuffers(render_dc);
         }
 
-        sleep_milliseconds(cast(s32) ifx overlay.visible then 16 else 32);
+        if editor_window.visible && now >= next_editor_frame {
+            draw_solution_editor();
+            next_editor_frame = now + 1.0 / 60;
+        }
+
+        busy := editor.open && (editor.recording || editor_busy() || editor_view.dragging);
+        sleep_milliseconds(cast(s32) ifx busy then 1 else ifx overlay.visible || editor_window.visible then 16 else 32);
         reset_temporary_storage();
     }
 }
@@ -129,6 +209,10 @@ console_key_input :: (event: Input.Event) {
         return;
     }
     if event.ctrl_pressed {
+        if console.show_subtitles && (event.key_code == .HOME || event.key_code == .END) {
+            subtitles_view.scroll = ifx event.key_code == .HOME then 0.0 else subtitles_view.max_scroll;
+            return;
+        }
         if event.key_code == #char "C" || event.key_code == #char "D" {
             overlay_hide();
             return;
@@ -157,6 +241,7 @@ console_key_input :: (event: Input.Event) {
     if event.key_code == {
         case .ESCAPE;      overlay_hide();
         case .ENTER;       if !event.repeat console_submit(*console);
+        case .TAB;         if !event.repeat && !event.ctrl_pressed && !event.alt_pressed console_tab_complete(event.shift_pressed);
         case .BACKSPACE;   console_backspace(*console);
         case .DELETE;      console_delete(*console);
         case .ARROW_LEFT;  console.cursor = console_previous_character(*console);
@@ -165,9 +250,51 @@ console_key_input :: (event: Input.Event) {
         case .END;         console.cursor = console.input.count;
         case .ARROW_UP;    console_history(*console, -1);
         case .ARROW_DOWN;  console_history(*console, 1);
-        case .PAGE_UP;     console.scroll += 10;
-        case .PAGE_DOWN;   console.scroll = max(0, console.scroll - 10);
+        case .PAGE_UP;
+            if console.show_subtitles subtitles_view_scroll(-cast(float64) max(subtitles_view.line_height, subtitles_view.viewport_height - subtitles_view.line_height));
+            else console.scroll += 10;
+        case .PAGE_DOWN;
+            if console.show_subtitles subtitles_view_scroll(cast(float64) max(subtitles_view.line_height, subtitles_view.viewport_height - subtitles_view.line_height));
+            else console.scroll = max(0, console.scroll - 10);
     }
+}
+
+console_tab_complete :: (backwards: bool) {
+    levels, customs, subtitle_levels: [..] string;
+    defer array_free(levels);
+    defer array_free(customs);
+    defer array_free(subtitle_levels);
+    database, custom_database: Solutions_Database;
+    defer solutions_free(*database);
+    defer solutions_free(*custom_database);
+    catalog: Subtitles_Catalog;
+    defer subtitles_catalog_free(*catalog);
+    if !console_completion_is_current(*console) {
+        kind := console_completion_context(*console);
+        if kind == .EDIT || kind == .PLAY {
+            error := solutions_load(*database, marker_file = ifx kind == .PLAY then "" else "data/marker.json", answer_file = "");
+            if !error.count for entry: database.entries array_add(*levels, entry.name);
+        }
+        if kind == .EDIT || kind == .CUSTOM {
+            error := custom_inputs_load(*custom_database);
+            if !error.count for entry: custom_database.entries array_add(*customs, entry.name);
+        }
+        if kind == .SUBTITLES {
+            directory := game_subtitles_directory();
+            if directory.count {
+                language: Console_Subtitle_Language;
+                input := console_input(*console);
+                position: s64;
+                while position < input.count {
+                    option := console_subtitle_language_option(console_next_argument(input, *position));
+                    if option != .BOTH language = option;
+                }
+                error := subtitles_catalog_load(*catalog, directory, load_english = language != .CHINESE, load_chinese = language != .ENGLISH);
+                if !error.count subtitles_collect_names(*catalog, *subtitle_levels);
+            }
+        }
+    }
+    console_complete(*console, levels, customs, subtitle_levels, backwards);
 }
 
 console_text_input :: (character: u32) {

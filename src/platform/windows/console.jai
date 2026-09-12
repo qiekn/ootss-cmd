@@ -26,6 +26,10 @@ process_console_should_exit :: () -> bool {
     return atomic_load(*process_console_interrupted);
 }
 
+process_console_acknowledge_exit :: () {
+    atomic_store(*process_console_interrupted, false);
+}
+
 #scope_file
 
 process_console_interrupted: bool;

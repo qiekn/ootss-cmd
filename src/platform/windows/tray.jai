@@ -108,10 +108,10 @@ Win :: #import "Windows";
 tray_create_menu :: () -> Win.HMENU {
     menu := CreatePopupMenu();
     if !menu return null;
-    success := AppendMenuW(menu, 0, cast(u64) Tray_Action.SHOW, utf8_to_wide("显示终端 (&S)",, temp)) &&
-               AppendMenuW(menu, 0, cast(u64) Tray_Action.HIDE, utf8_to_wide("隐藏终端 (&H)",, temp)) &&
+    success := AppendMenuW(menu, 0, cast(u64) Tray_Action.SHOW, utf8_to_wide("Show Console (&S)",, temp)) &&
+               AppendMenuW(menu, 0, cast(u64) Tray_Action.HIDE, utf8_to_wide("Hide Console (&H)",, temp)) &&
                AppendMenuW(menu, MF_SEPARATOR, 0, null) &&
-               AppendMenuW(menu, 0, cast(u64) Tray_Action.EXIT, utf8_to_wide("退出 (&X)",, temp));
+               AppendMenuW(menu, 0, cast(u64) Tray_Action.EXIT, utf8_to_wide("Quit (&X)",, temp));
     if !success {
         DestroyMenu(menu);
         return null;
@@ -136,7 +136,7 @@ tray_icon_data :: () -> Notify_Icon_Data {
     data.flags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_SHOWTIP;
     data.callback_message = TRAY_CALLBACK_MESSAGE;
     data.icon = tray.icon;
-    tip := utf8_to_wide("OOTSS Helper - 右键菜单可退出",, temp);
+    tip := utf8_to_wide("OotSS CMD",, temp);
     for i: 0..data.tip.count-2 {
         data.tip[i] = tip[i];
         if !tip[i] break;

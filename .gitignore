@@ -1,6 +1,11 @@
 .refs/
 .build/
+bin/
+
+tests/
 
 *.exe
+!/data/zork/dfrotz.exe
+/data/zork/*.[sS][aA][vV]
 /ootss-cmd.com
 *.pdb
