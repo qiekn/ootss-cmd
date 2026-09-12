@@ -1,10 +1,11 @@
-EDITOR_BUTTON_COUNT :: 10;
+EDITOR_BUTTON_COUNT :: 11;
 EDITOR_RESET_BUTTON :: 4;
 EDITOR_RABBIT_BUTTON :: 5;
-EDITOR_EXPORT_BUTTON :: 6;
-EDITOR_MINIMIZE_BUTTON :: 7;
-EDITOR_SAVE_BUTTON :: 8;
-EDITOR_EXIT_BUTTON :: 9;
+EDITOR_DRAG_GAME_BUTTON :: 6;
+EDITOR_EXPORT_BUTTON :: 7;
+EDITOR_MINIMIZE_BUTTON :: 8;
+EDITOR_SAVE_BUTTON :: 9;
+EDITOR_EXIT_BUTTON :: 10;
 EDITOR_INPUT_HINT :: "W/A/S/D or arrows: move; C/X/F/V and digits: actions; B or _: wait.";
 
 // Nerd Font glyphs: Font Awesome controls/arrows and the Material Design swap icon.
@@ -19,6 +20,8 @@ Editor_Icon :: struct {
     SAVE      :: "";
     RESET     :: ""; // 
     RABBIT    :: "󰤇"; // nf-md-rabbit (U+F0907)
+    LINK      :: ""; // nf-fa-link (U+F0C1)
+    UNLINK    :: ""; // nf-fa-unlink (U+F127)
     CLIPBOARD :: ""; // nf-fa-clipboard (U+F0EA)
     MINIMIZE  :: ""; // nf-fa-minimize (U+EF3E)
     MAXIMIZA  :: "";
@@ -36,6 +39,7 @@ Editor_View :: struct {
     font, small_font: *Simp.Dynamic_Font;
     font_dpi: s32;
     minimized: bool;
+    drag_affects_game := true;
     cell_width: float = 36;
     compact_cell_width: float = 28;
     mouse_down, dragging, strip_down: bool;
@@ -99,7 +103,7 @@ editor_view_tick :: (now: float64) {
         else wanted = editor_view.wheel_head;
     }
     else if editor.transport.scrubbing wanted = cast(float) editor.transport.target;
-    // Keep visual motion continuous; only the real transport advances the executed boundary.
+    // Visual easing never changes the playhead or sends game input.
     blend := cast(float)(elapsed / (0.045 + elapsed));
     editor_view.display_head += (wanted - editor_view.display_head) * blend;
     if abs(wanted - editor_view.display_head) * editor_pitch() < 0.05 editor_view.display_head = wanted;
@@ -125,14 +129,49 @@ editor_wheel :: (delta: s32, now: float64) {
     editor_view.wheel_head = max(0.0, min(cast(float) editor.timeline.keys.count,
                                          editor_view.wheel_head - cast(float) delta / 120.0));
     target := cast(s64) floor(editor_view.wheel_head + 0.5);
-    if target != editor.transport.target editor_seek(target, scrubbing = true);
+    editor_scrub_to(target);
+}
+
+editor_scrub_to :: (position: s64) {
+    if !editor.open || editor_save_prompt.active return;
+    target := max(0, min(editor.timeline.keys.count, position));
+    if editor_view.drag_affects_game {
+        if target != editor.transport.target editor_seek(target, scrubbing = true);
+        return;
+    }
+    // Drag/wheel begins by pausing and releasing keys. Repositioning changes the
+    // local execution boundary without queuing undo, redo, or a later catch-up.
+    if editor.transport.held.scan || editor.transport.time_held || editor_busy() return;
+    timeline_advance(*editor.timeline, target - editor.timeline.playhead);
+    editor.transport.target = editor.timeline.playhead;
+    editor.ready_at = 0;
+    editor_view.recording_motion = false;
+}
+
+editor_toggle_drag_game :: () {
+    if !editor.open || editor_save_prompt.active return;
+    if editor.transport.scrubbing editor_pause();
+    if editor.transport.held.scan || editor.transport.time_held {
+        // Ordinary playback may continue; a failed scrub release must finish first.
+        if !editor.transport.playing return;
+    }
+    editor_view_cancel_drag();
+    editor_view.wheeling = false;
+    editor_view.drag_affects_game = !editor_view.drag_affects_game;
+    editor_view.recording_motion = false;
+    editor_set_status(ifx editor_view.drag_affects_game then "Timeline drag/wheel: apply game undo and redo."
+                                                       else "Timeline drag/wheel: move the playhead without game input.");
+}
+
+editor_playhead_x :: (strip: RectUI.Rect) -> float {
+    return strip.x + strip.w / 2;
 }
 
 editor_layout :: () -> (strip: RectUI.Rect, controls: RectUI.Rect) {
     width := cast(float)(editor_window.bounds.right - editor_window.bounds.left);
     scale := editor_scale();
     if editor_view.minimized {
-        return RectUI.get_rect(52 * scale, 32 * scale, max(0.0, width - 104 * scale), 40 * scale),
+        return RectUI.get_rect(52 * scale, 32 * scale, max(0.0, width - 144 * scale), 40 * scale),
                RectUI.get_rect(width - 44 * scale, 32 * scale, 32 * scale, 40 * scale);
     }
     return RectUI.get_rect(16 * scale, 68 * scale, width - 32 * scale, 78 * scale),
@@ -143,6 +182,7 @@ editor_button_rect :: (index: s64) -> RectUI.Rect {
     strip, controls := editor_layout();
     if editor_view.minimized {
         if index == 0 return RectUI.get_rect(8 * editor_scale(), strip.y, controls.w, strip.h);
+        if index == EDITOR_DRAG_GAME_BUTTON return RectUI.get_rect(controls.x - 40 * editor_scale(), strip.y, controls.w, strip.h);
         return controls;
     }
     gap := 8 * editor_scale();
@@ -156,7 +196,8 @@ editor_button_icon :: (index: s64) -> string {
     icons := string.[ifx editor.recording then Editor_Icon.STOP else Editor_Icon.RECORD,
                      Editor_Icon.UNDO, Editor_Icon.STEP,
                      ifx editor.transport.playing then Editor_Icon.PAUSE else Editor_Icon.PLAY,
-                     Editor_Icon.RESET, Editor_Icon.RABBIT, Editor_Icon.CLIPBOARD,
+                     Editor_Icon.RESET, Editor_Icon.RABBIT,
+                     ifx editor_view.drag_affects_game then Editor_Icon.LINK else Editor_Icon.UNLINK, Editor_Icon.CLIPBOARD,
                      ifx editor_view.minimized then Editor_Icon.EDIT else Editor_Icon.MINIMIZE,
                      Editor_Icon.SAVE, Editor_Icon.EXIT];
     return icons[index];
@@ -182,7 +223,8 @@ editor_button_action :: (index: s64) {
         case 2; editor_step(1);
         case 3; editor_toggle_play();
         case EDITOR_RESET_BUTTON; editor_reset();
-        case EDITOR_RABBIT_BUTTON; editor_test_solution();
+        case EDITOR_RABBIT_BUTTON; editor_rabbit_play();
+        case EDITOR_DRAG_GAME_BUTTON; editor_toggle_drag_game();
         case EDITOR_EXPORT_BUTTON; editor_export_solution();
         case EDITOR_MINIMIZE_BUTTON; editor_toggle_minimized();
         case EDITOR_SAVE_BUTTON; editor_save();
@@ -206,6 +248,18 @@ editor_paste :: () {
     if error.count editor_set_status(error, true);
 }
 
+editor_delete_steps :: (backwards := false) {
+    if !editor_can_edit() return;
+    count := editor.timeline.keys.count;
+    timeline_delete(*editor.timeline, backwards);
+    if count == editor.timeline.keys.count return;
+    // Removing executed records reindexes the boundary; it must not create a
+    // pending seek or emit a game Undo just because the boundary moved left.
+    editor.transport.target = editor.timeline.playhead;
+    editor_view_reset();
+    editor_set_status(tprint("Deleted % timeline steps.", count - editor.timeline.keys.count));
+}
+
 editor_handle_event :: (event: Editor_Event) {
     if editor_save_prompt.active { editor_save_prompt_event(event); return; }
     strip, controls := editor_layout();
@@ -215,7 +269,7 @@ editor_handle_event :: (event: Editor_Event) {
         editor_view.down_x = event.x;
         editor_view.button_down = -1;
         for i: 0..EDITOR_BUTTON_COUNT-1 {
-            if editor_view.minimized && i != 0 && i != EDITOR_MINIMIZE_BUTTON continue;
+            if editor_view.minimized && i != 0 && i != EDITOR_DRAG_GAME_BUTTON && i != EDITOR_MINIMIZE_BUTTON continue;
             if editor_hit(editor_button_rect(i), event.x, event.y) editor_view.button_down = i;
         }
         editor_view.strip_down = editor_hit(strip, event.x, event.y);
@@ -234,7 +288,7 @@ editor_handle_event :: (event: Editor_Event) {
                                                editor_view.origin_view_head - cast(float) delta / editor_pitch()));
             steps := cast(s64)(cast(float) delta / editor_pitch());
             target := max(0, min(editor.timeline.keys.count, editor_view.origin_head - steps));
-            if target != editor.transport.target editor_seek(target, scrubbing = true);
+            editor_scrub_to(target);
         }
     } else if event.kind == .UP {
         if editor_view.mouse_down {
@@ -242,7 +296,8 @@ editor_handle_event :: (event: Editor_Event) {
                 editor_button_action(editor_view.button_down);
             } else if editor_view.strip_down && !editor_view.dragging {
                 center := strip.x + strip.w / 2;
-                index := cast(s64) floor(editor_future_head() + (cast(float) event.x - center) / editor_pitch() + 0.5);
+                head := ifx cast(float) event.x < center then editor_view.display_head else editor_future_head();
+                index := cast(s64) floor(head + (cast(float) event.x - center) / editor_pitch() + 0.5);
                 timeline_move_caret(*editor.timeline, index, event.shift);
                 editor_focus_text();
             }
@@ -283,13 +338,17 @@ editor_key_input :: (event: Editor_Event) {
         if !event.repeat editor_toggle_play();
         return;
     }
+    if (event.key == #char "J" || event.key == #char "L") && !event.ctrl && !event.alt && !event.shift {
+        if !event.repeat editor_adjust_playback_speed(event.key == #char "J");
+        return;
+    }
     if event.key == #char "N" && !event.ctrl && !event.alt && !event.shift {
         if !event.repeat editor_toggle_minimized();
         return;
     }
     direction := editor_step_key_direction(event.key);
     if !event.ctrl && !event.alt && !event.shift && direction != 0 {
-        if !event.repeat editor_step(direction, repeat_while_held = editor_step_key_repeats(event.key));
+        if !event.repeat editor_step(direction);
         return;
     }
     if event.ctrl && event.key == #char "Q" { overlay.quit_requested = true; return; }
@@ -302,8 +361,7 @@ editor_key_input :: (event: Editor_Event) {
     }
     if !editor_can_edit() return;
     if event.ctrl && event.key == #char "A" {
-        timeline_move_caret(*editor.timeline, editor.timeline.playhead);
-        timeline_move_caret(*editor.timeline, editor.timeline.keys.count, select = true);
+        timeline_select_side(*editor.timeline);
         return;
     }
     if !event.ctrl && !event.alt && event.key >= 0x25 && event.key <= 0x28 {
@@ -316,10 +374,10 @@ editor_key_input :: (event: Editor_Event) {
     if event.key == {
         case 0x25; if event.ctrl timeline_move_caret(*editor.timeline, editor.timeline.caret - 1, event.shift);
         case 0x27; if event.ctrl timeline_move_caret(*editor.timeline, editor.timeline.caret + 1, event.shift);
-        case 0x24; timeline_move_caret(*editor.timeline, editor.timeline.playhead, event.shift);
-        case 0x23; timeline_move_caret(*editor.timeline, editor.timeline.keys.count, event.shift);
-        case 8;    timeline_delete(*editor.timeline, backwards = true);
-        case 0x2e; timeline_delete(*editor.timeline);
+        case 0x24; timeline_move_caret(*editor.timeline, ifx timeline_caret_is_executed(*editor.timeline) then 0 else editor.timeline.playhead, event.shift);
+        case 0x23; timeline_move_caret(*editor.timeline, ifx timeline_caret_is_executed(*editor.timeline) then editor.timeline.playhead else editor.timeline.keys.count, event.shift);
+        case 8;    editor_delete_steps(backwards = true);
+        case 0x2e; editor_delete_steps();
     }
 }
 
@@ -363,7 +421,8 @@ draw_solution_editor :: () {
     editor_draw_text(editor_view.small_font, cast(float) width - 20 * scale - position_width, 24 * scale, position, muted);
     editor_draw_text(editor_view.small_font, strip.x, 54 * scale, "EXECUTED", muted);
     editor_draw_text(editor_view.small_font, center + 10 * scale, 54 * scale, "FUTURE", accent);
-    progress := tprint("% / %", editor.timeline.playhead, editor.timeline.keys.count);
+    progress := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
+                       editor_playback_speed_name(editor.transport.speed));
     progress_width := editor_text_width(editor_view.small_font, progress);
     editor_draw_text(editor_view.small_font, strip.x + strip.w - progress_width, 54 * scale, progress, primary);
 
@@ -374,7 +433,9 @@ draw_solution_editor :: () {
     Win.ScreenToClient(editor_window.handle, *mouse);
     labels := string.[ifx editor.recording then "Stop Recording" else "Record", "Undo", "Step",
                       ifx editor.transport.playing then "Pause" else "Play", "Reset: restore last saved solution",
-                      "Rabbit: reset and test current solution at 75 ms with fast time", "Export: copy the complete solution",
+                      "Rabbit: continue from playhead at 75 ms with fast time",
+                      ifx editor_view.drag_affects_game then "Drag affects game: ON (click to position the playhead only)" else "Drag affects game: OFF (click for undo/redo)",
+                      "Export: copy the complete solution",
                       "Minimize (N)", "Save", "Exit"];
     hovered: s64 = -1;
     for label: labels {
@@ -388,7 +449,7 @@ draw_solution_editor :: () {
     editor_draw_text(editor_view.small_font, 20 * scale, 221 * scale, status,
                    ifx hovered < 0 && editor.status_error then console_color(Naysayer.warning) else muted);
     editor_draw_text(editor_view.small_font, 20 * scale, 240 * scale,
-                   tprint("% SPACE   % Esc   % [/.   % ]/,   % B/_   % Ctrl+C   % Ctrl+S   % N   % :",
+                   tprint("% K/Space   J faster   L slower   % Esc   % [   % ]   % B/_   % Ctrl+C   % Ctrl+S   % N   % :",
                           Editor_Icon.PLAY, Editor_Icon.PAUSE, Editor_Icon.UNDO, Editor_Icon.STEP,
                           Editor_Icon.SLEEP, Editor_Icon.CLIPBOARD, Editor_Icon.SAVE, Editor_Icon.MINIMIZE,
                           Editor_Icon.KEYBOARD), muted);
@@ -409,9 +470,11 @@ editor_draw_timeline :: (strip: RectUI.Rect) {
     editor_draw_timeline_cells(strip, editor_view.display_head, past = true);
     editor_draw_timeline_cells(strip, editor_future_head(), past = false);
     Simp.set_scissor(cast(s32) strip.x, cast(s32) strip.y, cast(s32)(strip.x + strip.w), cast(s32)(strip.y + strip.h + 16 * scale));
-    editor_draw_rect(RectUI.get_rect(center - scale, strip.y - 2 * scale, 2 * scale, strip.h + 6 * scale), accent);
+    boundary := editor_playhead_x(strip);
+    editor_draw_rect(RectUI.get_rect(boundary - scale, strip.y - 2 * scale, 2 * scale, strip.h + 6 * scale), accent);
     if Win.GetForegroundWindow() == editor_window.handle && (cast(s64)(seconds_since_init() * 2) % 2) == 0 {
-        x := center + (cast(float) editor.timeline.caret - editor_future_head()) * pitch;
+        head := ifx timeline_caret_is_executed(*editor.timeline) then editor_view.display_head else editor_future_head();
+        x := center + (cast(float) editor.timeline.caret - head) * pitch;
         editor_draw_rect(RectUI.get_rect(x, strip.y + (ifx compact then 4 else 20) * scale,
                                          2 * scale, (ifx compact then 32 else 46) * scale), console_color(Naysayer.white));
     }
@@ -458,8 +521,9 @@ editor_draw_timeline_cells :: (strip: RectUI.Rect, head: float, past: bool) {
 editor_draw_button :: (index: s64, hover: bool) {
     r := editor_button_rect(index);
     active := (index == 0 && editor.recording) || (index == 3 && editor.transport.playing) ||
-              (index == EDITOR_RESET_BUTTON && editor.reset_requested && !editor.test_after_reset) ||
-              (index == EDITOR_RABBIT_BUTTON && (editor.test_after_reset || editor.transport.test_playback));
+              (index == EDITOR_RESET_BUTTON && editor.reset_requested) ||
+              (index == EDITOR_RABBIT_BUTTON && editor.transport.playing && editor.transport.speed == .RABBIT) ||
+              (index == EDITOR_DRAG_GAME_BUTTON && editor_view.drag_affects_game);
     color := ifx active || hover then console_color(Naysayer.line_fg) else console_color(Naysayer.selection);
     editor_draw_rect(r, color);
     icon := editor_button_icon(index);
@@ -478,17 +542,21 @@ editor_draw_preview :: (width: float) {
     Win.ScreenToClient(editor_window.handle, *mouse);
     hover := editor_hit(controls, mouse.x, mouse.y);
     record_hover := editor_hit(editor_button_rect(0), mouse.x, mouse.y);
-    progress := tprint("% / %", editor.timeline.playhead, editor.timeline.keys.count);
+    drag_hover := editor_hit(editor_button_rect(EDITOR_DRAG_GAME_BUTTON), mouse.x, mouse.y);
+    progress := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
+                       editor_playback_speed_name(editor.transport.speed));
     progress_x := width - 12 * scale - editor_text_width(editor_view.small_font, progress);
     Simp.set_scissor(cast(s32)(12 * scale), 0, cast(s32)(progress_x - 12 * scale), cast(s32)(28 * scale));
     title := ifx hover then "Edit (N)" else ifx record_hover then (ifx editor.recording then "Stop Recording" else "Record")
+             else ifx drag_hover then (ifx editor_view.drag_affects_game then "Drag affects game: ON" else "Drag affects game: OFF")
              else tprint("% / % %", editor.record.area, editor_record_title(), ifx editor.timeline.dirty then "*" else "");
     editor_draw_text(editor_view.small_font, 12 * scale, 20 * scale, title,
-                     ifx !editor.synchronized then console_color(Naysayer.warning) else primary);
+                     primary);
     Simp.clear_scissor();
     editor_draw_text(editor_view.small_font, progress_x, 20 * scale, progress, muted);
     editor_draw_timeline(strip);
     editor_draw_button(0, record_hover);
+    editor_draw_button(EDITOR_DRAG_GAME_BUTTON, drag_hover);
     editor_draw_button(EDITOR_MINIMIZE_BUTTON, hover);
 }
 

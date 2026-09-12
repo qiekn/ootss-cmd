@@ -12,18 +12,30 @@ Win   :: #import "Windows";
 #load "platform/windows/input.jai";
 #load "platform/windows/console.jai";
 #load "platform/windows/process.jai";
+#load "platform/windows/game_paths.jai";
 #load "platform/windows/subtitles.jai";
 #load "platform/windows/overlay.jai";
 #load "platform/windows/image.jai";
 #load "platform/windows/tray.jai";
 #load "platform/windows/send_monitor.jai";
+#load "platform/windows/shortcuts.jai";
+#load "platform/windows/noclip.jai";
 #load "platform/windows/editor.jai";
 #load "platform/windows/zork.jai";
 
 #load "game/commands.jai";
 #load "game/keymap.jai";
 #load "game/memory.jai";
+#load "game/level.jai";
+#load "game/position_reader.jai";
+#load "game/position_selection.jai";
+#load "game/position_layout.jai";
+#load "game/position_markers.jai";
+#load "game/position_commands.jai";
+#load "game/noclip.jai";
+#load "game/shortcuts.jai";
 #load "game/state.jai";
+#load "game/subtitle_mapping.jai";
 #load "game/subtitles.jai";
 
 #load "solution/solution.jai";
@@ -34,6 +46,7 @@ Win   :: #import "Windows";
 #load "solution/editor_view.jai";
 
 #load "ui/console.jai";
+#load "ui/fonts.jai";
 #load "ui/console_view.jai";
 #load "ui/subtitles_view.jai";
 
@@ -55,6 +68,8 @@ main :: () {
     }
     defer overlay_destroy();
     defer console_deinit(*console);
+    defer shortcuts_deinit();
+    defer noclip_deinit();
     defer zork_deinit();
     if !tray_init(overlay.window) {
         show_error("Unable to create the system tray icon.");
@@ -68,13 +83,17 @@ main :: () {
     Simp.prepare_window(overlay.window, wanted_msaa = 0);
     Simp.set_render_target(overlay.window, .LEFT_HANDED);
     render_dc := Win.wglGetCurrentDC();
+    config_error := console_config_load(*console.config);
     if !console_load_fonts() return;
     defer console_images_deinit();
     defer subtitles_view_free(*subtitles_view);
     defer editor_deinit();
     if process_console_should_exit() return;
 
-    command_blow(*console, "wave");
+    shortcut_error := shortcuts_install();
+    if config_error.count console_write(*console, config_error, .ERROR);
+    else if shortcut_error.count console_write(*console, shortcut_error, .ERROR);
+    else console_startup_presentation(*console);
     draw_console();
     Win.SwapBuffers(render_dc);
     if overlay.game overlay_show();
@@ -135,6 +154,8 @@ main :: () {
             }
         }
 
+        shortcuts_update();
+
         if console.pending_action == .HIDE overlay_hide();
         if console.pending_action == .EXIT overlay.quit_requested = true;
         if console.pending_action == .SHOW_POSITION {
@@ -142,7 +163,12 @@ main :: () {
             if error.count console_write(*console, error, .ERROR);
             else console_write(*console, game_position_text(position));
         }
+        if console.pending_action == .SHOW_LEVEL console_show_current_level(*console);
         if console.pending_action == .SHOW_SUBTITLES console_open_subtitles(*console);
+        if console.pending_action == .SET_POSITION console.pending_position_change = true;
+        if console.pending_action == .SWITCH_LEVEL console_prepare_switch(*console);
+        console_run_marker_action(*console);
+        if console.pending_action == .NOCLIP console_set_noclip(*console);
         if console.pending_action == .CONSOLE_MODE overlay_set_mode(console.pending_mode);
         if console.pending_action == .EDIT_SOLUTION editor_open_solution(console.pending_edit_level, console.pending_edit_custom);
         if console.pending_action == .PLAY_SOLUTION console_play_saved_solution(*console);
@@ -164,10 +190,18 @@ main :: () {
         console.pending_subtitle_comments = false;
         console.pending_subtitle_hide_speakers = false;
         console.pending_subtitle_language = .BOTH;
+        free(console.pending_marker_name);
+        free(console.pending_marker_new_name);
+        console.pending_marker_name = "";
+        console.pending_marker_new_name = "";
+        console.pending_marker_current = false;
+        free(console.pending_switch_level);
+        console.pending_switch_level = "";
+        noclip_update(*console, now);
         editor_update(now);
         if editor.open && console.pending_reset editor_pause();
         if editor.open && console.pending_send.count && !console.pending_reset {
-            console_write(*console, "Use the editor controls, or close it with Exit before send/play/undo.", .ERROR);
+            console_write(*console, "Use the editor controls, or close it with Exit before send/play/do/undo.", .ERROR);
             free(console.pending_send);
             console.pending_send = "";
             console.pending_send_hold_ms = DEFAULT_HOLD;
@@ -178,6 +212,8 @@ main :: () {
         reset_requested := console.pending_reset;
         sent_keys := console_run_pending_send(*console);
         if reset_requested && sent_keys > 0 editor_on_game_reset();
+        console_run_pending_position(*console);
+        if !console.pending_send.count && !console.pending_position_change console.submission = .{};
         zork_update(*console);
         overlay_present_output(*console);
 
@@ -240,7 +276,7 @@ console_key_input :: (event: Input.Event) {
     }
     if event.key_code == {
         case .ESCAPE;      overlay_hide();
-        case .ENTER;       if !event.repeat console_submit(*console);
+        case .ENTER;       if !event.repeat console_submit_window();
         case .TAB;         if !event.repeat && !event.ctrl_pressed && !event.alt_pressed console_tab_complete(event.shift_pressed);
         case .BACKSPACE;   console_backspace(*console);
         case .DELETE;      console_delete(*console);
@@ -260,10 +296,13 @@ console_key_input :: (event: Input.Event) {
 }
 
 console_tab_complete :: (backwards: bool) {
-    levels, customs, subtitle_levels: [..] string;
+    levels, customs, subtitle_levels, marker_names: [..] string;
     defer array_free(levels);
     defer array_free(customs);
     defer array_free(subtitle_levels);
+    defer array_free(marker_names);
+    markers: Position_Markers;
+    defer position_markers_free(*markers);
     database, custom_database: Solutions_Database;
     defer solutions_free(*database);
     defer solutions_free(*custom_database);
@@ -271,11 +310,19 @@ console_tab_complete :: (backwards: bool) {
     defer subtitles_catalog_free(*catalog);
     if !console_completion_is_current(*console) {
         kind := console_completion_context(*console);
+        if kind == .MARKER_NAME {
+            error := position_markers_load(*markers);
+            if !error.count for entry: markers.entries array_add(*marker_names, entry.name);
+        }
         if kind == .EDIT || kind == .PLAY {
             error := solutions_load(*database, marker_file = ifx kind == .PLAY then "" else "data/marker.json", answer_file = "");
             if !error.count for entry: database.entries array_add(*levels, entry.name);
         }
-        if kind == .EDIT || kind == .CUSTOM {
+        if kind == .SWITCH {
+            error := level_catalog_load(*database);
+            if !error.count for entry: database.entries array_add(*levels, entry.name);
+        }
+        if kind == .EDIT || kind == .CUSTOM || kind == .PLAY {
             error := custom_inputs_load(*custom_database);
             if !error.count for entry: custom_database.entries array_add(*customs, entry.name);
         }
@@ -283,18 +330,19 @@ console_tab_complete :: (backwards: bool) {
             directory := game_subtitles_directory();
             if directory.count {
                 language: Console_Subtitle_Language;
-                input := console_input(*console);
+                input, alias_error := console_expand_aliases(*console, console_input(*console));
+                defer free(input);
                 position: s64;
                 while position < input.count {
                     option := console_subtitle_language_option(console_next_argument(input, *position));
                     if option != .BOTH language = option;
                 }
-                error := subtitles_catalog_load(*catalog, directory, load_english = language != .CHINESE, load_chinese = language != .ENGLISH);
+                error := subtitles_catalog_load(*catalog, directory, load_english = language != .CHINESE, load_chinese = language != .ENGLISH, mapping_file = SUBTITLES_MAPPING_FILE);
                 if !error.count subtitles_collect_names(*catalog, *subtitle_levels);
             }
         }
     }
-    console_complete(*console, levels, customs, subtitle_levels, backwards);
+    console_complete(*console, levels, customs, subtitle_levels, backwards, marker_names);
 }
 
 console_text_input :: (character: u32) {

@@ -21,6 +21,7 @@ Subtitle_File :: struct {
 
 Subtitles_Catalog :: struct {
     english, chinese: Subtitle_File;
+    mapping: Subtitles_Mapping;
 }
 
 Subtitle_Block :: struct {
@@ -118,20 +119,32 @@ subtitles_level_name :: (section: string) -> string {
 }
 
 subtitles_collect_names :: (catalog: *Subtitles_Catalog, names: *[..] string) {
+    for level: catalog.mapping.levels {
+        for name: level.subtitle_names {
+            if subtitles_find_section(*catalog.english, name) >= 0 || subtitles_find_section(*catalog.chinese, name) >= 0 {
+                subtitles_add_name(names, level.level_name);
+                break;
+            }
+        }
+    }
     for file: *Subtitle_File.[*catalog.english, *catalog.chinese] {
         for section: file.sections {
+            // Offer real level names for mapped IDs; keep direct lookup for unassigned subtitle groups.
+            if subtitles_mapping_has_subtitle(*catalog.mapping, section.name) continue;
             name := subtitles_level_name(section.name);
-            found := false;
-            for previous: names.* if equal_nocase(previous, name) { found = true; break; }
-            if !found array_add(names, name);
+            if subtitles_mapping_find_level(*catalog.mapping, name) continue;
+            subtitles_add_name(names, name);
         }
     }
 }
 
-subtitles_catalog_load :: (catalog: *Subtitles_Catalog, directory: string,
-                           load_english := true, load_chinese := true) -> string {
+subtitles_catalog_load :: (catalog: *Subtitles_Catalog, directory: string, load_english := true, load_chinese := true, mapping_file := "") -> string {
     next: Subtitles_Catalog;
     defer subtitles_catalog_free(*next);
+    if mapping_file.count {
+        error := subtitles_mapping_load(*next.mapping, mapping_file);
+        if error.count return error;
+    }
     if load_english {
         path := tprint("%/en.subtitles", directory);
         source, ok := read_entire_file(path, log_errors = false);
@@ -161,15 +174,16 @@ subtitles_catalog_load :: (catalog: *Subtitles_Catalog, directory: string,
 
 subtitles_select :: (catalog: *Subtitles_Catalog, level: string, blocks: *[..] Subtitle_Block) -> bool {
     blocks.count = 0;
+    mapped := subtitles_mapping_find_level(*catalog.mapping, level);
     for *section: catalog.english.sections {
-        if !subtitles_section_matches(section.name, level) continue;
+        if !subtitles_selection_matches(mapped, section.name, level) continue;
         index := subtitles_find_section(*catalog.chinese, section.name);
         chinese: *Subtitle_Section;
         if index >= 0 chinese = *catalog.chinese.sections[index];
         subtitles_pair_section(section, chinese, blocks);
     }
     for *section: catalog.chinese.sections {
-        if !subtitles_section_matches(section.name, level) continue;
+        if !subtitles_selection_matches(mapped, section.name, level) continue;
         if subtitles_find_section(*catalog.english, section.name) >= 0 continue;
         subtitles_pair_section(null, section, blocks);
     }
@@ -189,12 +203,24 @@ subtitles_file_free :: (file: *Subtitle_File) {
 subtitles_catalog_free :: (catalog: *Subtitles_Catalog) {
     subtitles_file_free(*catalog.english);
     subtitles_file_free(*catalog.chinese);
+    subtitles_mapping_free(*catalog.mapping);
 }
 
 #scope_file
 #import "Basic";
 #import "String";
 #import "File";
+
+subtitles_add_name :: (names: *[..] string, name: string) {
+    for previous: names.* if equal_nocase(previous, name) return;
+    array_add(names, name);
+}
+
+subtitles_selection_matches :: (mapped: *Subtitle_Level_Mapping, section: string, requested: string) -> bool {
+    // A known level's exact references are authoritative, including an empty list.
+    if mapped return subtitles_mapping_contains(mapped, section);
+    return subtitles_section_matches(section, requested);
+}
 
 subtitles_phase_suffix :: (suffix: string) -> bool {
     for phase: string.["_start", "_mid", "_end"] {
@@ -257,7 +283,7 @@ subtitles_pair_section :: (english: *Subtitle_Section, chinese: *Subtitle_Sectio
             if en[e].cues.count == zh[c].cues.count {
                 for index: 0..en[e].cues.count-1 {
                     array_add(blocks, .{english = .{data = en[e].cues.data + index, count = 1},
-                                       chinese = .{data = zh[c].cues.data + index, count = 1}});
+                                        chinese = .{data = zh[c].cues.data + index, count = 1}});
                 }
             } else array_add(blocks, .{english = en[e].cues, chinese = zh[c].cues});
             e += 1;

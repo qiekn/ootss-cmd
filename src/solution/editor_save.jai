@@ -96,8 +96,7 @@ editor_confirm_save :: () -> bool {
     defer solutions_free(*database);
     error := ifx editor.custom then custom_inputs_load(*database) else solutions_load(*database);
     if error.count { editor_save_prompt_message(error, true); return false; }
-    index := solution_find_name(*database, name, ignore_case = editor.custom);
-    if index < 0 && !editor.custom index = solution_find_position(*database, editor.record.position);
+    index := solution_find_name(*database, name, ignore_case = true);
     if index >= 0 {
         saved := database.entries[index];
         different_name := editor.custom && !equal_nocase(editor.record.name, saved.name);

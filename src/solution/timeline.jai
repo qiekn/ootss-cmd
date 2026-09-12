@@ -6,6 +6,11 @@ Solution_Timeline :: struct {
     dirty: bool;
 }
 
+timeline_free :: (timeline: *Solution_Timeline) {
+    array_free(timeline.keys);
+    timeline.* = .{};
+}
+
 timeline_key_valid :: (key: u8) -> bool {
     // Z is an editor transport action, not a forward step.
     return contains("UDLRCXFV0123456789_", key);
@@ -37,26 +42,43 @@ timeline_load :: (timeline: *Solution_Timeline, source: string) -> string {
     keys, error := timeline_parse(source);
     defer free(keys);
     if error.count return error;
-    array_free(timeline.keys);
-    timeline.* = .{};
-    for key: keys array_add(*timeline.keys, key);
+    timeline_free(timeline);
+    for key: keys {
+        array_add(*timeline.keys, key);
+    }
     return "";
 }
 
 timeline_selection :: (timeline: *Solution_Timeline) -> (first: s64, last: s64) {
-    return max(timeline.playhead, min(timeline.caret, timeline.anchor)),
-           max(timeline.playhead, max(timeline.caret, timeline.anchor));
+    return max(0, min(timeline.keys.count, min(timeline.caret, timeline.anchor))),
+           max(0, min(timeline.keys.count, max(timeline.caret, timeline.anchor)));
 }
 
 timeline_move_caret :: (timeline: *Solution_Timeline, position: s64, select := false) {
-    timeline.caret = max(timeline.playhead, min(timeline.keys.count, position));
+    timeline.caret = max(0, min(timeline.keys.count, position));
     if !select timeline.anchor = timeline.caret;
 }
 
+timeline_caret_is_executed :: (timeline: *Solution_Timeline) -> bool {
+    return timeline.caret < timeline.playhead || (timeline.caret == timeline.playhead && timeline.anchor < timeline.playhead);
+}
+
+timeline_select_side :: (timeline: *Solution_Timeline) {
+    past := timeline_caret_is_executed(timeline);
+    first := ifx past then 0 else timeline.playhead;
+    last := ifx past then timeline.playhead else timeline.keys.count;
+    timeline_move_caret(timeline, first);
+    timeline_move_caret(timeline, last, select = true);
+}
+
 timeline_erase :: (timeline: *Solution_Timeline, first: s64, last: s64) -> bool {
-    if first < timeline.playhead || first < 0 || last > timeline.keys.count || first >= last return false;
-    for i: last..timeline.keys.count-1 timeline.keys[i - (last - first)] = timeline.keys[i];
+    if first < 0 || last > timeline.keys.count || first >= last return false;
+    removed_executed := max(0, min(last, timeline.playhead) - min(first, timeline.playhead));
+    for i: last..timeline.keys.count-1 {
+        timeline.keys[i - (last - first)] = timeline.keys[i];
+    }
     timeline.keys.count -= last - first;
+    timeline.playhead -= removed_executed;
     timeline_move_caret(timeline, first);
     timeline.dirty = true;
     return true;
@@ -73,13 +95,16 @@ timeline_delete :: (timeline: *Solution_Timeline, backwards := false) {
 
 timeline_insert :: (timeline: *Solution_Timeline, keys: string) -> string {
     first, last := timeline_selection(timeline);
+    if first < timeline.playhead return "Executed steps can be deleted. Move the caret to Future to insert new steps.";
     if keys.count > SEND_KEY_LIMIT - (timeline.keys.count - (last - first)) {
         return tprint("A solution can contain at most % steps.", SEND_KEY_LIMIT);
     }
     for key: keys if !timeline_key_valid(key) return "Unsupported solution key.";
     if !keys.count return "";
     timeline_erase(timeline, first, last);
-    for key: keys array_insert_at(*timeline.keys, key, first + it_index);
+    for key: keys {
+        array_insert_at(*timeline.keys, key, first + it_index);
+    }
     timeline_move_caret(timeline, first + keys.count);
     timeline.dirty = true;
     return "";
@@ -88,17 +113,20 @@ timeline_insert :: (timeline: *Solution_Timeline, keys: string) -> string {
 timeline_record :: (timeline: *Solution_Timeline, key: u8) -> bool {
     if !timeline_key_valid(key) || timeline.keys.count == SEND_KEY_LIMIT return false;
     array_insert_at(*timeline.keys, key, timeline.playhead);
+    if timeline.caret >= timeline.playhead timeline.caret += 1;
+    if timeline.anchor >= timeline.playhead timeline.anchor += 1;
     timeline.playhead += 1;
-    timeline.caret += 1;
-    timeline.anchor += 1;
     timeline.dirty = true;
     return true;
 }
 
 timeline_advance :: (timeline: *Solution_Timeline, direction: s64) {
+    following := timeline.caret == timeline.playhead && timeline.anchor == timeline.playhead;
     timeline.playhead = max(0, min(timeline.keys.count, timeline.playhead + direction));
-    timeline.caret = max(timeline.caret, timeline.playhead);
-    timeline.anchor = max(timeline.anchor, timeline.playhead);
+    if following {
+        timeline.caret = timeline.playhead;
+        timeline.anchor = timeline.playhead;
+    }
 }
 
 // A physical Z undoes one game action, skipping character switches and waits.
@@ -115,12 +143,9 @@ timeline_apply_game_undo :: (timeline: *Solution_Timeline) -> bool {
 
 timeline_clear_executed :: (timeline: *Solution_Timeline) {
     count := timeline.playhead;
-    for i: count..timeline.keys.count-1 timeline.keys[i - count] = timeline.keys[i];
-    timeline.keys.count -= count;
-    timeline.playhead = 0;
+    timeline_erase(timeline, 0, count);
     timeline.caret = 0;
     timeline.anchor = 0;
-    if count > 0 timeline.dirty = true;
 }
 
 timeline_serialize :: (timeline: *Solution_Timeline) -> string {

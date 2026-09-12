@@ -1,0 +1,815 @@
+{
+  "version": 1,
+  "source": {
+    "package": "levels.package",
+    "package_sha256": "006838f59616e9c6c7c3905bdae510569af1d1bd805c2b252555cb04ba32c920",
+    "subtitles": [
+      {
+        "file": "en.subtitles",
+        "sha256": "a66fa6222b5b27f36e500fa3f9aa51378c5f8c1d8ed3d3db39d3eb75cd0e3315"
+      },
+      {
+        "file": "s-cn.subtitles",
+        "sha256": "0a0e1956f2fecde0e91afbb13110385e7c461294b69b2fbf2a58021bf6f9d221"
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level_name": "a_wiz_out_of_water",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "crystal_bridges",
+      "subtitle_names": [
+        "hw_second"
+      ]
+    },
+    {
+      "level_name": "detonator",
+      "subtitle_names": [
+        "hw_warrior_thief_dragons"
+      ]
+    },
+    {
+      "level_name": "dipping_your_toes_in",
+      "subtitle_names": [
+        "hw_first"
+      ]
+    },
+    {
+      "level_name": "dont_push_the_button",
+      "subtitle_names": [
+        "hw_warrior_going"
+      ]
+    },
+    {
+      "level_name": "drowner",
+      "subtitle_names": [
+        "hw_warrior_goblins"
+      ]
+    },
+    {
+      "level_name": "druid_and_dragon",
+      "subtitle_names": [
+        "heroes3_druid_warrior_second"
+      ]
+    },
+    {
+      "level_name": "dunk_tank_alt",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "easy_situation_v2",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "env_corral",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "gully_alt",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "heroes1_1",
+      "subtitle_names": [
+        "warrior_heroes1_start",
+        "warrior_heroes1_start_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_10_inv_v4_b",
+      "subtitle_names": [
+        "heroes1_wizard_array_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_11_v2",
+      "subtitle_names": [
+        "heroes1_warrior_wizard",
+        "heroes1_warrior_wizard_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_12_v2_alt",
+      "subtitle_names": [
+        "heroes1_wizard_thief",
+        "heroes1_wizard_thief_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_13_v2",
+      "subtitle_names": [
+        "heroes1_warrior_thief_mid0",
+        "heroes1_warrior_thief_mid",
+        "heroes1_warrior_thief",
+        "heroes1_warrior_thief_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_15",
+      "subtitle_names": [
+        "heroes1_warrior_wizard_confused_mid",
+        "heroes1_warrior_wizard_confused",
+        "heroes1_warrior_wizard_confused_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_16_v3",
+      "subtitle_names": [
+        "heroes_three_for_the_first_time_optional",
+        "heroes_three_for_the_first_time_optional_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_17",
+      "subtitle_names": [
+        "heroes_three_for_the_first_time_mandatory",
+        "heroes_three_for_the_first_time_mandatory_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_18",
+      "subtitle_names": [
+        "heroes_three_for_the_second_time_mandatory",
+        "heroes_three_for_the_second_time_mandatory_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_19_jail",
+      "subtitle_names": [
+        "heroes_jail"
+      ]
+    },
+    {
+      "level_name": "heroes1_21_v3",
+      "subtitle_names": [
+        "heroes_jail2",
+        "heroes_jail2_end",
+        "heroes_jail2_mid",
+        "heroes_jail2_mid2"
+      ]
+    },
+    {
+      "level_name": "heroes1_2_v2",
+      "subtitle_names": [
+        "warrior_heroes1_call"
+      ]
+    },
+    {
+      "level_name": "heroes1_3",
+      "subtitle_names": [
+        "heroes_warrior_gate",
+        "heroes_warrior_gate_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_4",
+      "subtitle_names": [
+        "heroes_warrior_mistrust",
+        "heroes_warrior_where_is_tif"
+      ]
+    },
+    {
+      "level_name": "heroes1_4.5",
+      "subtitle_names": [
+        "thief_first"
+      ]
+    },
+    {
+      "level_name": "heroes1_5_v2",
+      "subtitle_names": [
+        "heroes1_5"
+      ]
+    },
+    {
+      "level_name": "heroes1_6",
+      "subtitle_names": [
+        "heroes1_thief_three_crystals_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_7.5",
+      "subtitle_names": [
+        "heroes1_wizard_1"
+      ]
+    },
+    {
+      "level_name": "heroes1_7_v2",
+      "subtitle_names": [
+        "heroes_tif_lone_crystal",
+        "heroes_tif_so_much_space",
+        "heroes_tif_return"
+      ]
+    },
+    {
+      "level_name": "heroes1_8_v2",
+      "subtitle_names": [
+        "heroes1_wizard_2",
+        "heroes1_wizard_2_end"
+      ]
+    },
+    {
+      "level_name": "heroes1_9",
+      "subtitle_names": [
+        "heroes1_wizard_three_crystals",
+        "heroes1_wizard_three_crystals_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_10",
+      "subtitle_names": [
+        "heroes2_postmeetup_thief"
+      ]
+    },
+    {
+      "level_name": "heroes2_10.5",
+      "subtitle_names": [
+        "heroes2_wizard_per_turn_goblins",
+        "heroes2_wizard_per_turn_goblins_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_10a",
+      "subtitle_names": [
+        "heroes2_warrior_monster_gate_2_optional",
+        "heroes2_warrior_monster_gate_2_optional_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_10a_intro",
+      "subtitle_names": [
+        "heroes2_warrior_monster_gate_first",
+        "heroes2_warrior_monster_gate_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_11_v2",
+      "subtitle_names": [
+        "heroes2_warrior_goblins_vs_dragon",
+        "heroes2_warrior_goblins_vs_dragon_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_11_v2_easier",
+      "subtitle_names": [
+        "heroes2_postmeetup_warrior"
+      ]
+    },
+    {
+      "level_name": "heroes2_12_v2",
+      "subtitle_names": [
+        "heroes2_postmeetup_wizard_mid",
+        "heroes2_postmeetup_wizard"
+      ]
+    },
+    {
+      "level_name": "heroes2_13",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "heroes2_14",
+      "subtitle_names": [
+        "heroes2_wizard_priestess_first",
+        "heroes2_wizard_priestess_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_15",
+      "subtitle_names": [
+        "heroes2_warrior_priestess_first",
+        "heroes2_warrior_priestess_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_16v4",
+      "subtitle_names": [
+        "heroes2_thief_priestess_first"
+      ]
+    },
+    {
+      "level_name": "heroes2_17",
+      "subtitle_names": [
+        "heroes2_wizard_and_priestess_alone_third",
+        "heroes2_wizard_and_priestess_alone_third_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_17_intro",
+      "subtitle_names": [
+        "heroes2_wizard_and_priestess_alone_second"
+      ]
+    },
+    {
+      "level_name": "heroes2_18",
+      "subtitle_names": [
+        "heroes2_thief_priestess_second_mid_warrior",
+        "heroes2_thief_priestess_second_mid_disgraced",
+        "heroes2_thief_priestess_second_mid_wizard",
+        "heroes2_thief_priestess_second",
+        "heroes2_thief_priestess_second_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_2",
+      "subtitle_names": [
+        "heroes2_warrior_goblins_2_mid",
+        "heroes2_warrior_goblins_2_mid_2",
+        "heroes2_warrior_goblins_2",
+        "heroes2_warrior_goblins_2_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_20",
+      "subtitle_names": [
+        "heroes2_wizard_thief_priestess_goblins"
+      ]
+    },
+    {
+      "level_name": "heroes2_21b",
+      "subtitle_names": [
+        "heroes2_thief_wizard_priestess_compartments_mid",
+        "heroes2_thief_wizard_priestess_compartments"
+      ]
+    },
+    {
+      "level_name": "heroes2_22_v2",
+      "subtitle_names": [
+        "heroes2_four"
+      ]
+    },
+    {
+      "level_name": "heroes2_2b",
+      "subtitle_names": [
+        "heroes2_warrior_goblins_1"
+      ]
+    },
+    {
+      "level_name": "heroes2_3_v2",
+      "subtitle_names": [
+        "heroes2_wizard_goblins_mid",
+        "heroes2_wizard_goblins"
+      ]
+    },
+    {
+      "level_name": "heroes2_3monster",
+      "subtitle_names": [
+        "heroes2_warrior_3monster",
+        "heroes2_warrior_3monster_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_5.5v5",
+      "subtitle_names": [
+        "heroes2_thief_dragons_second",
+        "heroes2_thief_dragons_second_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_5_altE",
+      "subtitle_names": [
+        "heroes2_warrior_dragon_intro",
+        "heroes2_warrior_dragon_intro_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_5_no_crystal",
+      "subtitle_names": [
+        "heroes2_thief_dragons_intro"
+      ]
+    },
+    {
+      "level_name": "heroes2_6_v3",
+      "subtitle_names": [
+        "heroes2_thief_dragons_third",
+        "heroes2_thief_dragons_third_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_9",
+      "subtitle_names": [
+        "heroes2_three_first_mid",
+        "heroes2_three_first",
+        "heroes2_three_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_reprise",
+      "subtitle_names": [
+        "heroes2_warrior_priestess_second",
+        "heroes2_warrior_priestess_second_end"
+      ]
+    },
+    {
+      "level_name": "heroes2_thief_goblin",
+      "subtitle_names": [
+        "heroes2_thief_goblins",
+        "heroes2_thief_goblins_mid"
+      ]
+    },
+    {
+      "level_name": "heroes3_10",
+      "subtitle_names": [
+        "heroes3_druid_thief_crystal",
+        "heroes3_druid_thief_first",
+        "heroes3_druid_thief_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_11_v2",
+      "subtitle_names": [
+        "heroes3_druid_warrior_first",
+        "heroes3_druid_warrior_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_15_v4",
+      "subtitle_names": [
+        "heroes3_wizard_druid_second"
+      ]
+    },
+    {
+      "level_name": "heroes3_1_v3",
+      "subtitle_names": [
+        "heroes3_bard_first",
+        "heroes3_bard_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_2_v4",
+      "subtitle_names": [
+        "heroes3_bard_second",
+        "heroes3_bard_second_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_3_v2",
+      "subtitle_names": [
+        "heroes3_bard_crystals_first_mid",
+        "heroes3_bard_crystals_first",
+        "heroes3_bard_crystals_first_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_4",
+      "subtitle_names": [
+        "heroes3_bard_two_goblins",
+        "heroes3_bard_two_goblins_end"
+      ]
+    },
+    {
+      "level_name": "heroes3_5",
+      "subtitle_names": [
+        "heroes3_bard_warrior_first",
+        "heroes3_bard_warrior_first_end"
+      ]
+    },
+    {
+      "level_name": "ingame_glyphs",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "ingame_particles",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "intro",
+      "subtitle_names": [
+        "intro_1",
+        "intro_before_teleporter",
+        "intro_queen_sign",
+        "paradise_lost_invocation_2",
+        "intro_queen_callout",
+        "intro_queen_foreign_script",
+        "intro_queen_am_i_dead",
+        "intro_queen_hosts_1",
+        "intro_queen_hosts_2",
+        "intro_queen_teleporter"
+      ]
+    },
+    {
+      "level_name": "island_hopping",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "jenga_dispenser",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "menu",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "menu_demo_startup",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "mirror_1",
+      "subtitle_names": [
+        "mirror_new_1_start",
+        "mirror_new_1_end"
+      ]
+    },
+    {
+      "level_name": "mirror_10_alt2",
+      "subtitle_names": [
+        "mirror_to_gold_1",
+        "mirror_to_gold_1_end"
+      ]
+    },
+    {
+      "level_name": "mirror_10_b_v2",
+      "subtitle_names": [
+        "mirror_to_gold_3",
+        "mirror_to_gold_3_end"
+      ]
+    },
+    {
+      "level_name": "mirror_10_d",
+      "subtitle_names": [
+        "mirror_to_gold_4",
+        "mirror_to_gold_4_end"
+      ]
+    },
+    {
+      "level_name": "mirror_11",
+      "subtitle_names": [
+        "clones_first_confusion_end",
+        "clones_first_confusion"
+      ]
+    },
+    {
+      "level_name": "mirror_12",
+      "subtitle_names": [
+        "clones_triple_confusion_end",
+        "clones_triple_confusion"
+      ]
+    },
+    {
+      "level_name": "mirror_13",
+      "subtitle_names": [
+        "clones_working_mid",
+        "clones_working",
+        "clones_working_end"
+      ]
+    },
+    {
+      "level_name": "mirror_14",
+      "subtitle_names": [
+        "clones_merge",
+        "clones_merge_end"
+      ]
+    },
+    {
+      "level_name": "mirror_15",
+      "subtitle_names": [
+        "mirror_after_clones_first"
+      ]
+    },
+    {
+      "level_name": "mirror_17",
+      "subtitle_names": [
+        "mirror_icy_second_start"
+      ]
+    },
+    {
+      "level_name": "mirror_18",
+      "subtitle_names": [
+        "mirror_post_clones_d"
+      ]
+    },
+    {
+      "level_name": "mirror_19",
+      "subtitle_names": [
+        "mirror_icy_start"
+      ]
+    },
+    {
+      "level_name": "mirror_2",
+      "subtitle_names": [
+        "mirror_new_2_start",
+        "clones_early"
+      ]
+    },
+    {
+      "level_name": "mirror_20",
+      "subtitle_names": [
+        "mirror_post_clones_c",
+        "mirror_post_clones_c_end"
+      ]
+    },
+    {
+      "level_name": "mirror_21",
+      "subtitle_names": [
+        "mirror_post_clones_f_mid",
+        "mirror_post_clones_f",
+        "mirror_post_clones_f_end"
+      ]
+    },
+    {
+      "level_name": "mirror_22_v2",
+      "subtitle_names": [
+        "mirror_post_clones_g",
+        "mirror_post_clones_g_end"
+      ]
+    },
+    {
+      "level_name": "mirror_3",
+      "subtitle_names": [
+        "mirror_new_3_start"
+      ]
+    },
+    {
+      "level_name": "mirror_4",
+      "subtitle_names": [
+        "mirror_4_start",
+        "mirror_4_end"
+      ]
+    },
+    {
+      "level_name": "mirror_5",
+      "subtitle_names": [
+        "mirror_5_start",
+        "mirror_5_end"
+      ]
+    },
+    {
+      "level_name": "mirror_6_alt",
+      "subtitle_names": [
+        "mirror_6_mid",
+        "mirror_6_start",
+        "mirror_6_end"
+      ]
+    },
+    {
+      "level_name": "mirror_7",
+      "subtitle_names": [
+        "mirror_new_7_start",
+        "mirror_7_end"
+      ]
+    },
+    {
+      "level_name": "mirror_8_v5",
+      "subtitle_names": [
+        "mirror_new_last_before_cloning_start"
+      ]
+    },
+    {
+      "level_name": "mirror_factory_v2",
+      "subtitle_names": [
+        "mirror_factory"
+      ]
+    },
+    {
+      "level_name": "mirror_pals",
+      "subtitle_names": [
+        "mirror_pals_start"
+      ]
+    },
+    {
+      "level_name": "mirror_sink",
+      "subtitle_names": [
+        "mirror_post_clones_b",
+        "mirror_post_clones_b_end"
+      ]
+    },
+    {
+      "level_name": "mosh_pit_small",
+      "subtitle_names": [
+        "heroes2_wizard_and_priestess_alone_first"
+      ]
+    },
+    {
+      "level_name": "mundane_mirror",
+      "subtitle_names": [
+        "mirror_to_gold_2"
+      ]
+    },
+    {
+      "level_name": "one_fire_v2",
+      "subtitle_names": [
+        "heroes2_one_fire_warrior_thief_optional",
+        "heroes2_one_fire_warrior_thief_optional_end"
+      ]
+    },
+    {
+      "level_name": "one_vs_three",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "overworld",
+      "subtitle_names": [
+        "audiolog_g_possession",
+        "audiolog_g_gold_and_silver",
+        "queen_wishlist_5",
+        "audiolog_g_musing_on_fast_travel",
+        "queen_og_heroes2",
+        "queen_wishlist_4",
+        "queen_wishlist_1",
+        "audiolog_g_work_and_care",
+        "queen_wishlist_2",
+        "queen_og_wardrobe_2",
+        "queen_wishlist_3",
+        "queen_og_mirror_isles",
+        "sokoban_overworld",
+        "queen_og_gold_room_first",
+        "queen_og_heroes_entry",
+        "queen_og_first_lily",
+        "audiolog_g_gold_rooms",
+        "queen_og_wardrobe"
+      ]
+    },
+    {
+      "level_name": "promesst1_streamlined",
+      "subtitle_names": [
+        "promesst1_further_down",
+        "promesst1_wand_get",
+        "promesst1_exiting_egg_room",
+        "promesst1_place_them",
+        "promesst1_wand_strong",
+        "promesst1_unlock",
+        "promesst1_start",
+        "promesst1_end",
+        "promesst1_cart",
+        "promesst1_wrap",
+        "promesst1_red_beam_lower",
+        "promesst1_egg"
+      ]
+    },
+    {
+      "level_name": "push_and_pull_zach",
+      "subtitle_names": [
+        "hw_warrior_thief",
+        "hw_warrior_thief_end"
+      ]
+    },
+    {
+      "level_name": "quadrants",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "quadrants_follow_up",
+      "subtitle_names": [
+        "hw_two_thieves_mid",
+        "hw_two_thieves",
+        "hw_two_thieves_end"
+      ]
+    },
+    {
+      "level_name": "surrounded",
+      "subtitle_names": [
+        "hw_warrior_surrounded"
+      ]
+    },
+    {
+      "level_name": "walk_it_over",
+      "subtitle_names": [
+        "walk_it_over_start"
+      ]
+    },
+    {
+      "level_name": "wizard_and_druid_alt_5",
+      "subtitle_names": [
+        "heroes3_wizard_druid_first"
+      ]
+    },
+    {
+      "level_name": "wizards_true_nature",
+      "subtitle_names": []
+    },
+    {
+      "level_name": "worlds_collide_heroes_and_mirrors_v3",
+      "subtitle_names": [
+        "worlds_collide_HM_start"
+      ]
+    }
+  ],
+  "unmapped_subtitle_names": [
+    "promesst1_all_gems",
+    "promesst1_audiolog_confrontation",
+    "promesst1_audiolog_egg",
+    "promesst1_audiolog_really_egg",
+    "promesst1_destroy_rover",
+    "promesst1_gems",
+    "promesst1_gems_amount1",
+    "promesst1_gems_amount2",
+    "promesst1_gems_amount3",
+    "promesst1_gems_amount4",
+    "promesst1_gems_amount5",
+    "promesst1_gems_amount6",
+    "promesst1_gems_amount7",
+    "promesst1_gemsuit_cannot_turn_1",
+    "promesst1_gemsuit_cannot_turn_2",
+    "promesst1_gemsuit_cannot_turn_3",
+    "promesst1_gemsuit_cannot_turn_4",
+    "promesst1_gemsuit_cannot_turn_5",
+    "promesst1_lovely",
+    "promesst1_not_so_hard",
+    "promesst1_snug",
+    "promesst1_strong",
+    "promesst1_temple_room",
+    "promesst1_through_wall",
+    "promesst1_wand_first_use"
+  ]
+}

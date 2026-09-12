@@ -6,9 +6,97 @@
       0
     ],
     "area": "promesst",
-    "name": "promesst1_streamlined",
+    "name": "promesst1_streamlined_part1",
+    "note": "在第一次需要控制时机的地方停下来",
+    "solution": "UUUUUUUUUUUURRRRUVDLLLUUVLLLDDDDLRRRDDDLLLLLDDDDDDDLRRUUUUUUURVLDDDDDDDLLLLLLDDDDDDLLLDDDDDVDRDRRRDRDVULULLLULUVUUUUURRRUUUUUURRRRRRDDDDDDVUURRDDULLDDVUURRDDRRRVDRRDDDDRVLLULRUUULURRUUUUUUULL"
+  },
+  {
+    "position": [
+      15,
+      15,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part2",
+    "note": "part1 结束原地不动，摧毁矿车后执行 (另外最好顺便开一个 tab 视角)",
+    "solution": "LDDDLVRUUURRRRRUVDLLU"
+  },
+  {
+    "position": [
+      15,
+      15,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part3",
+    "note": "同理",
+    "solution": "ULLLLVRRRRUURVRDDDDRDRURVULULDDLDDDDDDRRDRRRVRUUDLLUVURRDDDLVRURRRRDDVURUUUUUUUUULDULULVRRRRURUUURRRRUVDLLLUUVDDLDDDDLLDDLDVRRRRDDDDLLLLDVRRDDDLLLLLUVDRRRRRRRRDV"
+  },
+  {
+    "position": [
+      10,
+      4,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part4",
+    "note": "part 3 结束后，这里使用绿光取宝石后回原地，执行脚本",
+    "solution": "VURRRRDDDLVRUURRVUUUULLLUVLLUULLUUUURRRRRRUUUURUUUVLVRDDLL"
+  },
+  {
+    "position": [
+      20,
+      21,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part5",
+    "note": "再次等待时机摧毁矿车，然后执行脚本",
+    "solution": "ULLVRRURVRVDDDLDDDDDLUDVLLUUULVRDDDDLLLLLLLLUUUUURRRRUVDLLLUUVLDV"
+  },
+  {
+    "position": [
+      9,
+      21,
+      -10
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part6_underground",
     "note": "",
-    "solution": ""
+    "solution": "LLLLLDDVUVUVUVLVDVLLVUVLVDVDVDVRRDUVDRRVUVUVUVLVDVLLVUVLVDVDVDVRRDDLVRDDRDDDLDXDXDRRUDXDXDXDXDXDLDDDLRXRXRXRXRUULRXRXLDDDRRRRRRUUUVDDDLLDXDLLDLLLLLULXLXLXRDDDDDLVRUUUURRRRRRRURRRRRRRRRDDDDVURXRDRRRVLLLDDDDDLLLVRRRRRRDDDDDDDDDLLLLLXLULUULRXDDXDXDXDXVDRXRDVULLUVUURRRRRUVUUUULXDDVUULXLDLLDDDDRRRRRUVDRRUUUUUUUUUXURDLLLLLLLL"
+  },
+  {
+    "position": [
+      13,
+      20,
+      -10
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part7",
+    "note": "站在宝石上启动脚本",
+    "solution": "VDRRDRDDLDDRVRRRUUUUULVUUULLLLLLLLLDV__________DDDDDDLLLLLUUXUXUXULLU"
+  },
+  {
+    "position": [
+      2,
+      15,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part8",
+    "note": "站在宝石上启动脚本",
+    "solution": "VRRRRRRRDDDDRRDDRRVDRRRRRRRRRRRDDDDVUUUULLLLDDXDXDXDLDLRXRXLLDDDVUURRUUUUURRURRDDDDVUUUULLLLLLLLDDDDVULLLLLLDVDL"
+  },
+  {
+    "position": [
+      9,
+      3,
+      0
+    ],
+    "area": "promesst",
+    "name": "promesst1_streamlined_part9",
+    "note": "原地不动位移矿车",
+    "solution": "LDRRXRDVULLLURRUVURRRRRRDVUUUULLLUVLLUULLUUUUUUUUUUVLLDDDDDDDDDDV________LLDDDDDDDDDDVLVDVDVDVDVDVRVRVRVRVRVUVUVUVUVUVLVLVLV"
   },
   {
     "position": [

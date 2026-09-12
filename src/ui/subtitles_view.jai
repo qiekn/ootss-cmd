@@ -1,5 +1,3 @@
-SUBTITLE_ENGLISH_FONT :: "Karmina-Bold.otf";
-SUBTITLE_CHINESE_FONT :: "SourceHanSerifCN-SemiBold.otf";
 SUBTITLE_CONTENT_WIDTH_PERCENT :: 80;
 SUBTITLE_FONT_REFERENCE_WIDTH :: 1920;
 SUBTITLE_FONT_REFERENCE_HEIGHT :: 36;
@@ -26,37 +24,21 @@ Subtitles_View :: struct {
 
 subtitles_view: Subtitles_View;
 
-console_open_subtitles :: (console: *Console_State) {
+console_open_subtitles :: (console: *Console_State, read_scene: Game_Level_Query = game_read_scene) {
     next: Subtitles_View;
     defer subtitles_view_free(*next);
-    level := console.pending_subtitle_level;
-    database: Solutions_Database;
-    defer solutions_free(*database);
-    if !level.count {
-        position, error := game_read_position();
-        if error.count {
-            console_write(console, error, .ERROR);
-            console_write(console, "Use show subtitles <level_name>, for example: show subtitles mirror_6.", .INFO);
-            return;
-        }
-        error = solutions_load(*database, answer_file = "");
-        if error.count { console_write(console, error, .ERROR); return; }
-        index := solution_find_position(*database, position);
-        if index < 0 {
-            console_write(console, tprint("No level matches position %. Use show subtitles <level_name>.",
-                                         game_position_text(position)), .ERROR);
-            return;
-        }
-        level = database.entries[index].name;
-    }
+    level, error := game_resolve_level_name(console.pending_subtitle_level, read_scene);
+    defer free(level);
+    if error.count { console_write(console, error, .ERROR); return; }
     directory := game_subtitles_directory();
     if !directory.count {
-        console_write(console, "Could not find data/strings/subtitles in the game installation.", .ERROR);
+        console_write(console, "Could not find game subtitles. Set game_path in data/config.rc to the game installation directory.", .ERROR);
         return;
     }
     next.language = console.pending_subtitle_language;
-    error := subtitles_catalog_load(*next.catalog, directory,
-                                    load_english = next.language != .CHINESE, load_chinese = next.language != .ENGLISH);
+    error = subtitles_catalog_load(*next.catalog, directory,
+                                    load_english = next.language != .CHINESE, load_chinese = next.language != .ENGLISH,
+                                    mapping_file = SUBTITLES_MAPPING_FILE);
     if error.count { console_write(console, error, .ERROR); return; }
     if !subtitles_select(*next.catalog, level, *next.blocks) {
         console_write(console, tprint("No subtitles found for %. Use Tab to complete a subtitle level name.", level), .ERROR);
@@ -81,13 +63,13 @@ subtitles_view_load_fonts :: (view: *Subtitles_View, dpi: s32, window_width: s32
                   cast(s64) max(1, window_width) * SUBTITLE_FONT_REFERENCE_HEIGHT / SUBTITLE_FONT_REFERENCE_WIDTH);
     if view.dpi == dpi && view.font_height == height && view.english_font return "";
     small := max(1, height * 13 / 24);
-    view.english_font = Simp.get_font_at_size("data/fonts", SUBTITLE_ENGLISH_FONT, height);
-    view.chinese_font = Simp.get_font_at_size("data/fonts", SUBTITLE_CHINESE_FONT, height);
+    view.english_font = get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, height);
+    view.chinese_font = get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, height);
     view.small_font = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, small);
-    view.small_chinese_font = Simp.get_font_at_size("data/fonts", SUBTITLE_CHINESE_FONT, small);
+    view.small_chinese_font = get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, small);
     if !view.english_font || !view.chinese_font || !view.small_font || !view.small_chinese_font {
-        return tprint("Could not load subtitle fonts from data/fonts: %, %, %.",
-                      SUBTITLE_ENGLISH_FONT, SUBTITLE_CHINESE_FONT, CONSOLE_FONT_FILE);
+        return tprint("Could not load subtitle fonts from the game or data/fonts: % (bundled: %), %, %.",
+                      SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, SUBTITLE_CHINESE_FONT, CONSOLE_FONT_FILE);
     }
     view.font_height = cast(s32) height;
     view.line_height = cast(s32) max(1, height * 34 / 24);

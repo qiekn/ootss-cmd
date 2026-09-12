@@ -117,6 +117,45 @@ send_key_event :: (scan: u16, key_up := false, extended := false) -> (success: b
     return success, error;
 }
 
+// A complete press/release cycle also supports rebound and extended game keys.
+send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL,
+                   target_window: Windows.HWND = null, poll: () -> bool = null,
+                   emit: (scan: u16, key_up: bool, extended: bool) -> (bool, string) = send_key_event,
+                   wait: (milliseconds: s32, target: Windows.HWND, poll: () -> bool) -> string = null,
+                   after_release: (data: *void) -> string = null, release_data: *void = null) -> Send_Result {
+    result: Send_Result;
+    if !wait wait = send_wait;
+    if !scan || hold_ms <= 0 || interval_ms < 0 {
+        result.error = "A valid scan code, positive hold and nonnegative interval are required.";
+        return result;
+    }
+    target := ifx target_window then target_window else Windows.GetForegroundWindow();
+    if !target { result.error = "No foreground window."; return result; }
+    result.error = wait(0, target, poll);
+    if result.error.count return result;
+    pressed, press_error := emit(scan, false, extended);
+    if !pressed { result.error = press_error; return result; }
+    result.sent_keys = 1;
+    hold_error := wait(hold_ms, target, poll);
+    released, release_error := emit(scan, true, extended);
+    if !released {
+        emit(scan, true, extended); // Retry the release even if focus was lost during the hold.
+        result.error = release_error;
+        return result;
+    }
+    result.error = hold_error;
+    if result.error.count return result;
+    if after_release {
+        result.error = wait(0, target, poll);
+        if result.error.count return result;
+        result.error = after_release(release_data);
+        if result.error.count return result;
+    }
+    result.error = wait(interval_ms, target, poll);
+    result.success = !result.error.count;
+    return result;
+}
+
 // Receives literal key presses, already expanded by the caller. Do not parse these again:
 // a digit next to a letter here may have come from a whitespace-separated character selection.
 // A specified target must stay in the foreground. poll lets the caller process cancellation events.
@@ -209,28 +248,10 @@ send_sequence_keys :: (commands: string, hold_ms: s32, interval_ms: s32,
             continue;
         }
 
-        scan := scan_code_for_char(c);
-        pressed, press_error := send_scan_code(scan);
-        if !pressed {
-            result.error = press_error;
-            return result;
-        }
-        result.sent_keys += 1;
-
-        // Cancellation during a hold must still release the key before returning.
-        hold_error := send_wait(hold_ms, target, poll);
-        released, release_error := send_scan_code(scan, key_up = true);
-        if !released {
-            send_scan_code(scan, key_up = true); // Best effort if releasing the key failed.
-            result.error = release_error;
-            return result;
-        }
-        result.error = hold_error;
-        if result.error.count return result;
-
-        // The released interval lets games distinguish consecutive presses of the same key.
-        result.error = send_wait(interval_ms, target, poll);
-        if result.error.count return result;
+        cycle := send_key_cycle(scan_code_for_char(c), hold_ms = hold_ms, interval_ms = interval_ms,
+                                target_window = target, poll = poll);
+        result.sent_keys += cycle.sent_keys;
+        if !cycle.success { result.error = cycle.error; return result; }
     }
 
     result.success = true;

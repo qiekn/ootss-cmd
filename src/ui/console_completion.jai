@@ -1,4 +1,7 @@
-Console_Completion_Kind :: enum { NONE; COMMAND; SHOW; EDITOR; EDIT; CUSTOM; PLAY; PLAY_OPTION; SUBTITLES; SUBTITLE_OPTION; BLOW; TOGGLE; }
+Console_Completion_Kind :: enum {
+    NONE; COMMAND; SHOW; SET; EDITOR; EDIT; CUSTOM; PLAY; PLAY_OPTION; SUBTITLES; SUBTITLE_OPTION; BLOW; TOGGLE;
+    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS;
+}
 
 Console_Completion :: struct {
     matches: [..] string;
@@ -17,10 +20,15 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
     while end < text.count && !console_word_separator(text[end])       end   += 1;
 
     before := slice(text, 0, start);
+    expanded, alias_error := console_expand_aliases(console, before);
+    defer free(expanded);
+    if alias_error.count return .NONE, start, end;
+    before = expanded;
     position: s64;
     command := console_next_argument(before, *position);
     subject := console_next_argument(before, *position);
     if !command.count return .COMMAND, start, end;
+    if equal_nocase(command, "unalias") && !subject.count return .TEMP_ALIAS, start, end;
     if equal_nocase(command, "hello") && !subject.count {
         first: s64;
         while first < text.count && console_word_separator(text[first]) first += 1;
@@ -38,25 +46,40 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
         }
         return .SUBTITLES, start, end;
     }
+    if equal_nocase(command, "set") && !subject.count return .SET, start, end;
+    if equal_nocase(command, "move") && !subject.count return .MOVE_AXIS, start, end;
+    if equal_nocase(command, "switch") && !subject.count return .SWITCH, start, end;
+    if equal_nocase(command, "list") || equal_nocase(command, "add") || equal_nocase(command, "remove") {
+        if !subject.count return .MARKERS, start, end;
+        if equal_nocase(command, "remove") && equal_nocase(subject, "markers") &&
+           !console_next_argument(before, *position).count return .MARKER_NAME, start, end;
+    }
+    if (equal_nocase(command, "mark") || equal_nocase(command, "back") || equal_nocase(command, "tp") || equal_nocase(command, "rename")) &&
+       !subject.count return .MARKER_NAME, start, end;
+    if equal_nocase(command, "reset") {
+        if !subject.count return .RESET, start, end;
+        if equal_nocase(subject, "marker") && !console_next_argument(before, *position).count return .REGISTERS, start, end;
+    }
+    if equal_nocase(command, "noclip") && !subject.count return .NOCLIP, start, end;
     if (equal_nocase(command, "open") || equal_nocase(command, "close")) && !subject.count return .EDITOR, start, end;
     if equal_nocase(command, "edit") {
         if !subject.count return .EDIT, start, end;
         if equal_nocase(subject, "custom") && !console_next_argument(before, *position).count return .CUSTOM, start, end;
     }
-    if equal_nocase(command, "play") {
+    if equal_nocase(command, "play") || equal_nocase(command, "do") {
         position = 0;
         console_next_argument(before, *position);
-        has_level := false;
+        has_name := false;
         while position < before.count {
             argument := console_next_argument(before, *position);
             if !argument.count break;
             if equal_nocase(argument, "-delay") {
                 if !console_next_argument(before, *position).count return .NONE, start, end;
             } else if !console_send_speed_option(argument) && !equal_nocase(argument, "--udlr") {
-                has_level = true;
+                has_name = true;
             }
         }
-        return ifx has_level then .PLAY_OPTION else .PLAY, start, end;
+        return ifx has_name then .PLAY_OPTION else .PLAY, start, end;
     }
     if equal_nocase(command, "blow")   && !subject.count return .BLOW,   start, end;
     if equal_nocase(command, "toggle") && !subject.count return .TOGGLE, start, end;
@@ -69,7 +92,7 @@ console_completion_is_current :: (console: *Console_State) -> bool {
 }
 
 console_complete :: (console: *Console_State, levels: [] string, customs: [] string,
-                     subtitle_levels: [] string, backwards := false) {
+                     subtitle_levels: [] string, backwards := false, markers: [] string = .[]) {
     state := *console.completion;
     if console_completion_is_current(console) {
         if state.index < 0
@@ -89,8 +112,28 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             for command: CONSOLE_COMMANDS {
                 if !command.hidden console_completion_add(state, prefix, command.name);
             }
+            for alias: console.config.aliases console_completion_add(state, prefix, alias.name);
+            for alias: console.temporary_aliases console_completion_add(state, prefix, alias.name);
+        case .TEMP_ALIAS;
+            for alias: console.temporary_aliases console_completion_add(state, prefix, alias.name);
         case .SHOW;
-            for name: string.["position", "subtitles"] console_completion_add(state, prefix, name);
+            for name: string.["level", "position", "subtitles"] console_completion_add(state, prefix, name);
+        case .SET;
+            console_completion_add(state, prefix, "position");
+        case .MOVE_AXIS;
+            for name: string.["-x", "-y", "-z"] console_completion_add(state, prefix, name);
+        case .SWITCH;
+            for name: levels console_completion_add(state, prefix, name);
+        case .MARKERS;
+            console_completion_add(state, prefix, "markers");
+        case .MARKER_NAME;
+            for name: markers console_completion_add(state, prefix, name);
+        case .RESET;
+            console_completion_add(state, prefix, "marker");
+        case .REGISTERS;
+            console_completion_add(state, prefix, "registers");
+        case .NOCLIP;
+            for name: string.["enable", "disable"] console_completion_add(state, prefix, name);
         case .EDITOR;
             console_completion_add(state, prefix, "editor");
         case .EDIT;
@@ -101,8 +144,13 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             for name: customs console_completion_add(state, prefix, name);
         case .PLAY; #through;
         case .PLAY_OPTION;
-            if kind == .PLAY for name: levels console_completion_add(state, prefix, name);
-            rest := tprint("% %", slice(input, 0, start), slice(input, end, input.count - end));
+            if kind == .PLAY {
+                for name: levels console_completion_add(state, prefix, name);
+                for name: customs console_completion_add(state, prefix, name);
+            }
+            rest, alias_error := console_expand_aliases(console, tprint("% %", slice(input, 0, start), slice(input, end, input.count - end)));
+            defer free(rest);
+            if alias_error.count return;
             position: s64;
             speed_present, delay_present: bool;
             while position < rest.count {
@@ -120,7 +168,9 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
         case .SUBTITLE_OPTION;
             if kind == .SUBTITLES for name: subtitle_levels console_completion_add(state, prefix, name);
             // Check both sides of the cursor before suggesting another option.
-            rest := tprint("% %", slice(input, 0, start), slice(input, end, input.count - end));
+            rest, alias_error := console_expand_aliases(console, tprint("% %", slice(input, 0, start), slice(input, end, input.count - end)));
+            defer free(rest);
+            if alias_error.count return;
             position: s64;
             comment_present, language_present, no_character_present: bool;
             while position < rest.count {

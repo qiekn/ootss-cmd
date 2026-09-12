@@ -1,9 +1,6 @@
 #load "console_theme.jai";
 #load "console_images.jai";
 
-CONSOLE_FONT_FILE :: "Meslo-LG-Mono-Nerd-Regular.ttf";
-CONSOLE_CHINESE_FONT_FILE :: "NotoSansCJKsc-Regular.otf";
-
 console_font:       *Simp.Dynamic_Font;
 console_small_font: *Simp.Dynamic_Font;
 console_chinese_font: *Simp.Dynamic_Font;
@@ -20,9 +17,9 @@ console_load_fonts :: () -> bool {
         show_error(tprint("Unable to load data/fonts/% next to ootss-cmd.exe.", CONSOLE_FONT_FILE));
         return false;
     }
-    console_chinese_font = Simp.get_font_at_size("data/fonts", CONSOLE_CHINESE_FONT_FILE, console_font_height);
+    console_chinese_font = get_game_font_at_size(CONSOLE_CHINESE_FONT_FILE, CONSOLE_CHINESE_FONT_FILE, console_font_height);
     if !console_chinese_font {
-        show_error(tprint("Unable to load data/fonts/% next to ootss-cmd.exe.", CONSOLE_CHINESE_FONT_FILE));
+        show_error(tprint("Unable to load % from the game or data/fonts beside ootss-cmd.exe.", CONSOLE_CHINESE_FONT_FILE));
         return false;
     }
     console_font_dpi = dpi;
@@ -37,7 +34,7 @@ draw_console :: () {
         background := console_color(Naysayer.background);
         Simp.clear_scissor();
         Simp.clear_render_target(background.x, background.y, background.z, 1);
-        console_draw_input(width, 0, height, cast(s32)(16 * console_font_dpi / 96));
+        console_draw_input(width, 0, height, QUICK_COMMAND_MARGIN * console_font_dpi / 96);
         Simp.immediate_flush();
         return;
     }
@@ -124,7 +121,7 @@ draw_console :: () {
     }
     Simp.draw_text(console_small_font, margin, footer_y, hint, footer_color);
     if width > cast(s32)(1120 * scale) {
-        toggle_hint := ": console   ; quick   ` toggle   CTRL+` anywhere";
+        toggle_hint := ": console   ; quick   ` toggle";
         hint_width := Simp.prepare_text(console_small_font, toggle_hint);
         if Simp.prepare_text(console_small_font, hint) + hint_width + 3 * margin < width {
             Simp.draw_text(console_small_font, width - margin - hint_width, footer_y, toggle_hint, footer_color);

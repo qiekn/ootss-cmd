@@ -20,5 +20,49 @@
     "name": "test2",
     "note": "",
     "solution": "UURLDRLURLDRULRDLRULRURLURLURURLURURUDDRRL"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "mid_heroes1_together",
+    "note": "the first time change clothes",
+    "solution": "XLLLLUUUULUURUUUURRRRRRRDDDDRRLLLLLLUUUULLLDDDDLURUUURRRDDDDRRRLLLUUUULLLDDDDUUUURRRRRRRDDDUUULLLLLLLDDDDLUURUURRRDDDDRRRRUUUDDDLLLLUUUULLLDDDDRULUUURDDDDRRRULV"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "mid_heroes2_block_dragon",
+    "note": "move the red crystal, use it block the dragon and then we can go north to heroes3",
+    "solution": "URRDLLLLDLUUUURULDLUUUULURRRRURDDDUULLLLDDDDRRRURRRDRULUUU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "promesst1_underground_put_12_gems",
+    "note": "",
+    "solution": "LLLLLVUVLVDVLLVUVLVDVDVDVRRRURVDVLLDLLVUVUVUVRVDVRRVURRVUVUVUVLVDVLLVUVLVDVDVDVRRU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "pronesst1_underground_put_20_gems",
+    "note": "",
+    "solution": "VRVRVRVRVDVDVDVDVDVLVLVLVLVLVUVUVUVUVUV"
   }
 ]

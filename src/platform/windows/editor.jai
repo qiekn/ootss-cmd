@@ -1,5 +1,5 @@
 Editor_Event :: struct {
-    kind: enum { KEY; TEXT; DOWN; UP; MOVE; WHEEL; CANCEL; PLAY; STEP; UNDO; HOLD_STEP; RELEASE_STEP; TOGGLE_SIZE; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; CLOSE; };
+    kind: enum { KEY; TEXT; DOWN; UP; MOVE; WHEEL; CANCEL; PLAY; STEP; UNDO; TOGGLE_SIZE; SPEED_UP; SPEED_DOWN; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; CLOSE; };
     x, y: s32;
     key: u32;
     shift, ctrl, alt, repeat: bool;
@@ -139,7 +139,7 @@ editor_focus_game :: () {
 
 editor_focus_text :: () {
     if !editor.open || !editor_window.handle return;
-    // Clicking future cells requests text focus in either editor size.
+    // Clicking timeline cells requests text focus in either editor size.
     SetForegroundWindow(editor_window.handle);
     SetFocus(editor_window.handle);
 }
@@ -189,9 +189,9 @@ editor_process_window_events :: () {
         if event.kind == .PLAY editor_toggle_play();
         else if event.kind == .STEP editor_step(1);
         else if event.kind == .UNDO editor_step(-1);
-        else if event.kind == .HOLD_STEP editor_step(editor_step_key_direction(event.key), repeat_while_held = true);
-        else if event.kind == .RELEASE_STEP editor_release_step(editor_step_key_direction(event.key));
         else if event.kind == .TOGGLE_SIZE editor_toggle_minimized();
+        else if event.kind == .SPEED_UP editor_adjust_playback_speed(true);
+        else if event.kind == .SPEED_DOWN editor_adjust_playback_speed(false);
         else if event.kind == .SPEED_FAST editor_set_playback_speed(.FAST);
         else if event.kind == .SPEED_TURTLE editor_set_playback_speed(.TURTLE);
         else if event.kind == .COPY editor_export_solution();
@@ -211,17 +211,16 @@ editor_time_key_matches :: (binding: Game_Key, vk: u32) -> bool {
 }
 
 editor_step_key_direction :: (vk: u32) -> s64 {
-    if vk == 0xdd || vk == #char "J" return 1;  // ] or J
-    if vk == 0xdb || vk == #char "L" return -1; // [ or L
+    if vk == 0xdd return 1;  // ]
+    if vk == 0xdb return -1; // [
     return 0;
-}
-
-editor_step_key_repeats :: (vk: u32) -> bool {
-    return vk == #char "J" || vk == #char "L";
 }
 
 editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND) -> bool {
     if injected || vk >= 256 return false;
+    if shortcuts_handle_key(vk, down, injected, foreground) return true;
+    // Whichever keyboard hook runs first owns noclip movement; never record the consumed physical key.
+    if noclip_filter_key(vk, down, injected, foreground, editor_modifiers_down()) return true;
     was_down := editor_window.physical_down[vk];
     editor_window.physical_down[vk] = down;
     active := editor.open && !editor_save_prompt.active && (foreground == editor.game || foreground == editor_window.handle);
@@ -231,7 +230,6 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
     }
     if editor_window.transport_key_consumed[vk] {
         editor_window.transport_key_consumed[vk] = down;
-        if !down && editor_step_key_repeats(vk) editor_queue_event(.{kind = .RELEASE_STEP, key = vk});
         return true;
     }
     if active && vk == #char "C" && down &&
@@ -242,14 +240,16 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
     }
     // Editor shortcuts take priority over the game's time-modifier bindings.
     step := editor_step_key_direction(vk);
-    shortcut := vk == 0x20 || ((step != 0 || vk == #char "N" || vk == #char "K") && !editor_modifiers_down());
+    shortcut := vk == 0x20 || ((step != 0 || vk == #char "N" || vk == #char "J" ||
+                              vk == #char "K" || vk == #char "L") && !editor_modifiers_down());
     if shortcut && active {
         if down && !was_down {
             event: Editor_Event;
             event.key = vk;
             if vk == 0x20 || vk == #char "K" event.kind = .PLAY;
             else if vk == #char "N" event.kind = .TOGGLE_SIZE;
-            else if editor_step_key_repeats(vk) event.kind = .HOLD_STEP;
+            else if vk == #char "J" event.kind = .SPEED_UP;
+            else if vk == #char "L" event.kind = .SPEED_DOWN;
             else if step > 0 event.kind = .STEP;
             else event.kind = .UNDO;
             editor_queue_event(event);
@@ -334,9 +334,6 @@ editor_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64)
             if wparam == #char ":" { overlay.show_requested = true; return 0; }
             if wparam == #char ";" { overlay.quick_requested = true; return 0; }
             event.kind = .TEXT;
-            event.key = cast(u32) wparam;
-        } else if (message == Win.WM_KEYUP || message == Win.WM_SYSKEYUP) && editor_step_key_repeats(cast(u32) wparam) {
-            event.kind = .RELEASE_STEP;
             event.key = cast(u32) wparam;
         } else return Win.DefWindowProcW(window, message, wparam, lparam);
         editor_queue_event(event);

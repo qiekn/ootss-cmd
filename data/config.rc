@@ -1,0 +1,24 @@
+# Set to false to hide the startup jblow wave gif.
+
+show_startup_blow = true;
+
+# Game installation directory (contains sinking_star.exe, not its data/ folder).
+# Use forward slashes; set to "" to locate the running game automatically.
+# game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
+
+# Persistent aliases. Extra arguments are appended to the expanded command.
+
+tp = back;
+
+fastplay = "play -superfast";
+fastdo = "play -superfast";
+
+# Use alias name=command in the console for a temporary override.
+# unalias name removes that override and restores this file's definition.
+
+
+# Custom Keymaps
+
+map m = "move -z 1";
+
+# vim: ft=sh

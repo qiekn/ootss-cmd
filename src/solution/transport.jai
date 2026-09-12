@@ -1,12 +1,11 @@
 Editor_Emit_Key :: #type (key: Game_Key, key_up: bool) -> string;
-Editor_Playback_Speed :: enum { NORMAL; FAST; RABBIT; TURTLE; }
+Editor_Playback_Speed :: enum { NORMAL; FAST; RABBIT; SLOW; TURTLE; }
 EDITOR_FORWARD_DELAY :: 250;
 EDITOR_SCRUB_DELAY :: 75;
 EDITOR_SCRUB_UNDO_DELAY :: 10;
 EDITOR_HELD_UNDO_DELAY :: 125;
 Editor_Transport :: struct {
     playing: bool;
-    test_playback: bool;
     speed: Editor_Playback_Speed;
     scrubbing: bool;
     held_step: s64;
@@ -28,8 +27,6 @@ editor_transport_busy :: (transport: *Editor_Transport, timeline: *Solution_Time
 
 editor_transport_stop :: (transport: *Editor_Transport, timeline: *Solution_Timeline, emit: Editor_Emit_Key) -> string {
     transport.playing = false;
-    transport.test_playback = false;
-    transport.speed = .NORMAL;
     transport.scrubbing = false;
     transport.held_step = 0;
     transport.target = timeline.playhead;
@@ -53,9 +50,26 @@ editor_playback_delay :: (speed: Editor_Playback_Speed, normal_delay: s32 = EDIT
     if speed == {
         case .FAST;   return SEND_FAST_DELAY;
         case .RABBIT; return SEND_SUPERFAST_DELAY;
+        case .SLOW;   return SEND_SLOW_DELAY;
         case .TURTLE; return SEND_SUPERSLOW_DELAY;
     }
     return normal_delay;
+}
+
+editor_playback_speed_name :: (speed: Editor_Playback_Speed) -> string {
+    if speed == {
+        case .RABBIT; return "superfast";
+        case .FAST;   return "fast";
+        case .SLOW;   return "slow";
+        case .TURTLE; return "superslow";
+    }
+    return "normal";
+}
+
+editor_playback_speed_adjust :: (speed: Editor_Playback_Speed, faster: bool) -> Editor_Playback_Speed {
+    speeds := Editor_Playback_Speed.[.TURTLE, .SLOW, .NORMAL, .FAST, .RABBIT];
+    for current: speeds if current == speed return speeds[max(0, min(speeds.count - 1, it_index + (ifx faster then 1 else -1)))];
+    return .NORMAL;
 }
 
 editor_playback_time_key :: (map: *Game_Keymap, speed: Editor_Playback_Speed) -> Game_Key {
@@ -84,7 +98,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
         transport.phase = .IDLE;
     }
     if transport.playing transport.target = timeline.keys.count;
-    // Extend held J/L by one cell only after the previous complete key cycle.
+    // Extend an explicitly held step only after the previous complete key cycle.
     if transport.held_step != 0 transport.target = timeline.playhead + transport.held_step;
     transport.target = max(0, min(timeline.keys.count, transport.target));
     if transport.target == timeline.playhead {
@@ -92,8 +106,9 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
     }
 
     forward := transport.target > timeline.playhead;
+    speed := ifx transport.playing then transport.speed else .NORMAL;
     time_key: Game_Key;
-    if forward time_key = editor_playback_time_key(map, ifx transport.scrubbing then .RABBIT else transport.speed);
+    if forward time_key = editor_playback_time_key(map, ifx transport.scrubbing then .RABBIT else speed);
     if transport.time_held && (time_key.scan != transport.time_key.scan || time_key.extended != transport.time_key.extended) {
         error := emit(transport.time_key, true);
         if error.count return error;
@@ -114,7 +129,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
         }
         if transport.target == timeline.playhead {
             if transport.held_step != 0 {
-                // Empty undo cells still take one selected undo interval while holding L.
+                // Empty undo cells still take the selected interval during held repetition.
                 transport.phase = .GAP;
                 transport.deadline = now + cast(float64) transport.undo_delay_ms / 1000;
                 return "";
@@ -123,7 +138,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
         }
     }
     delay_ms := ifx forward then (ifx transport.scrubbing then EDITOR_SCRUB_DELAY else
-                                 editor_playback_delay(transport.speed, transport.forward_delay_ms))
+                                 editor_playback_delay(speed, transport.forward_delay_ms))
                            else (ifx transport.scrubbing then EDITOR_SCRUB_UNDO_DELAY else transport.undo_delay_ms);
     if forward && timeline.keys[timeline.playhead] == #char "_" {
         transport.phase = .WAIT;

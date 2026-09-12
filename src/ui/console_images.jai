@@ -9,7 +9,11 @@ CONSOLE_BLOW_CAPTION_PADDING :: 8;
 CONSOLE_ICON_FILE :: "data/images/icon.png";
 CONSOLE_ICON_ROWS :: 5;
 
-CONSOLE_PICTURE_FILES :: string.["data/images/captain.jpg", "data/images/pirate.jpg", "data/images/captain-pirate-jl.png"];
+CONSOLE_PICTURE_FILES :: string.[
+    "data/images/captain.jpg",
+    "data/images/pirate.jpg",
+    "data/images/captain-pirate-jl.png"
+];
 
 Console_Blow_Effect :: enum { ALIEN; MIRROR; WAVE; } // Same order as CONSOLE_BLOW_NAMES.
 

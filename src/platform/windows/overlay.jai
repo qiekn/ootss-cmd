@@ -163,11 +163,7 @@ overlay_set_mode :: (mode: Console_Mode) {
 }
 
 overlay_present_output :: (console: *Console_State) {
-    if console.reveal_output && overlay.visible && overlay.mode == .MINI &&
-       Win.GetForegroundWindow() == overlay.window {
-        // Expand in place without reclaiming focus after a command hands it to the game.
-        overlay_set_mode(overlay.full_mode);
-    }
+    // Ordinary output stays in scrollback; explicit subtitle requests resize on submission.
     console.reveal_output = false;
 }
 

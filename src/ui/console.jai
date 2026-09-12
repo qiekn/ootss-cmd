@@ -1,4 +1,5 @@
 #load "console_completion.jai";
+#load "config.jai";
 #load "console_zork.jai";
 #load "console_text.jai";
 
@@ -11,8 +12,9 @@ Console_Line_Kind :: enum {
 }
 
 Console_Action :: enum {
-    NONE; HIDE; EXIT; SHOW_POSITION; SHOW_SUBTITLES; EDIT_SOLUTION; PLAY_SOLUTION; JUMP; CONSOLE_MODE; // Normal
-    EDITOR_RECORD; EDITOR_PAUSE; EDITOR_STOP; EDITOR_SAVE; EDITOR_CLOSE;                               // Solution Editor
+    NONE; HIDE; EXIT; SHOW_POSITION; SHOW_LEVEL; SET_POSITION; SHOW_SUBTITLES; EDIT_SOLUTION; PLAY_SOLUTION; JUMP; CONSOLE_MODE; // Normal
+    MARK_POSITION; LIST_MARKERS; REMOVE_MARKER; RENAME_MARKER; BACK_POSITION; RESET_MARKERS; NOCLIP; SWITCH_LEVEL;
+    EDITOR_RECORD; EDITOR_PAUSE; EDITOR_STOP; EDITOR_SAVE; EDITOR_CLOSE;                 // Solution Editor
     ZORK_START; ZORK_INPUT; ZORK_BACK;                                                                 // Zork
 }
 
@@ -44,6 +46,8 @@ Console_Line :: struct {
 }
 
 Console_State :: struct {
+    config: Console_Config;
+    temporary_aliases: [..] Console_Alias;
     lines: [..] Console_Line;
     input: [..] u8;
     cursor: s64;
@@ -61,6 +65,7 @@ Console_State :: struct {
     blow_index: s64;
     next_blow_index: s64;
     pending_send: string;
+    submission: Console_Submission;
     pending_send_hold_ms: s32 = DEFAULT_HOLD;
     pending_send_interval_ms: s32 = DEFUALT_INTERVAL;
     pending_send_time_mode: Send_Time_Mode;
@@ -76,6 +81,15 @@ Console_State :: struct {
     pending_edit_level: string;
     pending_edit_custom: bool;
     pending_jump_step: s64;
+    pending_position: Game_Position;
+    pending_position_relative: bool;
+    pending_position_take: bool;
+    pending_position_change: bool;
+    pending_switch_level: string;
+    pending_marker_name: string;
+    pending_marker_new_name: string;
+    pending_marker_current: bool;
+    pending_noclip: s32 = -1;
     zork_mode: bool;
     zork_input_kind: Zork_Input_Kind;
     pending_zork_input: string;
@@ -89,39 +103,54 @@ Console_Command :: struct {
 
 // @TODO maybe do some metaprogramming here
 CONSOLE_COMMANDS :: Console_Command.[
-    .{name = "ls",            run = command_ls       },
-    .{name = "echo",          run = command_echo     },
-    .{name = "print",         run = command_print    },
-    .{name = "help",          run = command_help     },
-    .{name = "clear",         run = command_clear    },
-    .{name = "cl",            run = command_clear    },
-    .{name = "blow",          run = command_blow     },
-    .{name = "about",         run = command_about    },
-    .{name = "license",       run = command_license  },
-    .{name = "send",          run = command_send     },
-    .{name = "send_alt",      run = command_send_alt },
-    .{name = "play",          run = command_play     },
-    .{name = "undo",          run = command_undo     },
-    .{name = "z",             run = command_undo     },
-    .{name = "reset",         run = command_reset    },
-    .{name = "r",             run = command_reset    },
-    .{name = "show",          run = command_show     },
-    .{name = "open",          run = command_open     },
-    .{name = "close",         run = command_close    },
-    .{name = "edit",          run = command_edit     },
-    .{name = "jump",          run = command_jump     },
-    .{name = "j",             run = command_jump     },
-    .{name = "record",        run = command_record   },
-    .{name = "pause",         run = command_pause    },
-    .{name = "stop",          run = command_stop     },
-    .{name = "save",          run = command_save     },
-    .{name = "toggle",        run = command_toggle   },
-    .{name = "q",             run = command_hide     },
-    .{name = "quit",          run = command_hide     },
-    .{name = "exit",          run = command_exit     },
-    .{name = "terminate",     run = command_exit     },
-    .{name = "xyzzy",         run = command_xyzzy    },
-    .{name = "hello sailor",  run = command_hello_sailor},
+    .{name = "ls",            run = command_ls               },
+    .{name = "echo",          run = command_echo             },
+    .{name = "print",         run = command_print            },
+    .{name = "help",          run = command_help             },
+    .{name = "clear",         run = command_clear            },
+    .{name = "cl",            run = command_clear            },
+    .{name = "blow",          run = command_blow             },
+    .{name = "about",         run = command_about            },
+    .{name = "license",       run = command_license          },
+    .{name = "send",          run = command_send             },
+    .{name = "send_alt",      run = command_send_alt         },
+    .{name = "play",          run = command_play             },
+    .{name = "do",            run = command_play             },
+    .{name = "undo",          run = command_undo             },
+    .{name = "z",             run = command_undo             },
+    .{name = "reset",         run = command_reset_or_markers },
+    .{name = "r",             run = command_reset            },
+    .{name = "show",          run = command_show             },
+    .{name = "set",           run = command_set              },
+    .{name = "move",          run = command_move             },
+    .{name = "move_xy",       run = command_move_xy          },
+    .{name = "mark",          run = command_mark             },
+    .{name = "list",          run = command_list_markers     },
+    .{name = "remove",        run = command_remove_markers   },
+    .{name = "add",           run = command_add_markers      },
+    .{name = "rename",        run = command_rename_marker    },
+    .{name = "back",          run = command_back             },
+    .{name = "tp",            run = command_back             },
+    .{name = "alias",         run = command_alias            },
+    .{name = "unalias",       run = command_unalias          },
+    .{name = "switch",        run = command_switch           },
+    .{name = "noclip",        run = command_noclip           },
+    .{name = "open",          run = command_open             },
+    .{name = "close",         run = command_close            },
+    .{name = "edit",          run = command_edit             },
+    .{name = "jump",          run = command_jump             },
+    .{name = "j",             run = command_jump             },
+    .{name = "record",        run = command_record           },
+    .{name = "pause",         run = command_pause            },
+    .{name = "stop",          run = command_stop             },
+    .{name = "save",          run = command_save             },
+    .{name = "toggle",        run = command_toggle           },
+    .{name = "q",             run = command_hide             },
+    .{name = "quit",          run = command_hide             },
+    .{name = "exit",          run = command_exit             },
+    .{name = "terminate",     run = command_exit             },
+    .{name = "xyzzy",         run = command_xyzzy            },
+    .{name = "hello sailor",  run = command_hello_sailor     },
     .{name = "zork",          run = command_zork,         hidden = true},
     // Match the combined picture commands before their single-word prefixes.
     .{name = "captain and pirate", run = command_captain_pirate, hidden = true},
@@ -165,12 +194,13 @@ command_play :: (console: *Console_State, arguments: string) {
     defer free(request.source);
     if error.count { console_write(console, error, .ERROR); return; }
     position: s64;
-    level := console_next_argument(request.source, *position);
-    if !level.count || console_next_argument(request.source, *position).count {
-        console_write(console, "Usage: play <level_name> [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
+    name := console_next_argument(request.source, *position);
+    if console_next_argument(request.source, *position).count {
+        console_write(console, "Usage: play|do [name] [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_action == .PLAY_SOLUTION {
+    if console.pending_send.count || console.pending_position_change || console.pending_action == .SET_POSITION ||
+       console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL || console.pending_action == .PLAY_SOLUTION {
         console_write(console, "A playback command is already waiting to run.", .ERROR);
         return;
     }
@@ -211,9 +241,21 @@ command_show :: (console: *Console_State, arguments: string) {
     subject := console_next_argument(arguments, *position);
     rest := trim(slice(arguments, position, arguments.count - position));
     if equal_nocase(subject, "position") && !rest.count console.pending_action = .SHOW_POSITION;
+    else if equal_nocase(subject, "level") && !rest.count console.pending_action = .SHOW_LEVEL;
     else if equal_nocase(subject, "subtitles") command_show_subtitles(console, rest);
     else console_write(console,
-                       "Usage: show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
+                       "Usage: show level, show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
+}
+
+command_set :: (console: *Console_State, arguments: string) {
+    cursor: s64;
+    subject := console_next_argument(arguments, *cursor);
+    if !equal_nocase(subject, "position") {
+        console_write(console, "Usage: set position <x> <y> <z>", .ERROR);
+        return;
+    }
+    console_queue_position_request(console, slice(arguments, cursor, arguments.count - cursor), "xyz", 3, false,
+                                   "set position <x> <y> <z>");
 }
 
 console_subtitle_language_option :: (argument: string) -> Console_Subtitle_Language {
@@ -292,8 +334,8 @@ command_edit :: (console: *Console_State, arguments: string) {
         level = extra;
         extra = console_next_argument(arguments, *position);
     }
-    if !level.count || extra.count {
-        console_write(console, "Usage: edit <level_name>, edit solution, or edit custom <name>. Use open editor for a new input.", .ERROR);
+    if extra.count {
+        console_write(console, "Usage: edit [level_name], or edit custom <name>. Bare edit uses the current level; open editor creates a new input.", .ERROR);
         return;
     }
     if !custom && equal_nocase(level, "temp") {
@@ -468,7 +510,8 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         console_write(console, usage, .ERROR);
         return;
     }
-    if console.pending_send.count {
+    if console.pending_send.count || console.pending_position_change || console.pending_action == .SET_POSITION ||
+       console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL {
         console_write(console, "A send command is already waiting to run.", .ERROR);
         return;
     }
@@ -502,26 +545,56 @@ tprint("send <keys>              Send literal keys; R stays R. Default: % ms.", 
        "                         Example: send w3 2 dd",
        "send_alt <moves>         Map U/D/L/R to W/S/A/D; C sends C.",
        "                         Example: send_alt R3U2C -rabbit",
-       "play <level_name>        Send a saved solution using send_alt's options.",
-       "                         Example: play mirror_1 -fast",
+       "play, do [name]          Play saved input; omitted name uses the current level.",
+       "                         Example: play -rabbit  or  do mirror_1 -fast",
 tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", UNDO_DEFAULT_DELAY, UNDO_FAST_DELAY),
        "                         Example: undo 100 -fast  or  z100 -delay 10",
        "reset, r                 Restart the game; rewind the current timeline.",
-       "edit <level_name>        Open a saved solution by name.",
+       "edit [level_name]        Edit a solution; omitted name uses the current level.",
        "open editor              Open a temporary input; choose its name on Save.",
        "close editor             Close the editor; confirm unsaved changes.",
        "edit custom <name>       Open a saved input from data/custom_inputs.json.",
        "jump <step>, jump $      Seek the open editor to a step, or to the end.",
+       "                         Forward: superfast (75 ms); backward: undo (10 ms).",
        "                         Alias: j 13, j 0, j $",
        "record                   Start recording in the open editor.",
        "pause                    Pause editor playback; keep recording armed.",
        "stop                     Stop editor playback and recording; keep the playhead.",
        "save                     Open the editor's save confirmation.",
        "                         record / pause / stop / save require an open editor.",
-       "edit solution            Open a solution at the current game position.",
-       "show position            Read (x, y, z). The address is not yet verified.",
+       "edit solution            Alias for edit (the current level).",
+       "show level               Show the current level name, or Overworld.",
+       "show position            Show the current controlled group's anchor (x, y, z).",
+       "                         Anchor: actual character ordered by X, then Y, then Z.",
+       "set position <x> <y> <z> Place the anchor at XYZ; translate its controlled group.",
+       "                         Copies keep their spacing; unselected characters stay put.",
+       "                         Example: set position 80 79 0",
+       "move <dx> <dy> [dz]      Move all controlled characters; omitted dz keeps Z.",
+       "move_xy <dx> <dy>        Teleport by X/Y offsets, keeping Z.",
+       "move -x <value>          Teleport by a signed X offset.",
+       "move -y <value>          Teleport by a signed Y offset.",
+       "move -z <value>          Teleport by a signed Z offset.",
+       "                         move -x / move -y with zero do nothing.",
+       "                         Example: move -x -2  or  move -z 1",
+       "mark [name] [x y z]      Save a position; omitted coordinates use the anchor.",
+       "                         Omitted name uses a-z, wrapping after z and overwriting a.",
+       "                         Example: mark home  or  mark 80 79 0",
+       "                         Markers are saved in data/markers.json (name and position).",
+       "add markers <x> <y> <z>  Save to the next a-z register, like mark x y z.",
+       "list markers            List saved marker names and positions.",
+       "remove markers <name>   Remove a saved position.",
+       "rename <name> <new_name> Rename a marker; keep its coordinates.",
+       "back, tp <name>         Place the controlled group's anchor at a saved marker.",
+       "alias [name=command]    List aliases, or define a temporary alias.",
+       "                         Example: alias tp=back  or  alias home=\"back a\"",
+       "unalias <name>          Remove a temporary alias; restore the configured default.",
+       "switch <level_name>     Teleport to an overworld entrance, then use TakeOrDrop.",
+       "                         Uses User.keymap (default V). Example: switch mirror_21",
+       "reset marker registers  Clear a-z and start at a; keep custom marker names.",
+       "noclip [enable|disable]  Toggle, enable or disable W/S/A/D position movement.",
+       "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
        "show subtitles [name]    Read English / Chinese dialogue for a level (default: current).",
-       "                         Example: show subtitles mirror_6 -comment",
+       "                         Example: show subtitles mirror_21 -comment",
        "                         -en: centered English; -cn / -sc: centered Chinese.",
        "                         -no_character / -nosayer hides speaker names.",
        "                         -comment includes notes; wheel / Page Up / Page Down scroll.",
@@ -535,10 +608,10 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "license                  Show the LICENSE file next to the executable.",
        "help                     Show this help.",
        "q, quit                  Hide the console and return to the game.",
-       "exit, terminate          Close the helper.",
+       "exit, terminate          Close the console. (It kills ootss-cmd.exe)",
        "ls, echo, print          Print each command's placeholder message.",
        "",
-       "Options for send, send_alt, and play:",
+       "Options for send, send_alt, play, and do:",
        "",
        "-delay <ms>              Set the complete per-key cycle in milliseconds.",
 tprint("-fast                    Use a % ms cycle.", SEND_FAST_DELAY),
@@ -547,7 +620,7 @@ tprint("-superfast, -rabbit      Use % ms and hold the game's fast-time key.", S
 tprint("-superslow, -turtle      Use % ms and hold the game's slow-time key.", SEND_SUPERSLOW_DELAY),
        "",
        "Choose one speed preset. -delay overrides its interval;",
-       "Any player input will interrupt send, send_alt, and play.",
+       "Any player input will interrupt send, send_alt, play, and do.",
        "w3: repeats w three times;",
        "w 3 s: move up and change to character 3, then move down",
        "(ad)3 repeats a group: adadad.",
@@ -555,26 +628,44 @@ tprint("-superslow, -turtle      Use % ms and hold the game's slow-time key.", S
 tprint("Keys are held for up to % ms; short cycles shorten the hold to leave a release gap.", DEFAULT_HOLD),
        "Command names and options are case-insensitive.",
        "",
+tprint("Configuration (% relative to the executable directory; loaded at startup):", CONSOLE_CONFIG_FILE),
+       "",
+       "game_path=\"...\";        Game directory containing sinking_star.exe; empty uses the running game.",
+       "show_startup_blow=false; Hide the startup wave; blow remains available.",
+       "tp=back;                Define a persistent alias with forwarded arguments.",
+       "custom_command=\"back home\";  Define an alias containing arguments.",
+       "nmap m=\"move -z 1\";     Run a game shortcut; pass the original key through.",
+       "map <key>=\"command\";   Same passthrough behavior as nmap.",
+       "noremap w=\"move -y 1\";  Run a shortcut and consume its original press/release.",
+       "                         Keys: letters, digits, F1-F24, Space, Enter, arrows, Home/End...",
+       "                         Modifiers: Ctrl+Alt+Shift+Win (optional; exact match).",
+       "                         Game focus only; one command per press. Aliases work here too.",
+       "",
        "Keyboard Shortcuts:",
        "",
        ":                        Open the console from the game.",
        ";                        Open quick command input at the bottom left.",
+       "Enter (quick input)     Submit and close; show subtitles opens the full console.",
        "Ctrl+C / Ctrl+D / Esc    Hide the console.",
        "Ctrl+V / Shift+Insert    Paste at the cursor.",
        "Ctrl+W / Ctrl+Delete     Delete the previous / next word.",
        "Ctrl+U                   Delete text before the cursor.",
-       "Tab / Shift+Tab          Complete commands and level names; cycle matches forward / backward.",
+       "Tab / Shift+Tab          Complete commands, level/marker names; cycle matches.",
        "Ctrl+Home / Ctrl+End     Subtitles: go to the beginning / end.",
        "Space                    Editor: toggle play / pause, including when bound to fast time.",
        "Esc                      Editor: pause and return input to the game.",
        "N                        Editor: toggle compact / full view.",
        "[ / ]                    Editor: undo / step.",
-       "J / K / L                Editor: step / play-pause / undo. Hold J or L to repeat.",
-       "                         Forward and undo steps use the normal 250 ms cycle.",
+       "J / K / L                Editor: faster / play-pause / slower (five speed levels).",
+       "                         superfast / fast / normal / slow / superslow: 75/175/250/500/750 ms.",
        "Fast-time / Slow-time    Other configured keys switch editor playback to -fast / -turtle.",
        "W/A/S/D or arrows        Editor: insert movement at the text cursor.",
        "B or _                   Editor: insert a wait cell at the text cursor.",
        "Ctrl+Left / Ctrl+Right   Editor: move the text cursor; add Shift to select.",
+       "Ctrl+A                   Editor: select Executed or Future, according to the text cursor.",
+       "Backspace / Delete      Editor: delete selected steps, including Executed; no game undo.",
+       "Timeline link button    Toggle game input while dragging or using the wheel.",
+       "                         Off: reposition the playhead only; Play resumes from there.",
        "Ctrl+S                   Editor: save the solution.",
        "Ctrl+C                   Editor: copy the complete current solution.",
        "Page Up / Page Down      Scroll console output. Mouse wheel also scrolls."
@@ -694,7 +785,9 @@ command_hello_sailor :: (console: *Console_State, arguments: string) {
 
 console_write :: (console: *Console_State, text: string, kind: Console_Line_Kind = .OUTPUT, wrap := false) {
     console.show_subtitles = false;
-    if kind != .COMMAND console.reveal_output = true;
+    if kind != .COMMAND {
+        console.reveal_output = true;
+    }
     if console.lines.count == CONSOLE_OUTPUT_LIMIT {
         free(console.lines[0].text);
         array_ordered_remove_by_index(*console.lines, 0);
@@ -719,7 +812,14 @@ console_submit :: (console: *Console_State) {
         console_set_input(console, "");
         return;
     }
+    console_execute_command(console, line, remember = true);
+    console_finish_input(console);
+}
 
+// Shared helper dispatch. Shortcuts leave the console's draft, caret, completion and history untouched.
+console_execute_command :: (console: *Console_State, source: string, remember := false) {
+    line := trim(source);
+    if !line.count return;
     previous_blow := console.show_blow;
     previous_restart := console.restart_blow;
     previous_picture := console.picture;
@@ -731,7 +831,15 @@ console_submit :: (console: *Console_State) {
     console.reveal_output = false;
     console.picture = .NONE;
     console_write(console, tprint("$ %", line), .COMMAND);
-    console_remember_input(console, line);
+    if remember console_remember_input(console, line);
+
+    expanded, alias_error := console_expand_aliases(console, line);
+    defer free(expanded);
+    if alias_error.count {
+        console_write(console, alias_error, .ERROR);
+        return;
+    }
+    line = expanded;
 
     found := false;
     for command: CONSOLE_COMMANDS {
@@ -761,8 +869,6 @@ console_submit :: (console: *Console_State) {
         while split < line.count && line[split] != #char " " && line[split] != #char "\t" split += 1;
         console_write(console, tprint("Unknown command: %", slice(line, 0, split)), .ERROR);
     }
-
-    console_finish_input(console);
 }
 
 console_remember_input :: (console: *Console_State, line: string) {
@@ -891,15 +997,20 @@ console_history :: (console: *Console_State, direction: s64) {
 }
 
 console_deinit :: (console: *Console_State) {
+    console_config_free(*console.config);
+    console_aliases_free(*console.temporary_aliases);
     console_completion_reset(*console.completion);
     for line: console.lines free(line.text);
     for command: console.history free(command);
     free(console.draft);
     free(console.pending_send);
+    free(console.pending_switch_level);
     free(console.pending_play.source);
     free(console.pending_edit_level);
     free(console.pending_subtitle_level);
     free(console.pending_zork_input);
+    free(console.pending_marker_name);
+    free(console.pending_marker_new_name);
     array_free(console.lines);
     array_free(console.input);
     array_free(console.history);
@@ -952,4 +1063,5 @@ console_word_separator :: (c: u8) -> bool {
 #import "Basic";
 #import "File";
 #import "String";
+#import "Math";
 Unicode :: #import "Unicode";
