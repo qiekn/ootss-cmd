@@ -13,7 +13,7 @@ Console_Line_Kind :: enum {
 
 Console_Action :: enum {
     NONE; HIDE; EXIT; SHOW_POSITION; SHOW_LEVEL; SET_POSITION; SHOW_SUBTITLES; EDIT_SOLUTION; PLAY_SOLUTION; JUMP; CONSOLE_MODE; // Normal
-    MARK_POSITION; LIST_MARKERS; REMOVE_MARKER; RENAME_MARKER; BACK_POSITION; RESET_MARKERS; NOCLIP; SWITCH_LEVEL;
+    MARK_POSITION; LIST_MARKERS; REMOVE_MARKER; RENAME_MARKER; BACK_POSITION; RESET_MARKERS; NOCLIP; FREECAM; SWITCH_LEVEL;
     EDITOR_RECORD; EDITOR_PAUSE; EDITOR_STOP; EDITOR_SAVE; EDITOR_CLOSE;                 // Solution Editor
     ZORK_START; ZORK_INPUT; ZORK_BACK;                                                                 // Zork
 }
@@ -90,6 +90,9 @@ Console_State :: struct {
     pending_marker_new_name: string;
     pending_marker_current: bool;
     pending_noclip: s32 = -1;
+    pending_freecam: s32 = -1;
+    pending_freecam_change: bool;
+    pending_freecam_pan: bool;
     zork_mode: bool;
     zork_input_kind: Zork_Input_Kind;
     pending_zork_input: string;
@@ -135,6 +138,7 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "unalias",       run = command_unalias          },
     .{name = "switch",        run = command_switch           },
     .{name = "noclip",        run = command_noclip           },
+    .{name = "freecam",       run = command_freecam          },
     .{name = "open",          run = command_open             },
     .{name = "close",         run = command_close            },
     .{name = "edit",          run = command_edit             },
@@ -199,7 +203,8 @@ command_play :: (console: *Console_State, arguments: string) {
         console_write(console, "Usage: play|do [name] [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_action == .SET_POSITION ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
+       console.pending_action == .FREECAM || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL || console.pending_action == .PLAY_SOLUTION {
         console_write(console, "A playback command is already waiting to run.", .ERROR);
         return;
@@ -510,7 +515,8 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         console_write(console, usage, .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_action == .SET_POSITION ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
+       console.pending_action == .FREECAM || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL {
         console_write(console, "A send command is already waiting to run.", .ERROR);
         return;
@@ -593,6 +599,10 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "reset marker registers  Clear a-z and start at a; keep custom marker names.",
        "noclip [enable|disable]  Toggle, enable or disable W/S/A/D position movement.",
        "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
+       "freecam [enable|disable] Toggle the free camera; disable restores the view.",
+       "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",
+       "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q/E raise/lower.",
+       "                         Both modes: hold Shift to move faster or Ctrl to move slower.",
        "show subtitles [name]    Read English / Chinese dialogue for a level (default: current).",
        "                         Example: show subtitles mirror_21 -comment",
        "                         -en: centered English; -cn / -sc: centered Chinese.",
@@ -632,12 +642,16 @@ tprint("Configuration (% relative to the executable directory; loaded at startup
        "",
        "game_path=\"...\";        Game directory containing sinking_star.exe; empty uses the running game.",
        "show_startup_blow=false; Hide the startup wave; blow remains available.",
+       "freecam_speed=12;        Free-camera speed in world units per second.",
+       "freecam_sensitivity=0.1; Mouse look in degrees per mouse count.",
+       "freecam_shift_multiplier=4;   Speed scale while holding Shift.",
+       "freecam_ctrl_multiplier=0.25; Speed scale while holding Ctrl.",
        "tp=back;                Define a persistent alias with forwarded arguments.",
        "custom_command=\"back home\";  Define an alias containing arguments.",
        "nmap m=\"move -z 1\";     Run a game shortcut; pass the original key through.",
        "map <key>=\"command\";   Same passthrough behavior as nmap.",
        "noremap w=\"move -y 1\";  Run a shortcut and consume its original press/release.",
-       "                         Keys: letters, digits, F1-F24, Space, Enter, arrows, Home/End...",
+       "                         Keys: letters, digits, F1-F24, , . - / \\ [ ], Space, Enter, arrows, Home/End...",
        "                         Modifiers: Ctrl+Alt+Shift+Win (optional; exact match).",
        "                         Game focus only; one command per press. Aliases work here too.",
        "",

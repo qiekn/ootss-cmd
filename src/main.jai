@@ -20,12 +20,16 @@ Win   :: #import "Windows";
 #load "platform/windows/send_monitor.jai";
 #load "platform/windows/shortcuts.jai";
 #load "platform/windows/noclip.jai";
+#load "platform/windows/freecam.jai";
 #load "platform/windows/editor.jai";
 #load "platform/windows/zork.jai";
 
 #load "game/commands.jai";
 #load "game/keymap.jai";
 #load "game/memory.jai";
+#load "game/camera_layout.jai";
+#load "game/camera.jai";
+#load "game/freecam.jai";
 #load "game/level.jai";
 #load "game/position_reader.jai";
 #load "game/position_selection.jai";
@@ -70,6 +74,7 @@ main :: () {
     defer console_deinit(*console);
     defer shortcuts_deinit();
     defer noclip_deinit();
+    defer freecam_deinit();
     defer zork_deinit();
     if !tray_init(overlay.window) {
         show_error("Unable to create the system tray icon.");
@@ -169,6 +174,7 @@ main :: () {
         if console.pending_action == .SWITCH_LEVEL console_prepare_switch(*console);
         console_run_marker_action(*console);
         if console.pending_action == .NOCLIP console_set_noclip(*console);
+        if console.pending_action == .FREECAM console.pending_freecam_change = true;
         if console.pending_action == .CONSOLE_MODE overlay_set_mode(console.pending_mode);
         if console.pending_action == .EDIT_SOLUTION editor_open_solution(console.pending_edit_level, console.pending_edit_custom);
         if console.pending_action == .PLAY_SOLUTION console_play_saved_solution(*console);
@@ -213,7 +219,9 @@ main :: () {
         sent_keys := console_run_pending_send(*console);
         if reset_requested && sent_keys > 0 editor_on_game_reset();
         console_run_pending_position(*console);
-        if !console.pending_send.count && !console.pending_position_change console.submission = .{};
+        console_run_pending_freecam(*console);
+        freecam_update(*console, seconds_since_init());
+        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change console.submission = .{};
         zork_update(*console);
         overlay_present_output(*console);
 
@@ -233,7 +241,8 @@ main :: () {
         }
 
         busy := editor.open && (editor.recording || editor_busy() || editor_view.dragging);
-        sleep_milliseconds(cast(s32) ifx busy then 1 else ifx overlay.visible || editor_window.visible then 16 else 32);
+        sleep_milliseconds(cast(s32) ifx busy then 1 else ifx freecam.enabled then 8
+                           else ifx overlay.visible || editor_window.visible then 16 else 32);
         reset_temporary_storage();
     }
 }

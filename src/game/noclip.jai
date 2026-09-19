@@ -1,3 +1,5 @@
+NOCLIP_REPEAT_DELAY :: 150; // Milliseconds between grid steps while a movement key stays held.
+
 Noclip_State :: struct {
     enabled: bool;
     game: Win.HWND;
@@ -73,7 +75,7 @@ noclip_next_direction :: (now: float64) -> u8 {
         if index < 0 return 0;
         direction = "UDLR"[index];
     }
-    noclip.next_step_at = now + cast(float64) DEFAULT_DELAY / 1000;
+    noclip.next_step_at = now + cast(float64) NOCLIP_REPEAT_DELAY / 1000;
     return direction;
 }
 
@@ -106,6 +108,7 @@ console_set_noclip :: (state: *Console_State) {
 
 noclip_update :: (state: *Console_State, now: float64) {
     if !noclip.enabled return;
+    if freecam.enabled || freecam.stopping { noclip_clear_motion(); return; }
     game := overlay.game;
     pid := process_window_pid(game);
     if game != noclip.game || pid != noclip.pid {

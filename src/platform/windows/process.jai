@@ -46,6 +46,39 @@ process_close_memory :: (memory: *Process_Memory) {
     memory.* = .{};
 }
 
+process_memory_has_exited :: (memory: Process_Memory) -> bool {
+    status: u32;
+    return memory.handle && GetExitCodeProcess(memory.handle, *status) != 0 && status != 259; // STILL_ACTIVE
+}
+
+// Global camera mode writes must target a writable, non-executable PE section.
+process_module_writable_data :: (memory: Process_Memory, address: u64, bytes: u64) -> bool {
+    if !process_module_contains(memory.module, address, bytes) return false;
+    dos: [64] u8;
+    if !process_read_memory(memory.handle, memory.module.base, *dos, dos.count) ||
+       dos[0] != #char "M" || dos[1] != #char "Z" return false;
+    pe := memory.module.base + (cast(*u32)(dos.data + 0x3c)).*;
+    header: [26] u8;
+    if !process_module_contains(memory.module, pe, header.count) ||
+       !process_read_memory(memory.handle, pe, *header, header.count) ||
+       (cast(*u32) header.data).* != 0x00004550 || (cast(*u16)(header.data + 4)).* != 0x8664 ||
+       (cast(*u16)(header.data + 24)).* != 0x20b return false;
+    count := (cast(*u16)(header.data + 6)).*;
+    optional_size := (cast(*u16)(header.data + 20)).*;
+    if !count || count > 96 || optional_size < 0xf0 return false;
+    table := pe + 24 + optional_size;
+    if !process_module_contains(memory.module, table, cast(u64) count * size_of(Process_PE_Section)) return false;
+    for i: 0..cast(s64) count-1 {
+        section: Process_PE_Section;
+        if !process_read_memory(memory.handle, table + cast(u64) i * size_of(Process_PE_Section), *section,
+                                 size_of(Process_PE_Section)) return false;
+        if (section.flags & 0xe0000000) != 0xc0000000 ||
+           !process_module_contains(memory.module, memory.module.base + section.rva, section.virtual_size) continue;
+        if process_module_contains(.{base = memory.module.base + section.rva, size = section.virtual_size}, address, bytes) return true;
+    }
+    return false;
+}
+
 process_memory_range_valid :: (address: u64, bytes: u64) -> bool {
     last: u64 = 0x0000_7fff_ffff_ffff;
     return address >= 0x10000 && address <= last && bytes > 0 && bytes - 1 <= last - address;
@@ -201,6 +234,7 @@ GetWindowTextW :: (window: Win.HWND, text: *u16, capacity: s32) -> s32 #foreign 
 GetWindowThreadProcessId :: (window: Win.HWND, pid: *u32) -> u32 #foreign user32;
 IsWindowVisible :: (window: Win.HWND) -> s32 #foreign user32;
 OpenProcess :: (access: u32, inherit: s32, pid: u32) -> Win.HANDLE #foreign kernel32;
+GetExitCodeProcess :: (process: Win.HANDLE, status: *u32) -> s32 #foreign kernel32;
 QueryFullProcessImageNameW :: (process: Win.HANDLE, flags: u32, path: *u16, length: *u32) -> s32 #foreign kernel32;
 ReadProcessMemory :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, received: *u64) -> s32 #foreign kernel32;
 WriteProcessMemory :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, written: *u64) -> s32 #foreign kernel32;

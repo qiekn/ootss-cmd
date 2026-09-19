@@ -5,6 +5,10 @@ Console_Alias :: struct { name, command: string; }
 Console_Config :: struct {
     show_startup_blow := true;
     game_path: string;
+    freecam_speed: float64 = 12;             // World units per second.
+    freecam_sensitivity: float64 = 0.1;      // Degrees of view rotation per mouse count.
+    freecam_shift_multiplier: float64 = 4;   // Speed scale while Shift is held.
+    freecam_ctrl_multiplier: float64 = 0.25; // Speed scale while Ctrl is held.
     aliases: [..] Console_Alias;
     shortcuts: [..] Command_Shortcut;
 }
@@ -101,16 +105,23 @@ console_parse_alias_assignment :: (input: string) -> (name: string, command: str
     return name, command, error;
 }
 
+console_config_number :: (name: string, text: string, target: *float64, maximum: float64) -> string {
+    value, success, remainder := string_to_float64(text);
+    if !success || remainder.count || !is_finite(value) || value <= 0 || value > maximum {
+        return tprint("% must be a positive number no greater than %.", name, maximum);
+    }
+    target.* = value;
+    return "";
+}
+
 console_config_assignment :: (config: *Console_Config, input: string) -> string {
     source := trim(input);
     if !source.count return "";
     cursor: s64;
     first := console_next_argument(source, *cursor);
     rest := trim(slice(source, cursor, source.count - cursor));
-    if (equal_nocase(first, "map") || equal_nocase(first, "nmap") || equal_nocase(first, "noremap")) &&
-       rest.count && rest[0] != #char "=" {
-        return shortcut_config_assignment(config, rest,
-                                          consume = equal_nocase(first, "noremap"));
+    if (equal_nocase(first, "map") || equal_nocase(first, "nmap") || equal_nocase(first, "noremap")) && rest.count && rest[0] != #char "=" {
+        return shortcut_config_assignment(config, rest, consume = equal_nocase(first, "noremap"));
     }
     if equal_nocase(first, "alias") source = trim(slice(source, cursor, source.count - cursor));
     name, command, error := console_parse_assignment(source, allow_empty = true);
@@ -123,6 +134,10 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         return "";
     }
     if !command.count return "A configuration value cannot be empty.";
+    if equal_nocase(name, "freecam_speed") return console_config_number("freecam_speed", command, *config.freecam_speed, 100000);
+    if equal_nocase(name, "freecam_sensitivity") return console_config_number("freecam_sensitivity", command, *config.freecam_sensitivity, 100);
+    if equal_nocase(name, "freecam_shift_multiplier") return console_config_number("freecam_shift_multiplier", command, *config.freecam_shift_multiplier, 1000);
+    if equal_nocase(name, "freecam_ctrl_multiplier") return console_config_number("freecam_ctrl_multiplier", command, *config.freecam_ctrl_multiplier, 1000);
     if equal_nocase(name, "show_startup_blow") {
         if equal_nocase(command, "true") config.show_startup_blow = true;
         else if equal_nocase(command, "false") config.show_startup_blow = false;
@@ -265,6 +280,7 @@ command_unalias :: (state: *Console_State, arguments: string) {
 
 #scope_file
 #import "Basic";
+#import "Math";
 #import "String";
 #import "File";
 #import "File_Utilities";

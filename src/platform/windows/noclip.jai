@@ -30,6 +30,8 @@ noclip_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
             key := cast(*Noclip_Keyboard_Event) data;
             if shortcuts_handle_key(key.vk, message == 0x100 || message == 0x104, (key.flags & 0x12) != 0,
                                      Win.GetForegroundWindow()) return 1;
+            if freecam_filter_key(key.vk, message == 0x100 || message == 0x104, (key.flags & 0x12) != 0,
+                                  Win.GetForegroundWindow(), freecam_modifiers_down()) return 1;
             if noclip_filter_key(key.vk, message == 0x100 || message == 0x104, (key.flags & 0x12) != 0,
                                  Win.GetForegroundWindow(), noclip_modifiers_down()) return 1;
         }

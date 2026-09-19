@@ -219,6 +219,7 @@ editor_step_key_direction :: (vk: u32) -> s64 {
 editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND) -> bool {
     if injected || vk >= 256 return false;
     if shortcuts_handle_key(vk, down, injected, foreground) return true;
+    if freecam_filter_key(vk, down, injected, foreground, freecam_modifiers_down()) return true;
     // Whichever keyboard hook runs first owns noclip movement; never record the consumed physical key.
     if noclip_filter_key(vk, down, injected, foreground, editor_modifiers_down()) return true;
     was_down := editor_window.physical_down[vk];

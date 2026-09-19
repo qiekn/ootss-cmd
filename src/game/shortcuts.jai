@@ -41,12 +41,18 @@ shortcut_base_key :: (name: string) -> u32 {
         if number >= 1 && number <= 24 return 0x70 + number - 1;
     }
     Key_Name :: struct { name: string; vk: u32; }
+    // Punctuation uses the US-layout character or a name. The rc syntax reserves
+    // '=', ';', '#' and quotes, so Plus/Equals and Quote are name-only; ';' and '`'
+    // stay unmapped because they open the console.
     for key: Key_Name.[
         .{"Space", 0x20}, .{"Enter", 0x0d}, .{"Return", 0x0d}, .{"Tab", 0x09}, .{"Backspace", 0x08},
         .{"Escape", 0x1b}, .{"Esc", 0x1b}, .{"Up", 0x26}, .{"Down", 0x28}, .{"Left", 0x25}, .{"Right", 0x27},
         .{"Home", 0x24}, .{"End", 0x23}, .{"PageUp", 0x21}, .{"PgUp", 0x21}, .{"PageDown", 0x22}, .{"PgDn", 0x22},
         .{"Insert", 0x2d}, .{"Ins", 0x2d}, .{"Delete", 0x2e}, .{"Del", 0x2e}, .{"CapsLock", 0x14},
-        .{"NumLock", 0x90}, .{"ScrollLock", 0x91}, .{"Pause", 0x13}, .{"PrintScreen", 0x2c}
+        .{"NumLock", 0x90}, .{"ScrollLock", 0x91}, .{"Pause", 0x13}, .{"PrintScreen", 0x2c},
+        .{",", 0xbc}, .{"Comma", 0xbc}, .{".", 0xbe}, .{"Period", 0xbe}, .{"-", 0xbd}, .{"Minus", 0xbd},
+        .{"Plus", 0xbb}, .{"Equals", 0xbb}, .{"/", 0xbf}, .{"Slash", 0xbf}, .{"\\", 0xdc}, .{"Backslash", 0xdc},
+        .{"[", 0xdb}, .{"LeftBracket", 0xdb}, .{"]", 0xdd}, .{"RightBracket", 0xdd}, .{"Quote", 0xde}, .{"Apostrophe", 0xde}
     ] if equal_nocase(name, key.name) return key.vk;
     return 0;
 }
@@ -60,7 +66,7 @@ shortcut_key_parse :: (source: string) -> (vk: u32, modifiers: Shortcut_Modifier
         if !part.count return 0, modifiers, "Expected a key, for example M or Ctrl+Shift+M.";
         if i == source.count {
             vk := shortcut_base_key(part);
-            if !vk return 0, modifiers, tprint("Unknown shortcut key '%'. Use a letter, digit, F1-F24 or a named key.", part);
+            if !vk return 0, modifiers, tprint("Unknown shortcut key '%'. Use a letter, digit, punctuation, F1-F24 or a named key.", part);
             return vk, modifiers, "";
         }
         modifier: Shortcut_Modifiers;
@@ -182,7 +188,7 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
         return false;
     }
     if !state.queue_count || console.pending_action != .NONE || console.pending_send.count ||
-       console.pending_position_change return false;
+       console.pending_position_change || console.pending_freecam_change return false;
     request := state.queue[state.queue_start];
     if request.game != game || request.pid != pid || request.index < 0 || request.index >= console.config.shortcuts.count {
         shortcuts_clear_queue(state);
@@ -196,6 +202,9 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
     state.queue_count -= 1;
     console.submission = .{shortcut = true, game = game, pid = pid, trigger_key = request.key};
     console_execute_command(console, binding.command);
+    // Subtitles are a display rather than a result line: reveal the full console
+    // for them (or their lookup error), matching the quick-input exception.
+    if console.pending_action == .SHOW_SUBTITLES overlay.show_requested = true;
     return true;
 }
 

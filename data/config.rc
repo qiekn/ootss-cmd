@@ -2,6 +2,14 @@
 
 show_startup_blow = true;
 
+# Free camera (freecam): movement speed in world units per second, mouse look
+# sensitivity in degrees per mouse count, and the speed multipliers applied
+# while holding Shift or Ctrl. All values must be positive.
+freecam_speed = 12;
+freecam_sensitivity = 0.1;
+freecam_shift_multiplier = 4;
+freecam_ctrl_multiplier = 0.25;
+
 # Game installation directory (contains sinking_star.exe, not its data/ folder).
 # Use forward slashes; set to "" to locate the running game automatically.
 # game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
@@ -12,13 +20,17 @@ tp = back;
 
 fastplay = "play -superfast";
 fastdo = "play -superfast";
+subtitles = "show subtitles"
+level_name = "show level"
+close = "close editor"
 
 # Use alias name=command in the console for a temporary override.
 # unalias name removes that override and restores this file's definition.
 
 
 # Custom Keymaps
-
 map m = "move -z 1";
+map , = noclip;
+map o = "show subtitles";
 
 # vim: ft=sh

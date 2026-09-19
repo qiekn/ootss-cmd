@@ -1,6 +1,6 @@
 Console_Completion_Kind :: enum {
     NONE; COMMAND; SHOW; SET; EDITOR; EDIT; CUSTOM; PLAY; PLAY_OPTION; SUBTITLES; SUBTITLE_OPTION; BLOW; TOGGLE;
-    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS;
+    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS; FREECAM; FREECAM_PAN; FREECAM_ENABLE;
 }
 
 Console_Completion :: struct {
@@ -61,6 +61,13 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
         if equal_nocase(subject, "marker") && !console_next_argument(before, *position).count return .REGISTERS, start, end;
     }
     if equal_nocase(command, "noclip") && !subject.count return .NOCLIP, start, end;
+    if equal_nocase(command, "freecam") {
+        if !subject.count return .FREECAM, start, end;
+        if console_next_argument(before, *position).count return .NONE, start, end;
+        if equal_nocase(subject, "enable") return .FREECAM_PAN, start, end;
+        if equal_nocase(subject, "-pan") return .FREECAM_ENABLE, start, end;
+        return .NONE, start, end;
+    }
     if (equal_nocase(command, "open") || equal_nocase(command, "close")) && !subject.count return .EDITOR, start, end;
     if equal_nocase(command, "edit") {
         if !subject.count return .EDIT, start, end;
@@ -134,6 +141,12 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             console_completion_add(state, prefix, "registers");
         case .NOCLIP;
             for name: string.["enable", "disable"] console_completion_add(state, prefix, name);
+        case .FREECAM;
+            for name: string.["enable", "disable", "-pan"] console_completion_add(state, prefix, name);
+        case .FREECAM_PAN;
+            console_completion_add(state, prefix, "-pan");
+        case .FREECAM_ENABLE;
+            console_completion_add(state, prefix, "enable");
         case .EDITOR;
             console_completion_add(state, prefix, "editor");
         case .EDIT;

@@ -51,6 +51,10 @@ jai first.jai -optimized
 ```ini
 game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
 show_startup_blow = false;
+freecam_speed = 12;
+freecam_sensitivity = 0.1;
+freecam_shift_multiplier = 4;
+freecam_ctrl_multiplier = 0.25;
 tp = back;
 custom_command = "back home";
 fastplay = "play -superfast";
@@ -59,7 +63,8 @@ fastplay = "play -superfast";
 `game_path` 指向包含 `sinking_star.exe` 的游戏安装目录，不要写到 `data/` 或 `data/fonts/`。上例是本机路径，其他安装位置修改这一项即可；代码中没有固定的本地游戏路径。带空格的路径用引号包围，推荐使用 `/`。相对路径以辅助程序的 exe 所在目录为基准。
 省略 `game_path` 或设置 `game_path = "";` 时，从正在运行的游戏定位。字体和字幕共用这个目录，配置在加载字体之前读取。
 `show_startup_blow` 默认为 `true`；设为 `false` 关闭启动 wave，仍可手动使用 `blow`。
-除 `game_path` 和 `show_startup_blow` 外，其余赋值定义命令别名：`tp a` 等于 `back a`，`custom_command` 等于 `back home`，`fastplay mirror_1` 等于 `play -superfast mirror_1`。
+`freecam_speed`（每秒世界单位，默认 12）、`freecam_sensitivity`（每个鼠标计数转动的度数，默认 0.1）、`freecam_shift_multiplier`（按住 Shift 时的速度倍率，默认 4）和 `freecam_ctrl_multiplier`（按住 Ctrl 时的速度倍率，默认 0.25）调整自由摄像机，都必须是正数。
+除 `game_path`、`show_startup_blow` 和这些 `freecam_` 选项外，其余赋值定义命令别名：`tp a` 等于 `back a`，`custom_command` 等于 `back home`，`fastplay mirror_1` 等于 `play -superfast mirror_1`。
 支持换行或分号分隔、`#` 注释、单/双引号，以及 `alias tp=back;` 写法。名称不区分大小写，后面的同名定义覆盖前面的定义。
 配置只定义选项、别名和快捷键，加载时不执行命令；格式错误会报告行号并保留原配置。优化构建保留已有的 `bin/data/config.rc`，仅在缺失时复制默认配置。
 
@@ -82,16 +87,20 @@ unalias custom_command
 nmap m = "move -z 1";
 noremap w = "move -y 1";
 map Ctrl+F1 = "tp home";
+map , = noclip;
+map o = "show subtitles";
 ```
 
 `map` 和 `nmap` 等价：执行命令，同时让原始按键继续按游戏或编辑器的原有逻辑处理。
 `noremap` 执行命令并拦截原始按下、长按重复和松开事件。例如上面的 W 只执行 `move -y 1`，不会再产生一次原生 W 移动。
 命令支持配置和临时 alias；每次实际按下只触发一次，长按不连发，脚本注入的按键不触发映射。
 
-按键名不区分大小写，支持字母、数字、F1–F24，以及 Space、Enter、Tab、Escape、Backspace、方向键 Up/Down/Left/Right、Home/End、PageUp/PageDown、Insert/Delete 等名称。
+按键名不区分大小写，支持字母、数字、F1–F24，标点 `,` `.` `-` `/` `\` `[` `]`（也可写作 Comma、Period、Minus、Slash、Backslash、LeftBracket、RightBracket），以及 Space、Enter、Tab、Escape、Backspace、方向键 Up/Down/Left/Right、Home/End、PageUp/PageDown、Insert/Delete 等名称。
+`=` 和 `'` 是配置语法的一部分，对应按键写作 Plus（或 Equals）和 Quote；`;` 和 `` ` `` 用于打开控制台，不能映射。
 可以组合 `Ctrl+`、`Alt+`、`Shift+`、`Win+`，如 `noremap Ctrl+Shift+M = "back home";`。修饰键需要完全匹配，同一组合以最后一条定义为准；不支持多键序列。
 快捷键仅在游戏获得焦点时生效，控制台和编辑器文本输入、保存确认不受影响。失焦或游戏窗口/进程变化会取消尚未执行的快捷键。
 移动类命令在按下时执行；可能发送按键或打开输入框的其他命令等待触发键及修饰键释放后执行。命令结果保留在完整控制台中，不会为了显示结果弹出输入窗口，也不改动输入草稿和历史。
+例外是 `show subtitles`：快捷键执行它时会打开完整控制台显示字幕或查找错误，例如上面的 `map o = "show subtitles";`。
 
 退出时，右键托盘图标选择“退出”，或在 overlay 中输入 `exit` / `terminate`。
 
@@ -474,8 +483,38 @@ switch mirror_21
 `noclip` 切换穿行模式，`noclip enable` 开启，`noclip disable` 关闭。开启后，在游戏前台按物理 W/S/A/D，
 分别让当前受控整组同步移动 Y +1、Y -1、X -1、X +1，不发送替代方向键。
 轻点一次请求移动一格，例如 D 让 X 从 10 到 11。位置校验复用经过复核的代码定位结果，每次仍重新解析当前受控角色。
-支持长按，按 250ms 间隔重复移动；处理单次移动时不等待按键按住／释放周期。忽略 Windows 自动重复和程序注入事件，离开游戏焦点会清空待执行移动，重新按键才继续。
+支持长按，按 150ms 间隔重复移动；处理单次移动时不等待按键按住／释放周期。忽略 Windows 自动重复和程序注入事件，离开游戏焦点会清空待执行移动，重新按键才继续。
 控制台和编辑器中的文字输入、带修饰键的快捷键不受影响。noclip 开关仅在本次运行中生效，不修改游戏碰撞代码。
+
+`freecam` 切换自由摄像机，`freecam enable` 开启，`freecam disable` 关闭并恢复原视角和正常跟随。
+默认是鼠标视角模式；`freecam -pan` 使用固定视角的平移模式。两种模式都可在主世界或小关卡中使用，命令不区分大小写，支持 Tab 补全。
+
+默认模式，开启后回到游戏即可操作：
+
+| 按键 | 镜头移动 |
+| --- | --- |
+| W / S | 沿当前视线前进 / 后退 |
+| A / D | 向画面左侧 / 右侧平移 |
+| Q / E | 沿世界 Z 轴下降 / 上升 |
+| 鼠标 | 转动视角：左右偏航、上下俯仰 |
+| Shift / Ctrl | 按住时移动加速 / 减速 |
+
+平移模式 `freecam -pan` 保持当前视角不变，不占用鼠标：
+
+| 按键 | 镜头移动 |
+| --- | --- |
+| W / S | 沿关卡的上 / 下方向平移（Y +/-） |
+| A / D | 沿关卡的左 / 右方向平移（X -/+） |
+| Q / E | 远离 / 靠近地面（Z +/-） |
+| Shift / Ctrl | 按住时移动加速 / 减速 |
+
+已开启时再次执行 `freecam` 关闭；平移模式下再次执行 `freecam -pan` 也关闭。鼠标模式下 `freecam -pan` 切到平移模式，平移模式下 `freecam enable` 切回鼠标模式，`freecam enable -pan` 明确开启平移模式。`freecam disable` 不接受 `-pan`。
+镜头独立于角色移动。长按连续移动，默认每秒 12 个世界单位，组合方向键不会增加总速度；按住 Shift 加速、Ctrl 减速，倍率可配置。
+鼠标模式下鼠标移动转动视角，俯仰限制在 ±89°，视角不会翻滚。游戏在前台时光标停在游戏窗口中心并被限制在那里，鼠标只用于转动视角；打开控制台或编辑器、切到平移模式或关闭 freecam 时释放光标。
+速度、灵敏度和 Shift/Ctrl 倍率见 `data/config.rc` 中的 `freecam_speed`、`freecam_sensitivity`、`freecam_shift_multiplier` 和 `freecam_ctrl_multiplier`。
+开启时暂停编辑器播放和录制，保留时间线与未保存内容；自由摄像机期间暂停 noclip 移动。
+打开控制台或编辑器会暂停镜头移动，文字输入照常；返回游戏后重新按键继续。配置中的 `noremap` 优先于摄像机按键；Alt / Win 组合键不会移动镜头。
+切到其他应用、切换场景或摄像机校验失败时自动关闭；切换场景时由新场景恢复正常跟随。
 
 地址定位、读写实现和游戏更新后的适配步骤见项目技能 [ootss-game-memory](skills/ootss-game-memory/SKILL.md)。
 
@@ -600,6 +639,8 @@ j $
 `src/game/level.jai` 独立读取当前场景名称，供无名称的字幕、解法编辑和播放命令使用，
 `src/solution/editor.jai` 管理编辑会话，`src/solution/editor_view.jai` 使用 GetRect 的矩形布局与命中检测及 Simp 绘制。
 Windows 窗口和录制钩子在 `src/platform/windows/editor.jai`，坐标与键位读取分别在 `src/game/memory.jai` 和 `src/game/keymap.jai`。
+`src/game/camera_layout.jai` 校验摄像机布局，`src/game/camera.jai` 负责镜头读写和恢复；
+`src/game/freecam.jai` 管理命令、移动和会话，物理按键钩子在 `src/platform/windows/freecam.jai`。
 保存确认、临时输入命名与覆盖检查在 `src/solution/editor_save.jai`。
 
 源码按平台、游戏、解法和 UI 分组，入口仍为 `src/main.jai`，构建命令仍为 `jai -quiet first.jai`：
@@ -618,11 +659,15 @@ src/
 │  ├─ tray.jai
 │  ├─ console.jai
 │  ├─ editor.jai
+│  ├─ freecam.jai
 │  └─ send_monitor.jai
 ├─ game/
 │  ├─ commands.jai
 │  ├─ keymap.jai
 │  ├─ memory.jai
+│  ├─ camera_layout.jai
+│  ├─ camera.jai
+│  ├─ freecam.jai
 │  ├─ state.jai
 │  ├─ level.jai
 │  ├─ subtitle_mapping.jai
@@ -662,4 +707,10 @@ jai -quiet tests/position_first.jai
 ./.build/position_tests.exe --read-level
 jai -quiet tests/controls_first.jai
 ./.build/controls_tests.exe
+```
+
+自由摄像机的布局、读写边界、恢复、六键移动和命令检查使用 Jai 脚本，只读写自身的隔离夹具：
+
+```powershell
+jai -quiet scripts/check_freecam.jai -import_dir "$PWD/modules"
 ```
