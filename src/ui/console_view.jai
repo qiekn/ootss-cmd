@@ -19,7 +19,7 @@ console_load_fonts :: () -> bool {
     }
     console_chinese_font = get_game_font_at_size(CONSOLE_CHINESE_FONT_FILE, CONSOLE_CHINESE_FONT_FILE, console_font_height);
     if !console_chinese_font {
-        show_error(tprint("Unable to load % from the game or data/fonts beside ootss-cmd.exe.", CONSOLE_CHINESE_FONT_FILE));
+        show_error(tprint("Unable to load % from the game or data/fonts beside ootss-cmd.exe. (You need to open OotSS before this application)", CONSOLE_CHINESE_FONT_FILE));
         return false;
     }
     console_font_dpi = dpi;
