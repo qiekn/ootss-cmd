@@ -1,6 +1,6 @@
-## OotSS Overlay Console
+## Order of the Sinking Star Overlay Console
 
-[DOCS](DOCS.md) (AI-Generated, Do not read it.)
+[DOCS](docs/document.md) (AI-Generated, Do not read it.)
 
 ## Build
 

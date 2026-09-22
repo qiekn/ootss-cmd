@@ -1,4 +1,4 @@
-# Order of the Sinking Star Console
+# Order of the Sinking Star Overlay Console
 
 使用 Jai 和项目内的 `modules/Simp` 实现的 Windows 下拉终端。
 窗口无边框、半透明，覆盖游戏画面顶部的 70%，并跟随游戏窗口移动和调整尺寸。
