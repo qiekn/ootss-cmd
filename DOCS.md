@@ -19,7 +19,7 @@
 `data/fonts/` 中暂未使用的字体是 `FiraCode-Retina.ttf`、`Karmina-BoldItalic.otf`、`Karmina-Regular.otf`、`Meslo-LG-Mono-Regular.ttf`、`NotoSerif-Regular.ttf`、`OpenSans-Regular.ttf`、`OpenSans-SemiBold.ttf` 和 `OpenSans-SemiBoldItalic.ttf`。游戏的其他字体目前也不参与辅助程序渲染。
 
 终端没有顶栏，输入行和命令回显统一使用 `$` 提示符。
-启动画面默认循环播放 `data/images/blow-wave.gif`，可在 `data/config.rc` 中关闭。三种 blow 效果共用这张 GIF，在输入栏上方居中，上下至少留出 24 个 DPI 缩放后的像素，选择可容纳的最大整数倍显示（如 320×240、640×480、960×720）。
+启动画面默认循环播放 `data/images/blow-wave.gif`，可在 `config.rc` 中关闭。三种 blow 效果共用这张 GIF，在输入栏上方居中，上下至少留出 24 个 DPI 缩放后的像素，选择可容纳的最大整数倍显示（如 320×240、640×480、960×720）。
 图片内部底部居中显示 `Powered by blowave`。窗口连原尺寸也容纳不下时，在留白区域内裁切，不覆盖输入行。GIF 区域完全不透明，以 60% 图片颜色预先混合终端背景色；周围终端保持半透明。
 提交第一条非空命令或执行 `clear` / `cl` 后收起 GIF，调整尺寸的 `toggle` 命令除外。空回车以及隐藏、重新打开终端不会清除这一状态。
 
@@ -38,7 +38,7 @@
 jai first.jai
 ```
 
-优化构建会生成 `bin/ootss-cmd.exe`，将 `data/` 复制到 `bin/data/`（其中 `fonts/` 只复制 `Meslo-LG-Mono-Nerd-Regular.ttf`），并将 `LICENSE` 复制到 `bin/LICENSE`：
+优化构建会生成 `bin/ootss-cmd.exe`，将 `data/` 复制到 `bin/data/`（其中 `fonts/` 只复制 `Meslo-LG-Mono-Nerd-Regular.ttf`），并将 `LICENSE` 和 `config.rc` 复制到 `bin/`：
 
 ```powershell
 jai first.jai -optimized
@@ -46,7 +46,7 @@ jai first.jai -optimized
 
 `-optimized` 可以简写为 `-o`。给其他人使用时，将整个 `bin/` 目录打包即可。程序和托盘图标在构建时内嵌；`about` 使用 `data/images/icon.png`，三种 `blow` 效果都使用 `data/images/blow-wave.gif`。
 
-程序启动时读取可执行文件所在目录下的 `data/config.rc`（优化版使用 `bin/data/config.rc`），修改后重启生效。例如：
+程序启动时读取可执行文件所在目录下的 `config.rc`（优化版使用 `bin/config.rc`），修改后重启生效。例如：
 
 ```ini
 game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
@@ -66,7 +66,7 @@ fastplay = "play -superfast";
 `freecam_speed`（每秒世界单位，默认 12）、`freecam_sensitivity`（每个鼠标计数转动的度数，默认 0.1）、`freecam_shift_multiplier`（按住 Shift 时的速度倍率，默认 4）和 `freecam_ctrl_multiplier`（按住 Ctrl 时的速度倍率，默认 0.25）调整自由摄像机，都必须是正数。
 除 `game_path`、`show_startup_blow` 和这些 `freecam_` 选项外，其余赋值定义命令别名：`tp a` 等于 `back a`，`custom_command` 等于 `back home`，`fastplay mirror_1` 等于 `play -superfast mirror_1`。
 支持换行或分号分隔、`#` 注释、单/双引号，以及 `alias tp=back;` 写法。名称不区分大小写，后面的同名定义覆盖前面的定义。
-配置只定义选项、别名和快捷键，加载时不执行命令；格式错误会报告行号并保留原配置。优化构建保留已有的 `bin/data/config.rc`，仅在缺失时复制默认配置。
+配置只定义选项、别名和快捷键，加载时不执行命令；格式错误会报告行号并保留原配置。优化构建保留已有的 `bin/config.rc`，仅在缺失时复制默认配置。
 
 在终端或 quick input 中使用 `alias` / `unalias` 临时修改，无需重启：
 
@@ -77,11 +77,11 @@ alias
 unalias custom_command
 ```
 
-单独输入 `alias` 列出当前配置和临时别名。临时别名优先于文件配置，`unalias <name>` 仅移除临时定义，恢复同名配置或内置命令；不改写 `data/config.rc`。
+单独输入 `alias` 列出当前配置和临时别名。临时别名优先于文件配置，`unalias <name>` 仅移除临时定义，恢复同名配置或内置命令；不改写 `config.rc`。
 `tp` 也是 `back` 的内置别名，没有配置文件时仍可使用。别名支持 Tab 补全、追加参数和嵌套展开；遇到循环或超长展开时不执行命令。
 历史保留实际输入的别名；别名不参与 Zork 会话内的命令。
 
-快捷键也写在 `data/config.rc` 中，修改后重启生效：
+快捷键也写在 `config.rc` 中，修改后重启生效：
 
 ```ini
 nmap m = "move -z 1";
@@ -511,7 +511,7 @@ switch mirror_21
 已开启时再次执行 `freecam` 关闭；平移模式下再次执行 `freecam -pan` 也关闭。鼠标模式下 `freecam -pan` 切到平移模式，平移模式下 `freecam enable` 切回鼠标模式，`freecam enable -pan` 明确开启平移模式。`freecam disable` 不接受 `-pan`。
 镜头独立于角色移动。长按连续移动，默认每秒 12 个世界单位，组合方向键不会增加总速度；按住 Shift 加速、Ctrl 减速，倍率可配置。
 鼠标模式下鼠标移动转动视角，俯仰限制在 ±89°，视角不会翻滚。游戏在前台时光标停在游戏窗口中心并被限制在那里，鼠标只用于转动视角；打开控制台或编辑器、切到平移模式或关闭 freecam 时释放光标。
-速度、灵敏度和 Shift/Ctrl 倍率见 `data/config.rc` 中的 `freecam_speed`、`freecam_sensitivity`、`freecam_shift_multiplier` 和 `freecam_ctrl_multiplier`。
+速度、灵敏度和 Shift/Ctrl 倍率见 `config.rc` 中的 `freecam_speed`、`freecam_sensitivity`、`freecam_shift_multiplier` 和 `freecam_ctrl_multiplier`。
 开启时暂停编辑器播放和录制，保留时间线与未保存内容；自由摄像机期间暂停 noclip 移动。
 打开控制台或编辑器会暂停镜头移动，文字输入照常；返回游戏后重新按键继续。配置中的 `noremap` 优先于摄像机按键；Alt / Win 组合键不会移动镜头。
 切到其他应用、切换场景或摄像机校验失败时自动关闭；切换场景时由新场景恢复正常跟随。
@@ -714,3 +714,12 @@ jai -quiet tests/controls_first.jai
 ```powershell
 jai -quiet scripts/check_freecam.jai -import_dir "$PWD/modules"
 ```
+
+`scripts/inspect_levels.jai` 只读解析游戏的 `levels.package`（Jai `Simple_Package` 格式），列出关卡集、资源清单和各关卡使用的实体类型；给出关卡名时导出该关的实体记录，再给出类型名时显示这类记录内的字符串和十六进制：
+
+```powershell
+jai -quiet scripts/inspect_levels.jai - "<游戏目录>/data/levels.package"
+jai -quiet scripts/inspect_levels.jai - "<游戏目录>/data/levels.package" mirror_1 Guy
+```
+
+关卡文件结构和离线自定义关卡的方法见 [docs/custom_levels.md](docs/custom_levels.md)。

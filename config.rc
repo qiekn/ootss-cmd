@@ -22,7 +22,6 @@ fastplay = "play -superfast";
 fastdo = "play -superfast";
 subtitles = "show subtitles"
 level_name = "show level"
-close = "close editor"
 
 # Use alias name=command in the console for a temporary override.
 # unalias name removes that override and restores this file's definition.

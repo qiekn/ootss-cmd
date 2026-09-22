@@ -1,4 +1,4 @@
-CONSOLE_CONFIG_FILE :: "data/config.rc";
+CONSOLE_CONFIG_FILE :: "config.rc";
 CONSOLE_ALIAS_DEPTH :: 16;
 
 Console_Alias :: struct { name, command: string; }

@@ -32,7 +32,7 @@ console_open_subtitles :: (console: *Console_State, read_scene: Game_Level_Query
     if error.count { console_write(console, error, .ERROR); return; }
     directory := game_subtitles_directory();
     if !directory.count {
-        console_write(console, "Could not find game subtitles. Set game_path in data/config.rc to the game installation directory.", .ERROR);
+        console_write(console, "Could not find game subtitles. Set game_path in config.rc next to the executable to the game installation directory.", .ERROR);
         return;
     }
     next.language = console.pending_subtitle_language;

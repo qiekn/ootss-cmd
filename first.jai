@@ -94,8 +94,7 @@ copy_data :: (output_path: string) #expand {
             runtime_data := equal_nocase(relative, "/markers.json")          ||
                             equal_nocase(relative, "/position_markers.json") ||
                             equal_nocase(relative, "/solutions.json")        ||
-                            equal_nocase(relative, "/custom_inputs.json")    ||
-                            equal_nocase(relative, "/config.rc");
+                            equal_nocase(relative, "/custom_inputs.json");
             if runtime_data && file_exists(target) return;
             // Leave an older installation's markers available for its own migration.
             if equal_nocase(relative, "/markers.json") && file_exists(tprint("%/position_markers.json", copy.destination)) return;
@@ -114,6 +113,13 @@ copy_data :: (output_path: string) #expand {
     license_destination := tprint("%/LICENSE", output_path);
     if !copy_file(tprint("%/LICENSE", #filepath), license_destination) {
         compiler_report(tprint("Could not copy LICENSE to %.", license_destination));
+        `return false;
+    }
+    // config.rc lives next to the executable.
+    // Keep an installation's edited copy; copy the default only when absent.
+    config_destination := tprint("%/config.rc", output_path);
+    if !file_exists(config_destination) && !copy_file(tprint("%/config.rc", #filepath), config_destination) {
+        compiler_report(tprint("Could not copy config.rc to %.", config_destination));
         `return false;
     }
 }
