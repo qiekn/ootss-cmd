@@ -207,6 +207,21 @@ Jai 类型头的前 32 字节为四个 u32（kind、ID、size、padding），后
 
 所有自动寄存器和自定义标记都写入 `data/markers.json`；每个条目只有 name/position，next_register 单独放在顶层。新文件缺失时迁移 `data/position_markers.json`，保留旧文件；已有新文件始终优先。`list markers` 只列名称和坐标，不显示 next-register footer。
 
+## 关卡数据与自定义关卡（2026-09-20 只读调研）
+
+同一 Demo（r62164，Steam public-testing）中，用 `scripts/inspect_levels.jai` 通过 Jai 的 `Simple_Package` 模块只读解析 `data/levels.package`（`simp` 头 + 末尾 `toc!`，238 个条目）得到：
+
+- `data-common/<level>.entities`：`enty` 二进制，版本 7。头部为 u16 版本、u64 头值、u64 类型数，随后是类型表（u64 名长 + 名称 + u64 aux），再是 u32 记录数和记录（u32 实体 ID、u16 类型索引、u32 diff 长度、diff）。114 个关卡共用同一张 86 项类型表；`mirror_1` 有 340 条记录，`overworld` 有 25164 条。
+- diff 是“与类型默认值不同的成员”列表：首成员为 u16 成员号，之后每个成员以 `FD` + u16 成员号开头；值前带 4 字节版本戳，随后是值本身（float 4 字节；字符串为 u64 长度 + 字节；数组为 u64 个数 + 元素）。成员号小于 0x1000 属于基类 `Entity`（0/1/2 = XYZ，6–9 = 四元数，0x1F = 名称或网格名），0x1000 起属于具体类型自身成员。参考 trainer 只解码了坐标成员；完整成员名需要运行时反射元数据。
+- `Level_Entry`（大地图入口，132 条）的成员 0x1000 是目标关卡名字符串，基类 0x1F 是入口网格（如 `GAME_SOKO_Exit_Star_8_A`）。`Guy` 的基类 0x1F 是角色名（如 `trader`），自身成员 0x1004 为 u32 类型编号，0x100E / 0x1011 为起止标记名。
+- `data-common/<level>.level_manifest`：文本，`;;;;; textures` / `;;;;; meshes` 两段列出该关引用的资源；缺少网格时游戏打印 `Could not find mesh "%" for entity %, using placholder.`。
+- `data/level_sets/*.level_set`：文本，首行版本号，逐行关卡名，`*choice` 分隔选择点，`#` 注释；`worlds_collide.level_set` 的注释提到玩家可用开发者控制台的 `level` 命令直接进入关卡。
+- 散装文件：`data-common/<level>.all_paint_data`、`.all_lightmap_data` 和 `data/levels/<level>/*-probe.dds`。可执行文件里有“paint data 中的实体在关卡里找不到”的警告文本，说明不匹配时只记录日志。
+- 可执行文件保留了编辑器与控制台：反射选项名 `open_editor`、`open_console`、`editor_level`、`cheats`、`no_sound`、`no_steam`、`running_packaged` 等成簇出现（应为按名称解析的命令行参数），还有 `Editor_Controls`、`editorUI_*` 网格、`data/fonts/editor/` 字体和 `level`、`switch`、`Restart`、`Playtest` 等控制台命令名。参考 trainer 使用 `-open_console` 启动参数。是否能在打包版真正打开编辑器尚未验证。
+- 参考 trainer 的运行时刷对象通过注入代码调用游戏的 create/init/register/apply_diff 函数（旧版 RVA），本项目不采用代码注入。
+
+自定义关卡的可行路线是离线改包：复制模板关卡的 `.entities`、`.level_manifest`、paint/lightmap 与 probe 文件，改名后编辑记录，把关卡名加进 `.level_set` 或在 `overworld.entities` 增加 `Level_Entry`，再重建 `levels.package`。修改前备份，Steam 校验会还原改动。
+
 ## 游戏更新后的排查流程
 
 1. **记录实际版本。** 先找正在运行的可执行文件；记录路径、文件大小、时间和 SHA-256。例如在 PowerShell 中：
