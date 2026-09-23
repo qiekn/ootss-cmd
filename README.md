@@ -51,7 +51,7 @@ map o = "show subtitles";
 
 ![markers](./screenshots/markers.jpg)
 
-## Others
+### Others
 
 For more, see [console.jai](./src/ui/console.jai) `CONSOLE_COMMANDS` , or use `help` command.
 
