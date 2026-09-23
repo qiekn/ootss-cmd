@@ -1,5 +1,7 @@
 ## Order of the Sinking Star Overlay Console
 
+![teaser](./screenshots/teaser.jpg)
+
 ## Build
 
 ```bash
