@@ -442,4 +442,4 @@ close editor            # 关闭，有未保存修改时确认
 
 - 命令表在 `src/ui/console.jai`；按键发送在 `src/game/commands.jai` 和 `src/platform/windows/input.jai`；编辑器在 `src/solution/`。
 - `src/platform/windows/overlay.jai` 中的 `OVERLAY_HEIGHT_PERCENT` 和 `OVERLAY_OPACITY` 控制终端高度比例和不透明度；配色和字幕角色名颜色在 `src/ui/console_theme.jai`。
-- 内存地址定位、读写实现和游戏更新后的适配步骤见 [ootss-game-memory](../skills/ootss-game-memory/SKILL.md)。
+- 内存地址定位、读写实现和游戏更新后的适配步骤见 [game-memory.md](game-memory.md)。
