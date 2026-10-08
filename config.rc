@@ -12,7 +12,7 @@ freecam_ctrl_multiplier = 0.25;
 
 # Game installation directory (contains sinking_star.exe, not its data/ folder).
 # Use forward slashes; set to "" to locate the running game automatically.
-# game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
+game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star";
 
 # Persistent aliases. Extra arguments are appended to the expanded command.
 
