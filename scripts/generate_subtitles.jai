@@ -139,7 +139,7 @@ parse_subtitle_ids :: (source: string, filename: string) -> [..] Subtitle_ID, st
         line := trim_unicode(slice(text, start, end - start));
         if !line.count || line[0] != #char ":" continue;
         cursor: s64 = 1;
-        if cursor < line.count && line[cursor] == #char ":" cursor += 1;
+        while cursor < line.count && line[cursor] == #char ":" cursor += 1;
         header_error := tprint("%:%: invalid subtitle header", filename, line_number);
         if cursor == line.count || (line[cursor] != #char " " && line[cursor] != #char "\t") {
             return result, header_error;
