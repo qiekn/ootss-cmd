@@ -1,5 +1,7 @@
-# Set to false to hide the startup jblow wave gif.
+# Saved changes reload automatically; no restart is needed for runtime settings.
+# Invalid or temporarily unavailable files leave the last valid settings active.
 
+# Set to false to hide the startup jblow wave gif.
 show_startup_blow = false;
 
 # Free camera (freecam): movement speed in world units per second, mouse look
@@ -18,9 +20,9 @@ game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star";
 
 tp = back;
 
-fastplay = "play -superfast";
-fastdo = "play -superfast";
-subtitles = "show subtitles"
+fastplay   = "play -superfast";
+fastdo     = "play -superfast";
+subtitles  = "show subtitles"
 level_name = "show level"
 
 # Use alias name=command in the console for a temporary override.

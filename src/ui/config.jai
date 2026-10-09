@@ -190,11 +190,29 @@ console_config_parse :: (config: *Console_Config, input: string) -> string {
 
 console_config_load :: (config: *Console_Config, filename := CONSOLE_CONFIG_FILE) -> string {
     if !file_exists(filename) { console_config_free(config); return ""; }
-    source, okay := read_entire_file(filename);
+    source, error := console_config_read(filename);
     defer free(source);
-    if !okay return tprint("Could not read %.", filename);
-    error := console_config_parse(config, source);
+    if error.count return tprint("%: %", filename, error);
+    error = console_config_parse(config, source);
     return ifx error.count then tprint("%: %", filename, error) else "";
+}
+
+// The caller owns source. Missing/unreadable files are errors during hot reload.
+console_config_read :: (filename: string) -> (source: string, error: string) {
+    file, okay := file_open(filename);
+    if !okay return "", "Could not open the configuration file.";
+    defer file_close(*file);
+    length, sized := file_length(file);
+    if !sized || length < 0 return "", "Could not determine the configuration size.";
+    if length > 65536 return "", "Configuration exceeds 64 KiB.";
+    if !length return "", "";
+    source: string = .{data = alloc(length), count = length};
+    read_okay, count := file_read(file, source.data, length);
+    if !read_okay || count != length {
+        free(source);
+        return "", "Could not read the complete configuration file.";
+    }
+    return source, "";
 }
 
 console_startup_presentation :: (state: *Console_State) {

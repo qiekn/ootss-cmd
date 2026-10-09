@@ -57,20 +57,24 @@ console_open_subtitles :: (console: *Console_State, read_scene: Game_Level_Query
     console.reveal_output = true;
 }
 
-subtitles_view_load_fonts :: (view: *Subtitles_View, dpi: s32, window_width: s32) -> string {
+subtitles_view_load_fonts :: (view: *Subtitles_View, dpi: s32, window_width: s32, force := false) -> string {
     // Render dimensions already include DPI scaling; do not scale their contribution twice.
     height := max(max(1, 18 * dpi / 96),
                   cast(s64) max(1, window_width) * SUBTITLE_FONT_REFERENCE_HEIGHT / SUBTITLE_FONT_REFERENCE_WIDTH);
-    if view.dpi == dpi && view.font_height == height && view.english_font return "";
+    if !force && view.dpi == dpi && view.font_height == height && view.english_font return "";
     small := max(1, height * 13 / 24);
-    view.english_font = get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, height);
-    view.chinese_font = get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, height);
-    view.small_font = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, small);
-    view.small_chinese_font = get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, small);
-    if !view.english_font || !view.chinese_font || !view.small_font || !view.small_chinese_font {
+    english_font := get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, height);
+    chinese_font := get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, height);
+    small_font := Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, small);
+    small_chinese_font := get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, small);
+    if !english_font || !chinese_font || !small_font || !small_chinese_font {
         return tprint("Could not load subtitle fonts from the game or data/fonts: % (bundled: %), %, %.",
                       SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, SUBTITLE_CHINESE_FONT, CONSOLE_FONT_FILE);
     }
+    view.english_font = english_font;
+    view.chinese_font = chinese_font;
+    view.small_font = small_font;
+    view.small_chinese_font = small_chinese_font;
     view.font_height = cast(s32) height;
     view.line_height = cast(s32) max(1, height * 34 / 24);
     view.small_line_height = cast(s32) max(1, small * 20 / 13);

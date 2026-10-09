@@ -13,6 +13,7 @@ Win   :: #import "Windows";
 #load "platform/windows/console.jai";
 #load "platform/windows/process.jai";
 #load "platform/windows/game_paths.jai";
+#load "platform/windows/hotloader.jai";
 #load "platform/windows/subtitles.jai";
 #load "platform/windows/overlay.jai";
 #load "platform/windows/image.jai";
@@ -55,6 +56,7 @@ Win   :: #import "Windows";
 
 #load "ui/console.jai";
 #load "ui/fonts.jai";
+#load "ui/config_reload.jai";
 #load "ui/hud.jai";
 #load "ui/console_view.jai";
 #load "ui/subtitles_view.jai";
@@ -95,7 +97,11 @@ main :: () {
     Simp.prepare_window(overlay.window, wanted_msaa = 0);
     Simp.set_render_target(overlay.window, .LEFT_HANDED);
     render_dc := Win.wglGetCurrentDC();
+    // Watch before the initial read so a save during startup is not missed.
+    reload_error := config_reload_init(*config_reload, *console);
+    defer config_reload_deinit(*config_reload);
     config_error := console_config_load(*console.config);
+    defer game_font_cache_deinit();
     if !console_load_fonts() return;
     defer console_images_deinit();
     defer subtitles_view_free(*subtitles_view);
@@ -106,6 +112,7 @@ main :: () {
     if config_error.count console_write(*console, config_error, .ERROR);
     else if shortcut_error.count console_write(*console, shortcut_error, .ERROR);
     else console_startup_presentation(*console);
+    if reload_error.count console_config_message(*console, reload_error, .ERROR);
     draw_console();
     Win.SwapBuffers(render_dc);
     if overlay.game overlay_show();
@@ -166,6 +173,9 @@ main :: () {
             }
         }
 
+        config_changed, reload_error := config_reload_update(*config_reload, seconds_since_init());
+        if reload_error.count console_config_message(*console, reload_error, .ERROR);
+        else if config_changed console_config_message(*console, "config.rc reloaded.");
         shortcuts_update();
 
         if console.pending_action == .HIDE overlay_hide();

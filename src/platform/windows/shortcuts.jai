@@ -1,5 +1,5 @@
-shortcuts_install :: () -> string {
-    if shortcuts_hook || !console.config.shortcuts.count return "";
+shortcuts_install :: (required := false) -> string {
+    if shortcuts_hook || (!required && !console.config.shortcuts.count) return "";
     shortcuts_hook = SetWindowsHookExW(13, shortcuts_keyboard_hook, Win.GetModuleHandleW(null), 0);
     if !shortcuts_hook return tprint("Could not install command shortcuts (Windows error %).", Win.GetLastError());
     shortcuts = .{};
