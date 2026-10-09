@@ -1,9 +1,9 @@
 Freecam_Mode :: enum { MOUSE; PAN; TOPDOWN; }
 Freecam_Speed :: enum { NORMAL; FAST; SLOW; }
 
-FREECAM_MOUSE_HINT :: "W/S/A/D/Q/E fly along the view and the mouse turns it. Hold Shift to speed up or Ctrl to slow down. freecam -pan pans with a fixed view; freecam disable restores the view.";
-FREECAM_PAN_HINT :: "W/S/A/D pan up/down/left/right; E rises and Q descends. Hold Shift to speed up or Ctrl to slow down. freecam enable returns to mouse look; freecam disable restores the view.";
-FREECAM_TOPDOWN_HINT :: "North-up top-down view. W/S: north/south; A/D: west/east; E rises and Q descends. freecam disable restores the view.";
+FREECAM_MOUSE_HINT   :: "Okay, now you can fly. [Fly Guide] W/S/A/D/Q/E, Hold Shift to speed up, Ctrl to slow down. other options: -pan -topdown";
+FREECAM_PAN_HINT     :: "Fixed orientation, WSAD to North/South/West/East";
+FREECAM_TOPDOWN_HINT :: "Fixed topdown, WSAD to North/South/West/East";
 
 freecam_mode_name :: (mode: Freecam_Mode) -> string {
     if mode == .TOPDOWN return "Top-down";
