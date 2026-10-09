@@ -19,7 +19,7 @@ capture_status :: (message: string) {
     free(capture.message);
     capture.message=copy_string(message);
     if capture.directory.count {
-        status: Capture_Status = .{state=tprint("%", capture.phase), message=message, completed=capture.manifest.frames.count, total=capture.manifest.columns*capture.manifest.rows};
+        status: Capture_Status = .{state=tprint("%", capture.phase), message=message, completed=capture.manifest.frames.count, total=capture.manifest.columns*capture.manifest.rows, run_id=capture.manifest.plan.run_id};
         error := capture_atomic_json(tprint("%/status.json",capture.directory),status);
         if error.count console_write(*console,error,.ERROR);
     }
@@ -56,7 +56,7 @@ capture_clear :: () {
     capture.pid=0;
 }
 
-capture_load :: (filename: string) -> string {
+capture_load :: (filename: string, fresh := false) -> string {
     if capture_active() return "Pause or cancel the current capture first.";
     if freecam.enabled || freecam.stopping return "Disable freecam before starting a capture job.";
     success, plan := Json.json_parse_file(filename,Capture_Plan);
@@ -66,6 +66,10 @@ capture_load :: (filename: string) -> string {
     if error.count return error;
     directory := path_strip_filename(filename);
     if !directory.count return "Use a plan file inside a capture directory.";
+    if fresh {
+        error=capture_reset_files(directory);
+        if error.count return error;
+    }
     next: Capture_Manifest;
     manifest_file := tprint("%/manifest.json",directory);
     if file_exists(manifest_file) {
@@ -120,6 +124,18 @@ capture_requests :: () {
     if argument.count>=2 && argument[0]==#char "\"" && argument[argument.count-1]==#char "\"" argument=slice(argument,1,argument.count-2);
     error: string;
     if equal_nocase(verb,"start") && argument.count error=capture_load(argument);
+    else if equal_nocase(verb,"restart") && argument.count {
+        error=capture_load(argument,fresh=true);
+        if error.count {
+            parsed,plan:=Json.json_parse_file(argument,Capture_Plan);
+            defer free(plan.scene);
+            if parsed && plan.run_id {
+                status: Capture_Status=.{state="ERROR",message=error,run_id=plan.run_id};
+                saved:=capture_atomic_json(tprint("%/status.json",path_strip_filename(argument)),status);
+                if saved.count console_write(*console,saved,.ERROR);
+            }
+        }
+    }
     else if equal_nocase(verb,"pause") && !argument.count && capture_active() capture_pause("Capture paused");
     else if equal_nocase(verb,"cancel") && !argument.count {
         capture_release_camera(); capture.phase=.IDLE; capture_status("Capture cancelled; completed frames retained");
@@ -147,7 +163,7 @@ capture_update :: (now: float64) {
     if capture.phase==.WAIT_FOCUS {
         for key: s32.[Win.VK_RETURN,Win.VK_SHIFT,Win.VK_CONTROL,Win.VK_MENU,Win.VK_LWIN,Win.VK_RWIN] if Win.GetAsyncKeyState(key)<0 return;
         for key:"WSADQE" if Win.GetAsyncKeyState(cast(s32)key)<0 return;
-        if console.pending_action!=.NONE || console.pending_send.count || console.pending_position_change || console.pending_freecam_change return;
+        if console.pending_action!=.NONE || console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change return;
         scene, scene_error:=game_read_scene();
         defer free(scene);
         if scene_error.count || scene!=capture.manifest.plan.scene { capture_pause("Capture paused: the scene does not match the plan"); return; }

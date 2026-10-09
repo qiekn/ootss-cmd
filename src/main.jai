@@ -42,6 +42,7 @@ Win   :: #import "Windows";
 #load "game/position_markers.jai";
 #load "game/position_commands.jai";
 #load "game/noclip.jai";
+#load "game/fog.jai";
 #load "game/shortcuts.jai";
 #load "game/state.jai";
 #load "game/subtitle_mapping.jai";
@@ -81,6 +82,7 @@ main :: () {
     defer console_deinit(*console);
     defer shortcuts_deinit();
     defer noclip_deinit();
+    defer fog_deinit();
     defer hud_deinit();
     defer freecam_deinit();
     defer capture_deinit();
@@ -240,9 +242,10 @@ main :: () {
         if reset_requested && sent_keys > 0 editor_on_game_reset();
         console_run_pending_position(*console);
         console_run_pending_freecam(*console);
+        console_run_pending_fog(*console);
         capture_update(seconds_since_init());
         freecam_update(*console, seconds_since_init());
-        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change console.submission = .{};
+        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change console.submission = .{};
         zork_update(*console);
         overlay_present_output(*console);
 

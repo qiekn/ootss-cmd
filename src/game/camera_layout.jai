@@ -8,6 +8,7 @@ Game_Camera_Code :: struct {
 }
 
 Game_Camera_Layout :: struct {
+    profile: string;
     manager: Game_Manager_Locator;
     mode: u64;
     position, orientation, projection, cameras: u64;
@@ -38,10 +39,15 @@ game_camera_code_matches :: (code: [] u8, offset: s64, pattern: [] s16) -> bool 
 
 game_camera_find_code :: (code: [] u8, pattern: [] s16) -> s64 {
     found: s64 = -1;
-    if pattern.count > code.count return -1;
-    for i: 0..code.count - pattern.count {
+    if !pattern.count || pattern.count > code.count return -1;
+    source: string = .{data=code.data,count=code.count};
+    cursor: s64;
+    while cursor <= code.count-pattern.count {
+        i := ifx pattern[0]>=0 then find_index_from_left(source,cast(u8)pattern[0],cursor) else cursor;
+        if i<0 || i>code.count-pattern.count break;
+        cursor=i+1;
         if !game_camera_code_matches(code, i, pattern) continue;
-        if found >= 0 return -1; // Ambiguous signatures are unsupported too.
+        if found >= 0 return -2; // Keep ambiguity distinct from an absent profile.
         found = i;
     }
     return found;
@@ -70,6 +76,7 @@ game_camera_code_current :: (memory: Process_Memory, layout: Game_Camera_Layout)
 
 game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, error: string) {
     layout: Game_Camera_Layout;
+    layout.profile = "demo";
     unsupported :: "This game version's free-camera layout could not be verified.";
     slot, manager_error := game_entity_manager_slot(memory, *layout.manager);
     if manager_error.count return layout, manager_error;
@@ -83,6 +90,7 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
     gate := game_camera_find_code(code, s16.[
         0x4c,0x8d,0xb3,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
         0x48,0x85,0xc0, 0x0f,0x84,-1,-1,-1,-1, 0x48,0x83,0xf8,0x01, 0x0f,0x85,-1,-1,-1,-1]);
+    if gate == -2 return layout,"Camera layout: Demo mode signature is ambiguous.";
     if gate < 0 {
         retail, retail_error := game_camera_retail_layout(memory, code, base, layout.manager);
         return retail, retail_error;
@@ -149,29 +157,49 @@ game_camera_retail_layout :: (memory: Process_Memory, code: [] u8, base: u64, ma
                              -> (layout: Game_Camera_Layout, error: string) {
     layout: Game_Camera_Layout;
     layout.manager = manager;
+    layout.profile = "retail-rbx";
     unsupported :: "This game version's free-camera layout could not be verified.";
     gate := game_camera_find_code(code, s16.[
         0x48,0x8d,0xab,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
         0x48,0x85,0xc0,0x0f,0x84,-1,-1,-1,-1,0x48,0x83,0xf8,1,0x0f,0x85,-1,-1,-1,-1]);
+    r15_gate := game_camera_find_code(code, s16.[
+        0x49,0x8d,0xaf,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
+        0x48,0x85,0xc0,0x0f,0x84,-1,-1,-1,-1,0x48,0x83,0xf8,1,0x0f,0x85,-1,-1,-1,-1]);
+    if gate==-2 || r15_gate==-2 || (gate>=0 && r15_gate>=0)
+        return layout,"Camera layout: multiple retail mode profiles matched.";
+    r15 := r15_gate>=0;
+    if r15 { gate=r15_gate; layout.profile="retail-r15"; }
+    if gate<0 return layout,"Camera layout: mode signature missing or ambiguous.";
     render := game_camera_find_code(code, s16.[
         0x4c,0x8d,0x80,-1,-1,-1,-1,0xf3,0x0f,0x10,0x88,-1,-1,-1,-1,
         0xf3,0x0f,0x10,0x98,-1,-1,-1,-1,0xf3,0x0f,0x10,0x90,-1,-1,-1,-1]);
     link := game_camera_find_code(code, s16.[
         0x4c,0x8b,0x2d,-1,-1,-1,-1,0x49,0x8d,0x95,-1,-1,-1,-1,
         0x4d,0x8d,0x85,-1,-1,-1,-1,0x31,0xc9,0xe8,-1,-1,-1,-1]);
-    if gate < 0 || render < 47 || link < 0 return layout, unsupported;
+    if render < 47 return layout,"Camera layout: render signature missing or ambiguous.";
+    if link < 0 return layout,"Camera layout: active-scene link signature missing or ambiguous.";
     normal := gate + 23 + cast(s64)(cast(*s32)(code.data + gate + 19)).*;
     frozen := gate + 33 + cast(s64)(cast(*s32)(code.data + gate + 29)).*;
-    if !game_camera_code_matches(code, normal, s16.[
-           0x4c,0x89,0x74,0x24,0x70,0x48,0x83,0xbb,-1,-1,-1,-1,0,0x0f,0x8e,-1,-1,-1,-1]) ||
-       !game_camera_code_matches(code, normal + 73, s16.[0x48,0x8b,0x83,-1,-1,-1,-1,0x4e,0x8b,0x34,0xe0]) ||
-       !game_camera_code_matches(code, frozen - 15, s16.[
+    list_at := normal + ifx r15 then 75 else 73;
+    write_at := frozen - ifx r15 then 17 else 15;
+    normal_pattern := ifx r15 then s16.[
+           0x4c,0x89,0x74,0x24,-1,0x49,0x83,0xbf,-1,-1,-1,-1,0,0x0f,0x8e,-1,-1,-1,-1] else s16.[
+           0x4c,0x89,0x74,0x24,-1,0x48,0x83,0xbb,-1,-1,-1,-1,0,0x0f,0x8e,-1,-1,-1,-1];
+    list_pattern := ifx r15 then s16.[0x49,0x8b,0x87,-1,-1,-1,-1,0x4c,0x8b,0x34,0xd8] else
+                                s16.[0x48,0x8b,0x83,-1,-1,-1,-1,0x4e,0x8b,0x34,0xe0];
+    write_pattern: [] s16;
+    if r15 write_pattern = s16.[
+           0x41,0x0f,0x13,0x87,-1,-1,-1,-1,0xf3,0x41,0x0f,0x11,0x97,-1,-1,-1,-1,
+           0x49,0x8b,0x07,0x48,0x83,0xc0,0xfb,0x48,0x83,0xf8,0x14,0x0f,0x87,-1,-1,-1,-1];
+    else write_pattern = s16.[
            0x0f,0x13,0x83,-1,-1,-1,-1,0xf3,0x0f,0x11,0x93,-1,-1,-1,-1,
-           0x48,0x8b,0x03,0x48,0x83,0xc0,0xfb,0x48,0x83,0xf8,0x14,0x0f,0x87,-1,-1,-1,-1]) ||
-       !game_camera_code_matches(code, render - 47, s16.[
+           0x48,0x8b,0x03,0x48,0x83,0xc0,0xfb,0x48,0x83,0xf8,0x14,0x0f,0x87,-1,-1,-1,-1];
+    if !game_camera_code_matches(code,normal,normal_pattern) || !game_camera_code_matches(code,list_at,list_pattern) ||
+       !game_camera_code_matches(code,write_at,write_pattern) return layout,"Camera layout: follow/frozen branch evidence differs.";
+    if !game_camera_code_matches(code, render - 47, s16.[
            0x48,0x8d,0x90,-1,-1,-1,-1,0x0f,0xb6,0x0d,-1,-1,-1,-1,0xc0,0xe9,4,0x80,0xe1,1,
            0x4c,0x8b,0x05,-1,-1,-1,-1,0xf2,0x41,0x0f,0x10,0x40,0x38,0x0f,0x5b,0xc0,
-           0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1]) return layout, unsupported;
+           0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1]) return layout,"Camera layout: render argument evidence differs.";
 
     layout.position = (cast(*u32)(code.data + gate + 3)).*;
     layout.orientation = (cast(*u32)(code.data + render + 3)).*;
@@ -183,8 +211,8 @@ game_camera_retail_layout :: (memory: Process_Memory, code: [] u8, base: u64, ma
     if layout.position < 0x380 || layout.position > 0x100000 ||
        layout.orientation != layout.position + 24 || layout.projection != layout.orientation + 16 ||
        layout.cameras < 0x380 || layout.cameras + 16 > layout.position ||
-       (cast(*u32)(code.data + normal + 76)).* != layout.cameras + 8 ||
-       (cast(*u32)(code.data + frozen - 12)).* != layout.position ||
+       (cast(*u32)(code.data + list_at + 3)).* != layout.cameras + 8 ||
+       (cast(*u32)(code.data + write_at + (ifx r15 then 4 else 3))).* != layout.position ||
        (cast(*u32)(code.data + frozen - 4)).* != layout.position + 8 ||
        (cast(*u32)(code.data + render - 44)).* != layout.position ||
        (cast(*u32)(code.data + render + 19)).* != layout.projection + 4 ||
@@ -195,8 +223,8 @@ game_camera_retail_layout :: (memory: Process_Memory, code: [] u8, base: u64, ma
        !process_module_contains(memory.module, layout.mode, 8) || layout.mode == manager.slot return layout, unsupported;
     if !game_camera_save_code(*layout.code[0], code, base, gate, 33) ||
        !game_camera_save_code(*layout.code[1], code, base, normal, 19) ||
-       !game_camera_save_code(*layout.code[2], code, base, normal + 73, 11) ||
-       !game_camera_save_code(*layout.code[3], code, base, frozen - 15, 32) ||
+       !game_camera_save_code(*layout.code[2], code, base, list_at, 11) ||
+       !game_camera_save_code(*layout.code[3], code, base, write_at, write_pattern.count) ||
        !game_camera_save_code(*layout.code[4], code, base, render - 47, 78) ||
        !game_camera_save_code(*layout.code[5], code, base, link, 28) ||
        !game_camera_code_current(memory, layout) return layout, unsupported;

@@ -1,5 +1,6 @@
 Capture_Plan :: struct {
     version: s32 = 1;
+    run_id: u64;
     scene: string;
     xmin, ymin, xmax, ymax, z, ground: float64;
     overlap: float64 = 0.3;
@@ -10,7 +11,10 @@ Capture_Frame :: struct {
     index, column, row: s64;
     position: [3] float;
 }
-Capture_Status :: struct { state, message: string; completed, total: s64; }
+Capture_Status :: struct { state, message: string; completed, total: s64; run_id: u64; }
+
+CAPTURE_COPYDATA_ID :: 0x4f4f5443;
+CAPTURE_RUN_COPYDATA_ID :: 0x4f4f5444;
 
 Capture_Manifest :: struct {
     version: s32 = 1;
@@ -85,12 +89,35 @@ capture_grid_frame :: (manifest: Capture_Manifest, index: s64) -> Capture_Frame 
 }
 
 capture_plan_equal :: (a: Capture_Plan, b: Capture_Plan) -> bool {
-    return a.version==b.version && a.scene==b.scene && a.xmin==b.xmin && a.ymin==b.ymin && a.xmax==b.xmax &&
+    return a.version==b.version && a.run_id==b.run_id && a.scene==b.scene && a.xmin==b.xmin && a.ymin==b.ymin && a.xmax==b.xmax &&
            a.ymax==b.ymax && a.z==b.z && a.ground==b.ground && a.overlap==b.overlap && a.settle_ms==b.settle_ms;
 }
 
 capture_frame_file :: (directory: string, index: s64) -> string {
     return tprint("%/frame_%.png", directory, formatInt(index, minimum_digits=6));
+}
+
+// A fresh job removes only generated capture files, never the directory or
+// unrelated user files. Validate the plan before calling this procedure.
+capture_reset_files :: (directory: string) -> string {
+    State :: struct { failed: bool; }
+    state: State;
+    visitor :: (info: *File_Visit_Info, state: *State) {
+        if state.failed || !capture_generated_file(info.short_name) return;
+        if !file_delete(info.full_name) state.failed=true;
+    }
+    if !visit_files(directory,false,*state,visitor,visit_symlinks=false,follow_directory_symlinks=false) || state.failed
+        return "Could not remove previous capture files. No new capture was started.";
+    return "";
+}
+
+capture_generated_file :: (filename: string) -> bool {
+    name:=filename;
+    if ends_with(name,".tmp") name=slice(name,0,name.count-4);
+    if name=="manifest.json" || name=="status.json" return true;
+    if name.count!=16 || !begins_with(name,"frame_") || !ends_with(name,".png") return false;
+    for i:6..11 if name[i]<#char "0" || name[i]>#char "9" return false;
+    return true;
 }
 
 capture_validate_manifest :: (manifest: Capture_Manifest, complete := false) -> string {
@@ -160,4 +187,5 @@ capture_json_value :: (builder:*String_Builder,data:*void,info:*Type_Info) {
 #import "Math";
 #import "File_Utilities";
 #import "File";
-Json :: #import "Json";
+#import "String";
+Json :: #import,dir "../../modules/Json";

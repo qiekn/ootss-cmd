@@ -1,15 +1,31 @@
 #!/usr/bin/env jai
 
-// jai -quiet scripts/stitch_map.jai -import_dir ../modules - <capture-directory> <new-output-directory>
+// jai -quiet scripts/stitch_map.jai - <capture-directory> <new-output-directory>
 #run {
     set_build_options_dc(.{do_output=false});
     set_working_directory(tprint("%/..",#filepath));
     args:=get_build_options().compile_time_command_line;
-    if args.count!=2 compiler_report("Usage: stitch_map <capture-directory> <new-output-directory>");
+    if (args.count==3 || args.count==5) && args[1]=="--png" {
+        error:=export_png(args);
+        if error.count compiler_report(error);
+    }
+    else if args.count!=2 compiler_report("Usage: stitch_map <capture-directory> <new-output-directory> | <capture-directory> --png <output.png> [--max-side 8192]");
     else {
         error:=stitch(args[0],args[1]);
         if error.count compiler_report(error);
     }
+}
+
+export_png :: (args:[]string) -> string {
+    max_side:s64;
+    if args.count==5 {
+        if args[3]!="--max-side" return "Expected --max-side <64-16384>.";
+        value,ok,rest:=string_to_float64(args[4]);
+        if !ok || rest.count || !is_finite(value) || value<64 || value>16384 || floor(value)!=value
+            return "PNG maximum side must be an integer from 64 to 16384.";
+        max_side=cast(s64)value;
+    }
+    return map_export_png(args[0],args[2],max_side=max_side);
 }
 
 Map_Metadata :: struct {
@@ -85,5 +101,5 @@ stitch :: (directory:string,output:string) -> string {
 #import "Compiler";
 #import "File";
 #import "System";
-Json :: #import "Json";
+Json :: #import,dir "../modules/Json";
 Process :: #import "Process";

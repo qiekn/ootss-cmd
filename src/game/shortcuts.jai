@@ -188,7 +188,7 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
         return false;
     }
     if !state.queue_count || console.pending_action != .NONE || console.pending_send.count ||
-       console.pending_position_change || console.pending_freecam_change return false;
+       console.pending_position_change || console.pending_freecam_change || console.pending_fog_change return false;
     request := state.queue[state.queue_start];
     if request.game != game || request.pid != pid || request.index < 0 || request.index >= console.config.shortcuts.count {
         shortcuts_clear_queue(state);

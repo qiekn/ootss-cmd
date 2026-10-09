@@ -53,12 +53,11 @@ capture_save_client :: (game: Win.HWND, width: s32, height: s32, filename: strin
     return "";
 }
 
-CAPTURE_COPYDATA_ID :: 0x4f4f5443;
 Capture_Copy_Data :: struct { id: u64; count: u32; data: *u8; }
 
 capture_receive_request :: (lparam: s64) -> s64 {
     request := cast(*Capture_Copy_Data)lparam;
-    if !request || request.id!=CAPTURE_COPYDATA_ID || !request.count || request.count>32768 ||
+    if !request || (request.id!=CAPTURE_COPYDATA_ID && request.id!=CAPTURE_RUN_COPYDATA_ID) || !request.count || request.count>32768 ||
        !request.data || capture.pending.count return 0;
     text: string = .{data=request.data,count=request.count};
     if contains(text,cast(u8)0) return 0;

@@ -104,6 +104,13 @@ process_write_memory :: (process: Win.HANDLE, address: u64, buffer: *void, bytes
 
 // Read the executable's mapped code section; callers own the returned buffer.
 process_read_module_code :: (memory: Process_Memory) -> (code: [] u8, rva: u64, error: string) {
+    bytes,rva,error := process_read_module_section(memory,".text\0\0\0",0x20000000);
+    return bytes,rva,error;
+}
+
+// Callers own the returned section buffer. Names are the eight PE header bytes.
+process_read_module_section :: (memory: Process_Memory, wanted_name: string, required_flags: u32)
+                               -> (data: [] u8, rva: u64, error: string) {
     dos: [64] u8;
     if !process_module_contains(memory.module, memory.module.base, dos.count) ||
        !process_read_memory(memory.handle, memory.module.base, *dos, dos.count) ||
@@ -127,18 +134,18 @@ process_read_module_code :: (memory: Process_Memory) -> (code: [] u8, rva: u64, 
        !process_read_memory(memory.handle, table, sections.data, bytes) return .[], 0, "Could not read the game section table.";
     for section: sections {
         name: string = .{data = section.name.data, count = section.name.count};
-        if name != ".text\0\0\0" continue;
+        if name != wanted_name continue;
         address := memory.module.base + section.rva;
-        if !(section.flags & 0x20000000) || !section.virtual_size || section.virtual_size > 64 * 1024 * 1024 ||
-           !process_module_contains(memory.module, address, section.virtual_size) return .[], 0, "Invalid game code section.";
+        if (section.flags & required_flags)!=required_flags || !section.virtual_size || section.virtual_size > 64 * 1024 * 1024 ||
+           !process_module_contains(memory.module, address, section.virtual_size) return .[], 0, "Invalid game module section.";
         code := NewArray(section.virtual_size, u8);
         if !process_read_memory(memory.handle, address, code.data, cast(u64) code.count) {
             free(code.data);
-            return .[], 0, "Could not read the game code section.";
+            return .[], 0, "Could not read the game module section.";
         }
         return code, section.rva, "";
     }
-    return .[], 0, "Could not find the game's code section.";
+    return .[], 0, "Could not find the requested game module section.";
 }
 
 #scope_file

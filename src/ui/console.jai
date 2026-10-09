@@ -90,6 +90,7 @@ Console_State :: struct {
     pending_marker_new_name: string;
     pending_marker_current: bool;
     pending_noclip: s32 = -1;
+    pending_fog_change, pending_fog_enabled: bool;
     pending_freecam: s32 = -1;
     pending_freecam_change: bool;
     pending_freecam_pan: bool;
@@ -140,6 +141,8 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "unalias",       run = command_unalias          },
     .{name = "switch",        run = command_switch           },
     .{name = "noclip",        run = command_noclip           },
+    .{name = "unfog",         run = command_unfog            },
+    .{name = "fog",           run = command_fog              },
     .{name = "freecam",       run = command_freecam          },
     .{name = "hud",           run = command_hud              },
     .{name = "capture",       run = command_capture          },
@@ -207,7 +210,7 @@ command_play :: (console: *Console_State, arguments: string) {
         console_write(console, "Usage: play|do [name] [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change ||
        console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL || console.pending_action == .PLAY_SOLUTION {
         console_write(console, "A playback command is already waiting to run.", .ERROR);
@@ -531,7 +534,7 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         console_write(console, usage, .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change ||
        console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL {
         console_write(console, "A send command is already waiting to run.", .ERROR);
@@ -615,6 +618,8 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "reset marker registers   Clear a-z and start at a; keep custom marker names.",
        "noclip [enable|disable]  Toggle W/S/A/D position movement; hold Shift for 2x speed.",
        "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
+       "unfog                   Temporarily hide exploration fog (does not explore the save).",
+       "fog                     Restore exploration fog; also restored when the helper exits.",
        "freecam [enable|disable] Toggle the free camera; disable restores the view.",
        "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",
        "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q down, E up.",

@@ -41,11 +41,13 @@ inspect :: () -> string {
     layout, layout_error := App.game_camera_layout(memory);
     print("Production camera: %\n", layout_error);
     if !layout_error.count {
-        print("Camera fields: position=0x%, orientation=0x%, projection=0x%, list=0x%, mode RVA=0x%\n",
-              hex(layout.position), hex(layout.orientation), hex(layout.projection), hex(layout.cameras), hex(layout.mode-memory.module.base));
+        print("Camera profile=%, fields: position=0x%, orientation=0x%, projection=0x%, list=0x%, mode RVA=0x%\n",
+              layout.profile,hex(layout.position), hex(layout.orientation), hex(layout.projection), hex(layout.cameras), hex(layout.mode-memory.module.base));
         snapshot, snapshot_error := App.game_camera_snapshot(memory, layout);
         print("Camera position=%, mode=%, error=%\n", snapshot.position, snapshot.mode, snapshot_error);
     }
+    fog,fog_error:=Fog.fog_inspect(window);
+    print("Production fog: % %\n",fog,fog_error);
     catalog: App.Subtitles_Catalog;
     defer App.subtitles_catalog_free(*catalog);
     subtitle_error := App.subtitles_catalog_load(*catalog, App.game_subtitles_directory(),
@@ -120,3 +122,4 @@ inspect_roots :: (memory: App.Process_Memory, code: [] u8, code_rva: u64) {
 #import "Basic";
 #import "Compiler";
 App :: #import,file "../src/main.jai";
+Fog :: #import,file "../src/game/fog_memory.jai";

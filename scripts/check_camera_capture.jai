@@ -8,6 +8,8 @@
     check_absolute_camera();
     check_grid();
     check_pixels();
+    check_restart();
+    check_scaled_png();
     print("PASS: % camera/capture checks. Synthetic frames: .build/map-fixture\n",checks);
 }
 
@@ -158,6 +160,8 @@ check_grid :: () {
     }
     defer array_free(grid.frames);
     check(!capture_validate_manifest(grid,true).count,"Complete manifest validates.");
+    another:=plan; another.run_id=123;
+    check(!capture_plan_equal(plan,another),"A new run cannot resume the previous manifest even with identical coordinates.");
     grid.orientation[0]=0;
     check(capture_validate_manifest(grid,true).count>0,"Reject wrong view orientation.");
     grid.orientation[0]=-0.5;
@@ -222,6 +226,88 @@ check_pixels :: () {
     map_reduce_child(pixels.data,parent.data,0,0);
     check(parent[0]==200 && parent[3]==64,"Downsample edge alpha without dark fringes.");
     check(map_max_zoom(2148,1608)==3,"Pyramid uses a 512px root tile.");
+
+    output:=".build/map-fixture-output.png";
+    check(write_entire_file(output,"old map"),"Seed an existing texture.");
+    check(!map_export_png(directory,output).count,"Replace an existing texture with the complete PNG.");
+    image,image_error:=map_read_png(output,2148,1608);
+    defer map_image_free(*image);
+    check(!image_error.count,"Full PNG retains native dimensions.");
+    valid:=true;
+    for y:0..1607 for x:0..2147 {
+        p:=image.pixels+(y*2148+x)*4;
+        if p[0]!=(x&255) || p[1]!=(y&255) || p[2]!=77 || p[3]!=255 valid=false;
+    }
+    check(valid,"Every full PNG pixel matches the north-up synthetic raster across all seams.");
+    check(write_entire_file(output,"keep this map"),"Seed texture for failure checks.");
+    check(map_export_png(directory,output,123).count>0,"Reject a stale completed capture.");
+    grid.frames.count-=1;
+    check(!capture_atomic_json(tprint("%/manifest.json",directory),grid).count,"Save incomplete metadata.");
+    check(map_export_png(directory,output).count>0,"Incomplete capture cannot replace the texture.");
+    grid.frames.count+=1;
+    check(!capture_atomic_json(tprint("%/manifest.json",directory),grid).count,"Restore complete metadata.");
+    last_file:=capture_frame_file(directory,grid.frames.count-1);
+    saved,read_ok:=read_entire_file(last_file);
+    defer free(saved);
+    check(read_ok && write_entire_file(last_file,"broken png"),"Corrupt the last frame after the other frames decode.");
+    check(map_export_png(directory,output).count>0,"A corrupt final frame blocks publishing.");
+    check(map_export_png(directory,output,max_side=1200).count>0,"A corrupt final frame also blocks scaled publishing.");
+    retained,retained_ok:=read_entire_file(output);
+    defer free(retained);
+    check(retained_ok && retained=="keep this map","Failed exports retain the previous texture bytes.");
+    check(write_entire_file(last_file,saved),"Restore the source fixture.");
+    check(!map_export_png(directory,output).count,"A later successful run updates the texture again.");
+}
+
+check_restart :: () {
+    directory:=".build/capture-reset-fixture";
+    check(make_directory_if_it_does_not_exist(directory,true),"Create restart fixture.");
+    generated:=string.["manifest.json","manifest.json.tmp","status.json","status.json.tmp","frame_000000.png","frame_099999.png.tmp"];
+    retained:=string.["plan.json","run.lock","notes.txt","map.png","frame_custom.png","frame_000000.png.backup"];
+    for name:generated check(write_entire_file(tprint("%/%",directory,name),"old"),"Seed generated capture file.");
+    for name:retained check(write_entire_file(tprint("%/%",directory,name),"keep"),"Seed retained file.");
+    error:=App.capture_load(tprint("%/plan.json",directory),fresh=true);
+    check(error.count>0 && file_exists(tprint("%/manifest.json",directory)),"Invalid replacement plan leaves existing capture intact.");
+    App.capture.phase=.MOVE;
+    error=App.capture_load(tprint("%/plan.json",directory),fresh=true);
+    App.capture.phase=.IDLE;
+    check(error.count>0 && file_exists(tprint("%/manifest.json",directory)),"Restart cannot erase a running capture.");
+    check(!capture_reset_files(directory).count,"Reset generated files.");
+    for name:generated check(!file_exists(tprint("%/%",directory,name)),"Generated progress and frames are removed.");
+    for name:retained check(file_exists(tprint("%/%",directory,name)),"Plan, lock, texture and unrelated files are retained.");
+    check(!capture_reset_files(directory).count,"Reset works repeatedly even without previous progress.");
+    status:Capture_Status=.{state="DONE",run_id=123456789012345678};
+    check(!capture_atomic_json(tprint("%/status.json",directory),status).count,"Save run identity in completion status.");
+    ok,loaded:=Json.json_parse_file(tprint("%/status.json",directory),Capture_Status);
+    defer free(loaded.state); defer free(loaded.message);
+    check(ok && loaded.run_id==status.run_id,"Run identity round-trips without floating-point loss.");
+}
+
+check_scaled_png :: () {
+    parsed,manifest:=Json.json_parse_file(".build/map-fixture/manifest.json",Capture_Manifest);
+    defer free(manifest.plan.scene); defer array_free(manifest.frames);
+    check(parsed,"Read scaled PNG fixture.");
+    cw,ch,error:=map_png_layout(manifest,1200);
+    check(!error.count && cw*manifest.columns==1074 && ch*manifest.rows==804,"Fit the mosaic without raising the camera.");
+    unused_x,unused_y,bad:=map_png_layout(manifest,-1);
+    check(bad.count>0,"Reject invalid PNG dimension budgets.");
+    unused_x,unused_y,bad=map_png_layout(.{},8192);
+    check(bad.count>0,"Reject an empty scaled grid.");
+    output:=".build/map-fixture-scaled.png";
+    check(!map_export_png(".build/map-fixture",output,max_side=1200).count,"Export a filtered single PNG.");
+    image,image_error:=map_read_png(output,1074,804);
+    defer map_image_free(*image);
+    check(!image_error.count,"Scaled PNG has the expected dimensions.");
+    for y:s64.[7,267,268,269,535,536,537] for x:s64.[13,357,358,359,715,716,717] {
+        pixel:=image.pixels+(y*1074+x)*4;
+        check(abs(cast(s64)pixel[0]-((x*2)&255))<=1 && abs(cast(s64)pixel[1]-((y*2)&255))<=1 &&
+              pixel[2]==77 && pixel[3]==255,"Filtering preserves alignment and serpentine row order across seams.");
+    }
+    world:Capture_Plan=.{scene="overworld",xmin=-40,ymin=-20,xmax=180,ymax=170,z=80,ground=0,overlap=.3,settle_ms=200};
+    grid,grid_error:=capture_make_grid(world,3840,2160,cast(float)0.610865235328674316);
+    check(!grid_error.count && grid.columns*grid.rows==24,"Height 80 world plan uses 24 frames.");
+    cw,ch,error=map_png_layout(grid,8192);
+    check(!error.count && cw*grid.columns==5376 && ch*grid.rows==4536,"World frames fit one PNG at half scale.");
 }
 
 #load "../src/game/capture_plan.jai";

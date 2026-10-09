@@ -52,13 +52,59 @@ hud_show_notifications = true;
 
 ## 自动拍摄
 
+### 探索迷雾
+
+控制台命令 `unfog` 临时隐藏探索迷雾，`fog` 恢复显示；命令不区分大小写，无需参数，也支持 Tab 补全。正式版现场测试已确认未探索区域的地形会显示。它们只修改当前游戏进程的渲染开关，不移动玩家，也不修改存档的探索进度。助手正常退出时恢复自己关闭的迷雾；游戏重启后自然恢复。
+
+实现会按名称发现反射元数据，验证代码签名、附近的参数上传和 `Fog_Voxelization_Params.fog_of_war_enabled` 的类型、大小与偏移，只把每帧赋值的常量 `1` 临时改为 `0`。元数据地址、上传距离与无关临时栈位置可随版本变化；字段和指令语义仍须匹配。游戏更新后校验不符会拒绝修改。EXE 文件不变。强制结束持有开关的进程来不及执行恢复时，可用 `fog` 或重启游戏恢复。
+
 脚本使用 Jai，通过 `-` 后面的参数接收命令。以下脚本的相对路径统一从项目根目录解析；控制台内的路径从助手 EXE 所在目录解析。脚本不会启动第二个相机控制器，而是向正在运行的助手排队发送拍摄请求。
+
+### 一次执行，更新一张贴图
+
+先启动新编译的 `ootss-cmd.exe` 和游戏，退出手动 freecam、关闭编辑器。在 MSYS2 中执行：
+
+```sh
+./scripts/capture_map.jai
+```
+
+PowerShell 中可用 `jai -quiet scripts/capture_map.jai`。不需要 `capture.sh`，也不用传 `-import_dir`。参数集中在 `scripts/capture_map.jai` 顶部的 `Capture_Settings`：
+
+```jai
+Capture_Settings :: struct {
+    directory: string = "map/capture-world";
+    output: string = "map/map.png";
+    disable_fog: bool = true;
+    png_max_side: s64 = 16384;
+    plan: Capture_Plan = .{
+        xmin=-40, ymin=-20,
+        xmax=180, ymax=170,
+        z=40,
+        ground=0,
+        overlap=0.3,
+        settle_ms=200,
+        scene="overworld",
+    };
+}
+```
+
+每次执行都覆盖计划，清理该拍摄目录内旧的进度和 `frame_000000.png` 等生成文件，从头拍摄。脚本等待本次任务完成后，将中心裁切拼成一张北朝上的 PNG，原子替换 `map/map.png`；不依赖 cwebp。`png_max_side` 只限制最终 PNG，超出时按相同整数倍率缩小各裁切单元，并使用重叠区的像素进行过滤；原始截图保持完整分辨率。设为 `0` 请求原始大小，仍受 PNG 内存预算限制。目录中的其他文件保留。任务编号防止上次的完成状态被误用，同时运行两个脚本会被目录锁拒绝。
+
+当前全世界预设来自本机正式版 `levels.package` 中 `overworld.entities` 的 920 个 `Level_Entry`，入口范围为 X `-24…164`、Y `-2…153`、Z `-25…63`；不是 Demo 的 105 个入口目录。向外留至少 10 单位并取整后采用上面的 XY 范围。入口范围不等于所有装饰地形的边界。当前脚本保留用户调整后的绝对高度 40 和 PNG 最大边长 16384；高度不是距地高度，高处地形需要手动检查取景。200ms 是当前截图流程的有效等待下限，PNG 编码和写盘另耗时间。按实测 3840×2160、FOV 约 35°，预计 8×10 共 80 张截图，原始拼图为 21504×15120，受 64M 像素预算限制缩小为 7168×5040。旧的 `map/capture-pilot` 试拍目录保留。
+
+无参数运行时，`disable_fog = true` 会在拍摄前临时关闭探索迷雾，完成、取消或失败后恢复拍摄前的开关状态；若此前已经 `unfog`，拍完仍保持关闭。设为 `false` 则不操作迷雾。分步 `plan` / `start` / `run` 模式保持手动控制，可自行执行 `unfog` 和 `fog`。
+
+提交后切回无遮挡的游戏并松开按键。拍摄暂停时脚本显示原因并继续等待，此时迷雾继续关闭；处理后在助手控制台执行 `capture resume`，再返回游戏。执行 `capture cancel`、助手退出或拼接失败时，上一张 `map/map.png` 保留。终端 Ctrl+C 会请求取消助手中的拍摄并恢复迷雾。仍在进行的拍摄不会被另一个请求强行覆盖。
+
+首次使用此流程需要重新编译并重启助手，旧版本会拒绝新的重新拍摄请求。PNG 每边最大 16384 像素，总量不超过 64M 像素；超大地图使用下文的瓦片输出。实际覆盖范围仍按完整裁切单元向外取整。
+
+### 分步拍摄与续拍
 
 先在游戏内调整画质、隐藏不需要的游戏 UI，并用俯视模式试取景。然后退出 freecam，关闭编辑器，创建一个小区域的试拍计划：
 
 ```powershell
-jai -quiet scripts/capture_map.jai -import_dir ../modules - plan .build/capture-pilot 76 77 84 85 18 --ground 0 --overlap 0.3 --settle-ms 700 --scene overworld
-jai -quiet scripts/capture_map.jai -import_dir ../modules - start .build/capture-pilot
+jai -quiet scripts/capture_map.jai - plan .build/capture-pilot 76 77 84 85 18 --ground 0 --overlap 0.3 --settle-ms 700 --scene overworld
+jai -quiet scripts/capture_map.jai - start .build/capture-pilot
 ```
 
 参数顺序是 `目录 xmin ymin xmax ymax 相机绝对Z`。`--ground` 是用于换算截图比例的参考地面绝对 Z；它不修改地形。`--overlap` 默认 0.3，范围 0.1–0.8；`--settle-ms` 默认 500，范围 100–10000，实际至少等待 200 ms，以预留隐藏 HUD 的时间。范围与高度仅为例子，不代表已经验证的正式版全图边界。
@@ -66,10 +112,10 @@ jai -quiet scripts/capture_map.jai -import_dir ../modules - start .build/capture
 提交后返回游戏，待 Enter、修饰键和移动键释放才开始。无需持续按键。程序按蛇形路径逐点移动，等待画面稳定，再保存完整无损 PNG。
 
 ```powershell
-jai -quiet scripts/capture_map.jai -import_dir ../modules - status .build/capture-pilot
-jai -quiet scripts/capture_map.jai -import_dir ../modules - pause
-jai -quiet scripts/capture_map.jai -import_dir ../modules - resume
-jai -quiet scripts/capture_map.jai -import_dir ../modules - cancel
+jai -quiet scripts/capture_map.jai - status .build/capture-pilot
+jai -quiet scripts/capture_map.jai - pause
+jai -quiet scripts/capture_map.jai - resume
+jai -quiet scripts/capture_map.jai - cancel
 ```
 
 也可直接在控制台使用：
@@ -91,10 +137,16 @@ capture cancel
 安装 libwebp 命令行工具，使 `cwebp` 在 PATH 中；例如 MSYS2 UCRT64 的 `mingw-w64-ucrt-x86_64-libwebp`。拍摄本身不依赖 cwebp。
 
 ```powershell
-jai -quiet scripts/stitch_map.jai -import_dir ../modules - .build/capture-pilot .build/map-pilot
+jai -quiet scripts/stitch_map.jai - .build/capture-pilot .build/map-pilot
 ```
 
 输出目录必须不存在，避免覆盖原图或已有地图。工具拒绝未拍完或坐标不一致的任务；读取每张 PNG 时检查尺寸和解码结果。内存中只保留当前瓦片和单张源图，不创建一张占用巨大内存的全图。
+
+只重新拼接已完成的拍摄、生成单张 PNG 时使用下面的命令。此模式允许替换已有 PNG，无需 cwebp；先完整解码、拼接和编码，再替换输出文件：
+
+```sh
+jai -quiet scripts/stitch_map.jai - map/capture-world --png map/map.png --max-side 8192
+```
 
 | 文件 | 用途 |
 | --- | --- |
@@ -150,7 +202,7 @@ map.fitBounds(bounds);
 
 ```powershell
 jai -quiet scripts/check_camera_capture.jai -import_dir ../modules
-jai -quiet scripts/stitch_map.jai -import_dir ../modules - .build/map-fixture .build/map-test-output
+jai -quiet scripts/stitch_map.jai - .build/map-fixture .build/map-test-output
 ```
 
 回归检查涵盖俯视四元数、键位、命令验证 / 补全、网格范围、奇数分辨率裁切、元数据往返精度、蛇形排序和 PNG 像素拼接，不查看图片。生成的合成测试地图是 2148×1608、四级共 29 张瓦片。游戏内存接口已在运行中的正式版进行只读验证；完整实景拍摄与视觉接缝仍需试拍验收。
