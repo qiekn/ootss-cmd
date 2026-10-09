@@ -314,6 +314,7 @@ Input :: #import "Input";
 
 overlay_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64) -> s64 #c_call {
     push_context {
+        if message == 0x004a return capture_receive_request(lparam);
         if tray_handle_message(window, message, wparam, lparam) return 0;
         if message == WM_HOTKEY && wparam == 1 {
             overlay.toggle_requested = true;

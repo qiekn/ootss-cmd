@@ -23,6 +23,7 @@ build :: (name: string) -> bool {
     options := get_build_options();
     optimized := options.llvm_options.bitcode_optimization_setting > .O0;
     options.output_type = .EXECUTABLE;
+    // options.backend = .X64;
     options.output_executable_name = name;
     options.output_path = ifx optimized then tprint("%/bin", #filepath) else #filepath;
     options.prevent_compile_time_calls_from_runtime = false;

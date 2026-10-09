@@ -21,6 +21,7 @@ Win   :: #import "Windows";
 #load "platform/windows/shortcuts.jai";
 #load "platform/windows/noclip.jai";
 #load "platform/windows/freecam.jai";
+#load "platform/windows/capture.jai";
 #load "platform/windows/hud.jai";
 #load "platform/windows/editor.jai";
 #load "platform/windows/zork.jai";
@@ -31,6 +32,8 @@ Win   :: #import "Windows";
 #load "game/camera_layout.jai";
 #load "game/camera.jai";
 #load "game/freecam.jai";
+#load "game/capture_plan.jai";
+#load "game/capture.jai";
 #load "game/level.jai";
 #load "game/position_reader.jai";
 #load "game/position_selection.jai";
@@ -78,6 +81,7 @@ main :: () {
     defer noclip_deinit();
     defer hud_deinit();
     defer freecam_deinit();
+    defer capture_deinit();
     defer zork_deinit();
     if !tray_init(overlay.window) {
         show_error("Unable to create the system tray icon.");
@@ -172,6 +176,8 @@ main :: () {
             else console_write(*console, game_position_text(position));
         }
         if console.pending_action == .SHOW_LEVEL console_show_current_level(*console);
+        if console.pending_action == .SHOW_CAMERA console_show_camera(*console);
+        if console.pending_action == .SET_CAMERA console.pending_freecam_change = true;
         if console.pending_action == .SHOW_SUBTITLES console_open_subtitles(*console);
         if console.pending_action == .SET_POSITION console.pending_position_change = true;
         if console.pending_action == .SWITCH_LEVEL console_prepare_switch(*console);
@@ -223,6 +229,7 @@ main :: () {
         if reset_requested && sent_keys > 0 editor_on_game_reset();
         console_run_pending_position(*console);
         console_run_pending_freecam(*console);
+        capture_update(seconds_since_init());
         freecam_update(*console, seconds_since_init());
         if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change console.submission = .{};
         zork_update(*console);

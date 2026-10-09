@@ -76,7 +76,7 @@ game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position) -> (er
 
 // Move by delta and adopt orientation in one verified step; either part may be
 // unchanged. The orientation must already be a unit quaternion.
-game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position, orientation: [4] float) -> (error: string, changed: bool) {
+game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position, orientation: [4] float, absolute := false) -> (error: string, changed: bool) {
     if !session.settled return "Freecam is waiting for the camera to settle.", false;
     if !game_position_valid(delta) return "The camera movement is outside the supported range.", false;
     if !game_camera_orientation_valid(orientation) return "The camera orientation must be a unit quaternion.", false;
@@ -86,7 +86,7 @@ game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position, orient
     destination: Game_Position;
     move, turn: bool;
     for i: 0..2 {
-        coordinate := cast(float64) session.position[i] + cast(float64) delta[i];
+        coordinate := ifx absolute then cast(float64) delta[i] else cast(float64) session.position[i] + cast(float64) delta[i];
         if !is_finite(coordinate) || abs(coordinate) > GAME_POSITION_LIMIT {
             return "The camera destination must stay between -1000000 and 1000000.", false;
         }
@@ -179,6 +179,26 @@ game_camera_movement :: (orientation: [4] float, forward: float, right: float, u
 }
 
 GAME_CAMERA_PITCH_LIMIT :: 89.0 * PI64 / 180;
+
+// Exact north-up pose: local forward -> -Z, screen right -> +X, screen up -> +Y.
+GAME_CAMERA_TOPDOWN :: float.[-0.5, 0.5, 0.5, 0.5];
+
+game_camera_set_position :: (session: *Game_Camera_Session, position: Game_Position) -> (error: string, changed: bool) {
+    error, changed := game_camera_move(session, position, session.orientation, absolute = true);
+    return error, changed;
+}
+
+game_camera_read :: () -> (snapshot: Game_Camera_Snapshot, error: string) {
+    window := find_game_window();
+    if !window return .{}, "Game not found: sinking_star.exe.";
+    memory, error := process_open_memory(window, GAME_EXECUTABLE);
+    if error.count return .{}, error;
+    defer process_close_memory(*memory);
+    layout, layout_error := game_camera_layout(memory);
+    if layout_error.count return .{}, layout_error;
+    snapshot, snapshot_error := game_camera_snapshot(memory, layout);
+    return snapshot, snapshot_error;
+}
 
 // Pan along the level's grid: +X is right and +Y is up on screen (the Sokoban
 // directions noclip uses), +Z rises away from the ground. The view is unchanged.

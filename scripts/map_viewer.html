@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sinking Star map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>html,body,#map{height:100%;margin:0;background:#062626}#position{position:absolute;bottom:12px;left:12px;z-index:900;color:white;background:#062626;padding:6px;font:14px monospace}</style>
+<div id="map"></div><output id="position">Loading map…</output>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(async () => {
+  const response = await fetch('map.json');
+  if (!response.ok) throw Error('Cannot load map.json');
+  const m = await response.json();
+  const a = m.pixels_per_unit / 2 ** m.max_zoom;
+  // Leaflet coordinates are [world Y, world X]. Keep +Y north/up.
+  const crs = L.extend({}, L.CRS.Simple, {
+    transformation: new L.Transformation(a, -m.xmin * a, -a, m.ymax * a)
+  });
+  const bounds = [[m.ymin, m.xmin], [m.ymax, m.xmax]];
+  const map = L.map('map', {crs, minZoom: 0, maxZoom: m.max_zoom + 2});
+  L.tileLayer(m.tile_url, {tileSize: m.tile_size, minZoom: 0,
+    maxNativeZoom: m.max_zoom, maxZoom: m.max_zoom + 2,
+    bounds, noWrap: true, attribution: 'Order of the Sinking Star · qiekn'}).addTo(map);
+  map.fitBounds(bounds);
+  const position = document.querySelector('#position');
+  position.textContent = m.scene;
+  map.on('mousemove', e => { position.textContent = `X ${e.latlng.lng.toFixed(3)}  Y ${e.latlng.lat.toFixed(3)}`; });
+})().catch(e => { document.querySelector('#position').textContent = e.message + ' — serve this folder over HTTP.'; });
+</script>
+</html>

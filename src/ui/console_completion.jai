@@ -1,6 +1,6 @@
 Console_Completion_Kind :: enum {
     NONE; COMMAND; SHOW; SET; EDITOR; EDIT; CUSTOM; PLAY; PLAY_OPTION; SUBTITLES; SUBTITLE_OPTION; BLOW; TOGGLE;
-    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS; FREECAM; FREECAM_PAN; FREECAM_ENABLE;
+    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS; FREECAM; FREECAM_PAN; FREECAM_ENABLE; CAPTURE;
 }
 
 Console_Completion :: struct {
@@ -62,11 +62,12 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
     }
     if equal_nocase(command, "noclip") && !subject.count return .NOCLIP, start, end;
     if equal_nocase(command, "hud") && !subject.count return .NOCLIP, start, end;
+    if equal_nocase(command, "capture") && !subject.count return .CAPTURE, start, end;
     if equal_nocase(command, "freecam") {
         if !subject.count return .FREECAM, start, end;
         if console_next_argument(before, *position).count return .NONE, start, end;
         if equal_nocase(subject, "enable") return .FREECAM_PAN, start, end;
-        if equal_nocase(subject, "-pan") return .FREECAM_ENABLE, start, end;
+        if equal_nocase(subject, "-pan") || equal_nocase(subject, "-topdown") return .FREECAM_ENABLE, start, end;
         return .NONE, start, end;
     }
     if (equal_nocase(command, "open") || equal_nocase(command, "close")) && !subject.count return .EDITOR, start, end;
@@ -125,9 +126,10 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
         case .TEMP_ALIAS;
             for alias: console.temporary_aliases console_completion_add(state, prefix, alias.name);
         case .SHOW;
-            for name: string.["level", "position", "subtitles"] console_completion_add(state, prefix, name);
+            for name: string.["level", "position", "subtitles", "camera"] console_completion_add(state, prefix, name);
         case .SET;
             console_completion_add(state, prefix, "position");
+            console_completion_add(state, prefix, "camera");
         case .MOVE_AXIS;
             for name: string.["-x", "-y", "-z"] console_completion_add(state, prefix, name);
         case .SWITCH;
@@ -142,10 +144,13 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             console_completion_add(state, prefix, "registers");
         case .NOCLIP;
             for name: string.["enable", "disable"] console_completion_add(state, prefix, name);
+        case .CAPTURE;
+            for name: string.["start", "pause", "resume", "cancel", "status"] console_completion_add(state, prefix, name);
         case .FREECAM;
-            for name: string.["enable", "disable", "-pan"] console_completion_add(state, prefix, name);
+            for name: string.["enable", "disable", "-pan", "-topdown"] console_completion_add(state, prefix, name);
         case .FREECAM_PAN;
             console_completion_add(state, prefix, "-pan");
+            console_completion_add(state, prefix, "-topdown");
         case .FREECAM_ENABLE;
             console_completion_add(state, prefix, "enable");
         case .EDITOR;

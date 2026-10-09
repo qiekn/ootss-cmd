@@ -85,6 +85,7 @@ freecam_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
             down := message == 0x100 || message == 0x104;
             injected := (key.flags & 0x12) != 0;
             foreground := Win.GetForegroundWindow();
+            if capture.owns_camera && !injected && down && foreground==freecam.game capture.pause_requested=true;
             if shortcuts_handle_key(key.vk, down, injected, foreground) return 1;
             if freecam_filter_key(key.vk, down, injected, foreground, freecam_modifiers_down()) return 1;
         }

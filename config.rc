@@ -1,6 +1,6 @@
 # Set to false to hide the startup jblow wave gif.
 
-show_startup_blow = true;
+show_startup_blow = false;
 
 # Free camera (freecam): movement speed in world units per second, mouse look
 # sensitivity in degrees per mouse count, and the speed multipliers applied

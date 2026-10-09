@@ -13,7 +13,7 @@ Console_Line_Kind :: enum {
 
 Console_Action :: enum {
     NONE; HIDE; EXIT; SHOW_POSITION; SHOW_LEVEL; SET_POSITION; SHOW_SUBTITLES; EDIT_SOLUTION; PLAY_SOLUTION; JUMP; CONSOLE_MODE; // Normal
-    MARK_POSITION; LIST_MARKERS; REMOVE_MARKER; RENAME_MARKER; BACK_POSITION; RESET_MARKERS; NOCLIP; FREECAM; SWITCH_LEVEL;
+    MARK_POSITION; LIST_MARKERS; REMOVE_MARKER; RENAME_MARKER; BACK_POSITION; RESET_MARKERS; NOCLIP; FREECAM; SWITCH_LEVEL; SHOW_CAMERA; SET_CAMERA;
     EDITOR_RECORD; EDITOR_PAUSE; EDITOR_STOP; EDITOR_SAVE; EDITOR_CLOSE;                                                         // Solution Editor
     ZORK_START; ZORK_INPUT; ZORK_BACK;                                                                                           // Zork
 }
@@ -93,6 +93,8 @@ Console_State :: struct {
     pending_freecam: s32 = -1;
     pending_freecam_change: bool;
     pending_freecam_pan: bool;
+    pending_freecam_topdown, pending_camera_write: bool;
+    pending_camera_position: Game_Position;
     zork_mode: bool;
     zork_input_kind: Zork_Input_Kind;
     pending_zork_input: string;
@@ -140,6 +142,7 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "noclip",        run = command_noclip           },
     .{name = "freecam",       run = command_freecam          },
     .{name = "hud",           run = command_hud              },
+    .{name = "capture",       run = command_capture          },
     .{name = "open",          run = command_open             },
     .{name = "close",         run = command_close            },
     .{name = "edit",          run = command_edit             },
@@ -205,7 +208,7 @@ command_play :: (console: *Console_State, arguments: string) {
         return;
     }
     if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
-       console.pending_action == .FREECAM || console.pending_action == .SET_POSITION ||
+       console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL || console.pending_action == .PLAY_SOLUTION {
         console_write(console, "A playback command is already waiting to run.", .ERROR);
         return;
@@ -248,16 +251,28 @@ command_show :: (console: *Console_State, arguments: string) {
     rest := trim(slice(arguments, position, arguments.count - position));
     if equal_nocase(subject, "position") && !rest.count console.pending_action = .SHOW_POSITION;
     else if equal_nocase(subject, "level") && !rest.count console.pending_action = .SHOW_LEVEL;
+    else if equal_nocase(subject, "camera") && !rest.count console.pending_action = .SHOW_CAMERA;
     else if equal_nocase(subject, "subtitles") command_show_subtitles(console, rest);
     else console_write(console,
-                       "Usage: show level, show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
+                       "Usage: show camera, show level, show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
 }
 
 command_set :: (console: *Console_State, arguments: string) {
     cursor: s64;
     subject := console_next_argument(arguments, *cursor);
+    if equal_nocase(subject, "camera") {
+        if capture_active() { console_write(console, "Pause capture before setting the camera.", .ERROR); return; }
+        position, error := console_parse_coordinates(slice(arguments, cursor, arguments.count-cursor), "xyz", 3);
+        if error.count { console_write(console, tprint("% Usage: set camera <x> <y> <z>", error), .ERROR); return; }
+        if !console_position_command_ready(console) return;
+        if editor_save_prompt.active { console_write(console, "Finish the save confirmation first.", .ERROR); return; }
+        console.pending_camera_position = position;
+        console.pending_camera_write = true;
+        console.pending_action = .SET_CAMERA;
+        return;
+    }
     if !equal_nocase(subject, "position") {
-        console_write(console, "Usage: set position <x> <y> <z>", .ERROR);
+        console_write(console, "Usage: set position <x> <y> <z> or set camera <x> <y> <z>", .ERROR);
         return;
     }
     console_queue_position_request(console, slice(arguments, cursor, arguments.count - cursor), "xyz", 3, false,
@@ -517,7 +532,7 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         return;
     }
     if console.pending_send.count || console.pending_position_change || console.pending_freecam_change ||
-       console.pending_action == .FREECAM || console.pending_action == .SET_POSITION ||
+       console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL {
         console_write(console, "A send command is already waiting to run.", .ERROR);
         return;
@@ -602,9 +617,15 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
        "freecam [enable|disable] Toggle the free camera; disable restores the view.",
        "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",
-       "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q/E raise/lower.",
-       "                         Both modes: hold Shift to move faster or Ctrl to move slower.",
+       "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q down, E up.",
+       "freecam -topdown         Lock a vertical north-up view; W/S/A/D pan; Q down, E up.",
+       "                         Hold Shift to move faster or Ctrl to move slower in any mode.",
+       "show camera              Show world XYZ, view angles and vertical FOV.",
        "hud [enable|disable]    Toggle the HUD; hidden automatically while the console is open.",
+       "set camera <x> <y> <z>   Set absolute world coordinates while freecam is enabled.",
+       "capture start <plan.json> Photograph a planned grid; return focus to the game to start.",
+       "capture pause|resume     Pause and restore the view, or continue a capture job.",
+       "capture cancel|status    Stop a capture (retain frames), or show its progress.",
        "show subtitles [name]    Read English / Chinese dialogue for a level (default: current).",
        "                         Example: show subtitles mirror_21 -comment",
        "                         -en: centered English; -cn / -sc: centered Chinese.",
@@ -848,6 +869,10 @@ console_execute_command :: (console: *Console_State, source: string, remember :=
             if command.name != "z" || line[length] < #char "0" || line[length] > #char "9" continue;
         }
         arguments := trim(slice(line, length, line.count - length));
+        if capture_active() && command.name!="capture" && command.name!="show" && command.name!="hud" &&
+           command.name!="q" && command.name!="quit" && command.name!="toggle" && command.name!="help" {
+            capture_pause("Capture paused by a helper command");
+        }
         command.run(console, arguments);
         if command.name == "toggle" && console.pending_action == .CONSOLE_MODE {
             // Resizing preserves the current presentation, including images and subtitle scroll.
