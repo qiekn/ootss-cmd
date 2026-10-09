@@ -134,15 +134,20 @@ game_position_text :: (position: Game_Position) -> string {
 //   mov r14, [rip + disp32]; cmp qword [r14 + 0xda8], 2
 // This excludes retained overworld / background-scene managers that also contain a Guy.
 GAME_MANAGER_SIGNATURE :: u8.[0x4c, 0x8b, 0x35, 0, 0, 0, 0, 0x49, 0x83, 0xbe, 0xa8, 0x0d, 0, 0, 2];
+// Retail: load the active scene, then pass its camera position/orientation to
+// the native view update. Verified against the scene-switch stores to this slot.
+GAME_MANAGER_RETAIL_SIGNATURE :: u8.[
+    0x4c,0x8b,0x2d,0,0,0,0, 0x49,0x8d,0x95,0x98,0x3d,0,0,
+    0x4d,0x8d,0x85,0xb0,0x3d,0,0, 0x31,0xc9,0xe8,0,0,0,0];
 
 Game_Manager_Locator :: struct {
     slot, instruction: u64;
-    bytes: [19] u8;
+    bytes: [32] u8;
     count: s64;
 }
 
 game_manager_locator_current :: (memory: Process_Memory, locator: Game_Manager_Locator) -> bool {
-    bytes: [19] u8;
+    bytes: [32] u8;
     if locator.count <= 0 || locator.count > bytes.count ||
        !process_module_contains(memory.module, locator.slot, 8) ||
        !process_module_contains(memory.module, locator.instruction, cast(u64) locator.count) ||
@@ -156,10 +161,15 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
     if error.count return 0, error;
     defer free(code.data);
     rva, instruction: u64;
+    matched_count: s64;
     matches: s64;
     if code.count >= GAME_MANAGER_SIGNATURE.count for i: 0..code.count - GAME_MANAGER_SIGNATURE.count {
         if code[i] != GAME_MANAGER_SIGNATURE[0] continue;
-        if !game_manager_signature_matches(.{data = code.data + i, count = GAME_MANAGER_SIGNATURE.count}) continue;
+        count := GAME_MANAGER_SIGNATURE.count;
+        if !game_manager_signature_matches(.{data = code.data + i, count = count}) {
+            count = GAME_MANAGER_RETAIL_SIGNATURE.count;
+            if count > code.count - i || !game_manager_retail_signature_matches(.{data = code.data + i, count = count}) continue;
+        }
         matches += 1;
         if matches > 1 return 0, "The game's current-level signature is ambiguous. Position access was stopped.";
         displacement := (cast(*s32)(code.data + i + 3)).*;
@@ -169,11 +179,12 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
         }
         rva = cast(u64) target;
         instruction = cast(u64) i;
+        matched_count = count;
     }
     if matches == 1 {
         if locator {
             locator.* = .{slot = memory.module.base + rva, instruction = memory.module.base + code_rva + instruction,
-                          count = GAME_MANAGER_SIGNATURE.count};
+                          count = matched_count};
             for i: 0..locator.count-1 locator.bytes[i] = code[instruction + cast(u64) i];
         }
         return memory.module.base + rva, "";
@@ -188,12 +199,24 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
         same := true;
         for byte: expected if byte != original[it_index] same = false;
         if same {
-            if locator locator.* = .{slot = memory.module.base + 0x9acb50, instruction = memory.module.base + 0x2af0cc,
-                                     bytes = original, count = original.count};
+            if locator {
+                locator.* = .{slot = memory.module.base + 0x9acb50, instruction = memory.module.base + 0x2af0cc,
+                              count = original.count};
+                for byte: original locator.bytes[it_index] = byte;
+            }
             return memory.module.base + 0x9acb50, "";
         }
     }
-    return 0, "This game version's player-position layout was not recognized.";
+    return 0, "This game version's current-scene signature was not recognized.";
+}
+
+game_manager_retail_signature_matches :: (bytes: [] u8) -> bool {
+    if bytes.count != GAME_MANAGER_RETAIL_SIGNATURE.count return false;
+    for expected: GAME_MANAGER_RETAIL_SIGNATURE {
+        if (it_index >= 3 && it_index < 7) || it_index >= 24 continue;
+        if bytes[it_index] != expected return false;
+    }
+    return true;
 }
 
 game_manager_signature_matches :: (bytes: [] u8) -> bool {
