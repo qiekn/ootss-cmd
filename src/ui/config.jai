@@ -7,6 +7,7 @@ Hud_Info_Row :: struct { kind: Hud_Info_Item; text: string; }
 HUD_DEFAULT_ROWS :: Hud_Info_Row.[.{kind = .LEVEL_NAME}, .{kind = .POSITION}];
 Hud_Config :: struct {
     enabled := true;
+    hide_on_focus_loss := true;
     show_level_name := true;
     show_position := true;
     show_notifications := true;
@@ -27,7 +28,8 @@ hud_config_free :: (config: *Hud_Config) {
 
 // The caller owns the returned array and its strings.
 hud_config_copy :: (config: Hud_Config) -> Hud_Config {
-    result: Hud_Config = .{enabled = config.enabled, show_level_name = config.show_level_name,
+    result: Hud_Config = .{enabled = config.enabled, hide_on_focus_loss = config.hide_on_focus_loss,
+                          show_level_name = config.show_level_name,
                           show_position = config.show_position, show_notifications = config.show_notifications};
     array_reserve(*result.rows, config.rows.count);
     for row: config.rows array_add(*result.rows, .{kind = row.kind, text = copy_string(row.text)});
@@ -35,7 +37,7 @@ hud_config_copy :: (config: Hud_Config) -> Hud_Config {
 }
 
 hud_config_equal :: (a: Hud_Config, b: Hud_Config) -> bool {
-    if a.enabled != b.enabled || a.show_level_name != b.show_level_name ||
+    if a.enabled != b.enabled || a.hide_on_focus_loss != b.hide_on_focus_loss || a.show_level_name != b.show_level_name ||
        a.show_position != b.show_position || a.show_notifications != b.show_notifications return false;
     a_rows := hud_config_rows(a);
     b_rows := hud_config_rows(b);
@@ -210,6 +212,7 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
     }
     if !command.count return "A configuration value cannot be empty.";
     if equal_nocase(name, "hud_enabled") return console_config_bool(name, command, *config.hud.enabled);
+    if equal_nocase(name, "hud_hide_on_focus_loss") return console_config_bool(name, command, *config.hud.hide_on_focus_loss);
     if equal_nocase(name, "hud_show_level_name") {
         error = console_config_bool(name, command, *config.hud.show_level_name);
         if !error.count console_config_hud_item(*config.hud, .LEVEL_NAME);

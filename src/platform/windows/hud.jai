@@ -12,7 +12,7 @@ hud_panel_create :: (panel: *Hud_Panel) -> bool {
         Win.WS_EX_NOACTIVATE | Win.WS_EX_TRANSPARENT, name, name, Win.WS_POPUP,
         0, 0, 1, 1, null, null, instance, null);
     if !panel.window return false;
-    HudSetWindowDisplayAffinity(panel.window, 0x11);
+    // Keep the default display affinity so screen recording can include the HUD.
     // Per-pixel alpha, without a color key or an OpenGL SwapBuffers wait.
     return true;
 }
@@ -54,7 +54,6 @@ user32 :: #library,system "user32";
 Hud_Blend_Function :: struct { operation, flags, opacity, format: u8; }
 HudUpdateLayeredWindow :: (window: Win.HWND, destination_dc: Win.HDC, destination: *Win.POINT, size: *Win.SIZE,
     source_dc: Win.HDC, source: *Win.POINT, color: u32, blend: *Hud_Blend_Function, flags: u32) -> s32 #foreign user32 "UpdateLayeredWindow";
-HudSetWindowDisplayAffinity :: (window: Win.HWND, affinity: u32) -> s32 #foreign user32 "SetWindowDisplayAffinity";
 hud_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64) -> s64 #c_call {
     push_context {
         if message == Win.WM_NCHITTEST return -1;

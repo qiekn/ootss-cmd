@@ -276,7 +276,7 @@ hud_draw_panel :: (panel: *Hud_Panel, x: s32, y: s32, width: s32, height: s32,
 hud_update :: (now: float64) {
     foreground := Win.GetForegroundWindow();
     if !hud.enabled || hud.suppressed || overlay.visible || !overlay.game || HudIsIconic(overlay.game) ||
-       (foreground != overlay.game && foreground != editor_window.handle) {
+       (hud.settings.hide_on_focus_loss && foreground != overlay.game && foreground != editor_window.handle) {
         hud_hide();
         return;
     }

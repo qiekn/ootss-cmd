@@ -94,6 +94,17 @@ check_config :: () {
     error = App.console_config_parse(*config, "");
     check(!error.count && config.hud.enabled && config.hud.show_position && config.hud.rows.count == 2 && config.hud.rows[0].kind == .LEVEL_NAME,
           "Removing HUD settings restores their defaults.");
+    check(config.hud.hide_on_focus_loss, "Omitted focus settings preserve automatic HUD hiding.");
+    error = App.console_config_parse(*config, "hud_hide_on_focus_loss=true; HUD_HIDE_ON_FOCUS_LOSS=FALSE;");
+    check(!error.count && !config.hud.hide_on_focus_loss && !config.aliases.count,
+          "The focus setting is case-insensitive, uses the last value and never becomes an alias.");
+    for value: string.["1", "yes", "", "invalid"] {
+        error = App.console_config_parse(*config, tprint("hud_text='changed';\nhud_hide_on_focus_loss=%;", value));
+        check(error.count > 0 && contains(error, "Line 2") && !config.hud.hide_on_focus_loss && config.hud.rows.count == 2,
+              "Invalid focus settings reject the whole file and preserve the previous HUD configuration.");
+    }
+    error = App.console_config_parse(*config, "");
+    check(!error.count && config.hud.hide_on_focus_loss, "Removing the focus setting restores automatic hiding.");
 }
 
 check_text_newlines :: () {

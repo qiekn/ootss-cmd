@@ -219,10 +219,21 @@ check_notifications :: () {
     check(write_entire_file(filename, "hud_show_level_name=true; hud_text='Second'; hud_show_position=false; hud_show_notifications=false;"), "Remove one custom text declaration.");
     expect_pump(*reload, 0.8, 1, 0, "Deleting a custom text declaration triggers a reload.");
     check(App.hud_details("level", .{}, App.hud.settings) == "level\nSecond", "Removed text disappears while remaining rows retain their order.");
+    check(write_entire_file(filename, "hud_hide_on_focus_loss=false;"), "Disable hiding while editing configuration.");
+    expect_pump(*reload, 0.8, 1, 0, "Reload the HUD focus setting.");
+    check(!App.hud.settings.hide_on_focus_loss, "The applied HUD snapshot retains the changed focus setting.");
+    check(write_entire_file(filename, "hud_hide_on_focus_loss=invalid;"), "Save an invalid focus setting.");
+    expect_pump(*reload, 1.8, 0, 1, "Reject an invalid focus setting during hot reload.");
+    check(!App.hud.settings.hide_on_focus_loss, "An invalid save preserves background HUD visibility.");
+    check(write_entire_file(filename, "hud_hide_on_focus_loss=true;"), "Restore hiding without changing any other setting.");
+    expect_pump(*reload, 0.8, 1, 0, "A focus-only change refreshes the applied HUD snapshot.");
+    check(App.hud.settings.hide_on_focus_loss, "Re-enable automatic hiding without restarting.");
+    check(write_entire_file(filename, "hud_hide_on_focus_loss=false;"), "Disable hiding before removing the setting.");
+    expect_pump(*reload, 0.8, 1, 0, "Apply another focus-only change.");
     check(write_entire_file(filename, ""), "Explicitly clear the config.");
     expect_pump(*reload, 0.8, 1, 0, "Stable empty files restore defaults.");
     check(state.config.freecam_speed == 12 && !state.config.aliases.count, "An empty valid config resets file settings only.");
-    check(App.hud.settings.show_position && App.hud.settings.show_notifications && App.hud_info_line_count(App.hud.settings) == 2 &&
+    check(App.hud.settings.hide_on_focus_loss && App.hud.settings.show_position && App.hud.settings.show_notifications && App.hud_info_line_count(App.hud.settings) == 2 &&
           App.hud_details("level", .{}, App.hud.settings) == "level\nUnavailable",
           "Removing HUD configuration hot reloads the default switches and order.");
     check(write_entire_file(filename, "broken='"), "Create another pending change.");

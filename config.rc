@@ -12,6 +12,7 @@ show_startup_blow = false;
 # Use \\n to display literal backslash-n.
 hud_enabled            = true;
 hud_show_notifications = true;
+hud_hide_on_focus_loss = false;
 
 # Top-left HUD items (item order as blow)
 hud_show_level_name    = true;
