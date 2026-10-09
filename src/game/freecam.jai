@@ -4,6 +4,11 @@ Freecam_Speed :: enum { NORMAL; FAST; SLOW; }
 FREECAM_MOUSE_HINT :: "W/S/A/D/Q/E fly along the view and the mouse turns it. Hold Shift to speed up or Ctrl to slow down. freecam -pan pans with a fixed view; freecam disable restores the view.";
 FREECAM_PAN_HINT :: "W/S/A/D pan up/down/left/right and Q/E raise/lower the view. Hold Shift to speed up or Ctrl to slow down. freecam enable returns to mouse look; freecam disable restores the view.";
 
+freecam_mode_name :: (mode: Freecam_Mode) -> string {
+    if mode == .PAN return "Pan";
+    return "Free";
+}
+
 Freecam_State :: struct {
     enabled, stopping, reported_cleanup_error, looking: bool;
     mode: Freecam_Mode;
@@ -132,6 +137,7 @@ freecam_finish_stop :: (state: *Console_State) {
     freecam.stopping = false;
     freecam.game = null;
     freecam.pid = 0;
+    hud_notify("Freecam disabled");
 }
 
 freecam_stop :: (state: *Console_State) {
@@ -150,6 +156,7 @@ freecam_switch_mode :: (state: *Console_State, mode: Freecam_Mode) {
     freecam.mode = mode;
     freecam_clear_motion(); // Releases the parked cursor; movement resumes with a fresh press.
     console_write(state, tprint("Freecam mode changed. %", ifx mode == .PAN then FREECAM_PAN_HINT else FREECAM_MOUSE_HINT));
+    hud_notify(tprint("Freecam: %", freecam_mode_name(mode)));
 }
 
 console_run_pending_freecam :: (state: *Console_State) {
@@ -248,6 +255,7 @@ freecam_update :: (state: *Console_State, now: float64) {
         error := game_camera_settle(*freecam.session);
         if error.count { console_write(state, error, .ERROR); freecam_stop(state); return; }
         freecam.yaw, freecam.pitch = game_camera_angles(freecam.session.orientation);
+        hud_notify(tprint("Freecam enabled: %", freecam_mode_name(freecam.mode)));
     }
     if foreground != freecam.game || editor_save_prompt.active || state.pending_send.count || state.pending_position_change {
         freecam_clear_motion();

@@ -21,6 +21,7 @@ Win   :: #import "Windows";
 #load "platform/windows/shortcuts.jai";
 #load "platform/windows/noclip.jai";
 #load "platform/windows/freecam.jai";
+#load "platform/windows/hud.jai";
 #load "platform/windows/editor.jai";
 #load "platform/windows/zork.jai";
 
@@ -51,6 +52,7 @@ Win   :: #import "Windows";
 
 #load "ui/console.jai";
 #load "ui/fonts.jai";
+#load "ui/hud.jai";
 #load "ui/console_view.jai";
 #load "ui/subtitles_view.jai";
 
@@ -74,6 +76,7 @@ main :: () {
     defer console_deinit(*console);
     defer shortcuts_deinit();
     defer noclip_deinit();
+    defer hud_deinit();
     defer freecam_deinit();
     defer zork_deinit();
     if !tray_init(overlay.window) {
@@ -239,6 +242,7 @@ main :: () {
             draw_solution_editor();
             next_editor_frame = now + 1.0 / 60;
         }
+        hud_update(seconds_since_init());
 
         busy := editor.open && (editor.recording || editor_busy() || editor_view.dragging);
         sleep_milliseconds(cast(s32) ifx busy then 1 else ifx freecam.enabled then 8

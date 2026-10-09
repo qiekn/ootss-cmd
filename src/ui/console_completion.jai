@@ -61,6 +61,7 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
         if equal_nocase(subject, "marker") && !console_next_argument(before, *position).count return .REGISTERS, start, end;
     }
     if equal_nocase(command, "noclip") && !subject.count return .NOCLIP, start, end;
+    if equal_nocase(command, "hud") && !subject.count return .NOCLIP, start, end;
     if equal_nocase(command, "freecam") {
         if !subject.count return .FREECAM, start, end;
         if console_next_argument(before, *position).count return .NONE, start, end;

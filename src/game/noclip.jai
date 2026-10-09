@@ -101,6 +101,7 @@ console_set_noclip :: (state: *Console_State) {
             noclip.pid = process_window_pid(noclip.game);
             for vk: "WSAD" noclip.down[it_index] = Win.GetAsyncKeyState(cast(s32) vk) < 0;
         } else noclip_deinit();
+        hud_notify(ifx noclip.enabled then "Noclip enabled" else "Noclip disabled");
     }
     console_write(state, ifx noclip.enabled then "Noclip enabled. W/S: Y +/-1; A/D: X +/-1; one step per input."
                                           else "Noclip disabled.");

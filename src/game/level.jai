@@ -21,10 +21,16 @@ game_read_scene :: () -> (name: string, error: string) {
 }
 
 // The caller owns the returned name. No manager or player address is cached.
-game_read_scene_from :: (memory: Process_Memory) -> (name: string, error: string) {
+game_read_scene_from :: (memory: Process_Memory, locator: *Game_Manager_Locator = null,
+                         location: *Game_Scene_Location = null) -> (name: string, error: string) {
     scene: Game_Scene_Location;
-    slot, error := game_entity_manager_slot(memory, *scene.locator);
-    if error.count return "", error;
+    if locator && game_manager_locator_current(memory, locator.*) scene.locator = locator.*;
+    else {
+        slot, error := game_entity_manager_slot(memory, *scene.locator);
+        if error.count return "", error;
+        if locator locator.* = scene.locator;
+    }
+    slot := scene.locator.slot;
     if !process_read_memory(memory.handle, slot, *scene.manager, 8) || !scene.manager {
         return "", "Current level is unavailable. Wait until the game has loaded a scene.";
     }
@@ -41,6 +47,7 @@ game_read_scene_from :: (memory: Process_Memory) -> (name: string, error: string
         free(name);
         return "", "The current scene changed while reading its name. Try again.";
     }
+    if location location.* = scene;
     return name, "";
 }
 

@@ -326,4 +326,4 @@ jai -quiet first.jai -optimized -import_dir modules
 
 `-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型；拍摄比例使用已验证的垂直 FOV。
 
-自动拍摄独占同一个会话，逐帧检查相机身份与姿态；完整帧和元数据分别原子保存。全局 HUD 以只读方式采样相机，不读取玩家坐标，也不向编辑器录制加入连续位置采样。参见 [地图拍摄文档](map-capture.md) 与 `scripts/check_camera_capture.jai`。
+自动拍摄独占同一个会话，逐帧检查相机身份与姿态；完整帧和元数据分别原子保存。全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [地图拍摄文档](map-capture.md)、`scripts/check_camera_capture.jai` 与 `scripts/check_hud.jai`。
