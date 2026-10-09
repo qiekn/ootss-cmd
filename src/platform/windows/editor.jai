@@ -221,7 +221,7 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
     if shortcuts_handle_key(vk, down, injected, foreground) return true;
     if freecam_filter_key(vk, down, injected, foreground, freecam_modifiers_down()) return true;
     // Whichever keyboard hook runs first owns noclip movement; never record the consumed physical key.
-    if noclip_filter_key(vk, down, injected, foreground, editor_modifiers_down()) return true;
+    if noclip_filter_key(vk, down, injected, foreground, noclip_modifiers_down()) return true;
     was_down := editor_window.physical_down[vk];
     editor_window.physical_down[vk] = down;
     active := editor.open && !editor_save_prompt.active && (foreground == editor.game || foreground == editor_window.handle);

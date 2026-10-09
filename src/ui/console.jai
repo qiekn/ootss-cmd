@@ -613,7 +613,7 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "switch <level_name>      Teleport to an overworld entrance, then use TakeOrDrop.",
        "                         Uses User.keymap (default V). Example: switch mirror_21",
        "reset marker registers   Clear a-z and start at a; keep custom marker names.",
-       "noclip [enable|disable]  Toggle, enable or disable W/S/A/D position movement.",
+       "noclip [enable|disable]  Toggle W/S/A/D position movement; hold Shift for 2x speed.",
        "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
        "freecam [enable|disable] Toggle the free camera; disable restores the view.",
        "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",

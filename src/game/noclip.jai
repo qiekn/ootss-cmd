@@ -9,7 +9,7 @@ Noclip_State :: struct {
     last_direction: s64;
     queue: [64] u8;
     queue_start, queue_count: s64;
-    next_step_at: float64;
+    last_step_at: float64;
     overflow: bool;
 }
 
@@ -26,7 +26,7 @@ noclip_direction_index :: (vk: u32) -> s64 {
 noclip_clear_motion :: () {
     noclip.queue_start = 0;
     noclip.queue_count = 0;
-    noclip.next_step_at = 0;
+    noclip.last_step_at = 0;
     noclip.overflow = false;
     for *held: noclip.repeat held.* = false;
     // Keep consumed/down until release, so a key held across focus loss cannot restart movement.
@@ -59,14 +59,16 @@ noclip_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND,
     return true;
 }
 
-noclip_next_direction :: (now: float64) -> u8 {
+noclip_next_direction :: (now: float64, fast := false) -> u8 {
     direction: u8;
     if noclip.queue_count {
         direction = noclip.queue[noclip.queue_start];
         noclip.queue_start = (noclip.queue_start + 1) % noclip.queue.count;
         noclip.queue_count -= 1;
     } else {
-        if now < noclip.next_step_at return 0;
+        delay := cast(float64) NOCLIP_REPEAT_DELAY / 1000;
+        if fast delay /= 2;
+        if now < noclip.last_step_at + delay return 0;
         index := noclip.last_direction;
         if !noclip.repeat[index] {
             index = -1;
@@ -75,7 +77,7 @@ noclip_next_direction :: (now: float64) -> u8 {
         if index < 0 return 0;
         direction = "UDLR"[index];
     }
-    noclip.next_step_at = now + cast(float64) NOCLIP_REPEAT_DELAY / 1000;
+    noclip.last_step_at = now;
     return direction;
 }
 
@@ -103,7 +105,7 @@ console_set_noclip :: (state: *Console_State) {
         } else noclip_deinit();
         hud_notify(ifx noclip.enabled then "Noclip enabled" else "Noclip disabled");
     }
-    console_write(state, ifx noclip.enabled then "Noclip enabled. W/S: Y +/-1; A/D: X +/-1; one step per input."
+    console_write(state, ifx noclip.enabled then "Noclip enabled. W/S: Y +/-1; A/D: X +/-1; hold Shift for 2x speed."
                                           else "Noclip disabled.");
 }
 
@@ -128,7 +130,7 @@ noclip_update :: (state: *Console_State, now: float64) {
         console_write(state, "Noclip input queue filled; release movement keys and try again.", .ERROR);
         return;
     }
-    direction := noclip_next_direction(now);
+    direction := noclip_next_direction(now, Win.GetAsyncKeyState(Win.VK_SHIFT) < 0);
     if !direction return;
     // Teleport one grid cell without injecting a native movement or blocking on a key cycle.
     if !console_change_game_position(state, game_direction_delta(direction), true, from_game = true,

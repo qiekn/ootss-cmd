@@ -11,7 +11,8 @@ noclip_remove_hook :: () {
 }
 
 noclip_modifiers_down :: () -> bool {
-    for key: s32.[Win.VK_SHIFT, Win.VK_CONTROL, Win.VK_MENU, Win.VK_LWIN, Win.VK_RWIN] {
+    // Shift accelerates held movement; other modifier chords retain their behavior.
+    for key: s32.[Win.VK_CONTROL, Win.VK_MENU, Win.VK_LWIN, Win.VK_RWIN] {
         if Win.GetAsyncKeyState(key) < 0 return true;
     }
     return false;
