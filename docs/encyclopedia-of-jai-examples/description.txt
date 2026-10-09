@@ -1,0 +1,1 @@
+Explaining the programming language syntax, programming language design philosophy, and intentions behind the Jai programming language designed by Jonathan Blow.

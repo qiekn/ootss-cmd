@@ -319,3 +319,11 @@ jai -quiet tests/position_first.jai
 ```powershell
 jai -quiet first.jai -optimized -import_dir modules
 ```
+
+## 俯视相机与拍摄接口
+
+`show camera` 使用已验证的 camera layout 只读查询。`set camera` 在既有 freecam 会话内直接写入绝对 float32 XYZ，保留小数；没有通过 delta 相减再相加来换算绝对位置。
+
+`-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型；拍摄比例使用已验证的垂直 FOV。
+
+自动拍摄独占同一个会话，逐帧检查相机身份与姿态；完整帧和元数据分别原子保存。全局 HUD 以只读方式采样相机，不读取玩家坐标，也不向编辑器录制加入连续位置采样。参见 [地图拍摄文档](map-capture.md) 与 `scripts/check_camera_capture.jai`。
