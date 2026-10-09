@@ -2,8 +2,54 @@ CONSOLE_CONFIG_FILE :: "config.rc";
 CONSOLE_ALIAS_DEPTH :: 16;
 
 Console_Alias :: struct { name, command: string; }
+Hud_Info_Item :: enum { LEVEL_NAME; POSITION; TEXT; }
+Hud_Info_Row :: struct { kind: Hud_Info_Item; text: string; }
+HUD_DEFAULT_ROWS :: Hud_Info_Row.[.{kind = .LEVEL_NAME}, .{kind = .POSITION}];
+Hud_Config :: struct {
+    enabled := true;
+    show_level_name := true;
+    show_position := true;
+    show_notifications := true;
+    rows: [..] Hud_Info_Row; // Owns the array and each custom text string.
+}
+
+// Borrow the configured rows, or the static defaults for an unparsed config.
+hud_config_rows :: (config: Hud_Config) -> [] Hud_Info_Row {
+    if config.rows.count return config.rows;
+    return HUD_DEFAULT_ROWS;
+}
+
+hud_config_free :: (config: *Hud_Config) {
+    for row: config.rows free(row.text);
+    array_free(config.rows);
+    config.* = .{};
+}
+
+// The caller owns the returned array and its strings.
+hud_config_copy :: (config: Hud_Config) -> Hud_Config {
+    result: Hud_Config = .{enabled = config.enabled, show_level_name = config.show_level_name,
+                          show_position = config.show_position, show_notifications = config.show_notifications};
+    array_reserve(*result.rows, config.rows.count);
+    for row: config.rows array_add(*result.rows, .{kind = row.kind, text = copy_string(row.text)});
+    return result;
+}
+
+hud_config_equal :: (a: Hud_Config, b: Hud_Config) -> bool {
+    if a.enabled != b.enabled || a.show_level_name != b.show_level_name ||
+       a.show_position != b.show_position || a.show_notifications != b.show_notifications return false;
+    a_rows := hud_config_rows(a);
+    b_rows := hud_config_rows(b);
+    if a_rows.count != b_rows.count return false;
+    for row: a_rows {
+        other := b_rows[it_index];
+        if row.kind != other.kind || row.text != other.text return false;
+    }
+    return true;
+}
+
 Console_Config :: struct {
     show_startup_blow := true;
+    hud: Hud_Config;
     game_path: string;
     freecam_speed: float64 = 12;             // World units per second.
     freecam_sensitivity: float64 = 0.1;      // Degrees of view rotation per mouse count.
@@ -25,6 +71,7 @@ console_aliases_free :: (aliases: *[..] Console_Alias) {
 
 console_config_free :: (config: *Console_Config) {
     free(config.game_path);
+    hud_config_free(*config.hud);
     console_aliases_free(*config.aliases);
     shortcuts_free_bindings(*config.shortcuts);
     config.* = .{};
@@ -48,7 +95,7 @@ console_alias_store :: (aliases: *[..] Console_Alias, name: string, command: str
     } else array_add(aliases, .{name = copy_string(name), command = copy_string(command)});
 }
 
-console_config_value :: (input: string, allow_empty := false) -> (value: string, error: string) {
+console_config_value :: (input: string, allow_empty := false, decode_newlines := false) -> (value: string, error: string) {
     source := trim(input);
     if !source.count return "", "Expected a nonempty value after '='.";
     quote := source[0];
@@ -66,21 +113,28 @@ console_config_value :: (input: string, allow_empty := false) -> (value: string,
         c := source[cursor];
         cursor += 1;
         if c == quote { closed = true; break; }
-        if c == #char "\\" && cursor < source.count && (source[cursor] == quote || source[cursor] == #char "\\") {
-            c = source[cursor];
-            cursor += 1;
+        if c == #char "\\" && cursor < source.count {
+            next := source[cursor];
+            if next == quote || next == #char "\\" {
+                c = next;
+                cursor += 1;
+            } else if decode_newlines && next == #char "n" {
+                c = #char "\n";
+                cursor += 1;
+            }
         }
         array_add(*bytes, c);
     }
     if !closed || trim(slice(source, cursor, source.count - cursor)).count {
         return "", "Expected a closing quote at the end of the value.";
     }
-    value := trim(string.{data = bytes.data, count = bytes.count});
+    value := string.{data = bytes.data, count = bytes.count};
+    if !decode_newlines value = trim(value);
     if !value.count && !allow_empty return "", "A configuration value cannot be empty.";
     return copy_string(value), "";
 }
 
-console_parse_assignment :: (input: string, allow_empty := false) -> (name: string, command: string, error: string) {
+console_parse_assignment :: (input: string, allow_empty := false, hud_text_escapes := false) -> (name: string, command: string, error: string) {
     source := trim(input);
     if source.count && source[source.count - 1] == #char ";" source = trim(slice(source, 0, source.count - 1));
     split: s64;
@@ -88,7 +142,8 @@ console_parse_assignment :: (input: string, allow_empty := false) -> (name: stri
     if split == source.count return "", "", "Expected name=command (example: tp=back).";
     name := trim(slice(source, 0, split));
     if !name.count return "", "", "Expected a name before '='.";
-    command, error := console_config_value(slice(source, split + 1, source.count - split - 1), allow_empty);
+    command, error := console_config_value(slice(source, split + 1, source.count - split - 1), allow_empty,
+                                          decode_newlines = hud_text_escapes && equal_nocase(name, "hud_text"));
     if !error.count && command.count > CONSOLE_INPUT_LIMIT {
         free(command);
         return "", "", "The command exceeds the console input limit.";
@@ -114,6 +169,22 @@ console_config_number :: (name: string, text: string, target: *float64, maximum:
     return "";
 }
 
+console_config_bool :: (name: string, text: string, target: *bool) -> string {
+    if equal_nocase(text, "true") target.* = true;
+    else if equal_nocase(text, "false") target.* = false;
+    else return tprint("% must be true or false.", name);
+    return "";
+}
+
+console_config_hud_item :: (config: *Hud_Config, item: Hud_Info_Item) {
+    // Built-in rows are unique; their last definition determines their position.
+    for row: config.rows if row.kind == item {
+        array_ordered_remove_by_index(*config.rows, it_index);
+        break;
+    }
+    array_add(*config.rows, .{kind = item});
+}
+
 console_config_assignment :: (config: *Console_Config, input: string) -> string {
     source := trim(input);
     if !source.count return "";
@@ -124,7 +195,7 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         return shortcut_config_assignment(config, rest, consume = equal_nocase(first, "noremap"));
     }
     if equal_nocase(first, "alias") source = trim(slice(source, cursor, source.count - cursor));
-    name, command, error := console_parse_assignment(source, allow_empty = true);
+    name, command, error := console_parse_assignment(source, allow_empty = true, hud_text_escapes = true);
     defer free(command);
     if error.count return error;
     if !console_alias_name_valid(name) return "Invalid alias name; alias and unalias are reserved.";
@@ -133,16 +204,29 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         config.game_path = copy_string(command);
         return "";
     }
+    if equal_nocase(name, "hud_text") {
+        array_add(*config.hud.rows, .{kind = .TEXT, text = copy_string(command)});
+        return "";
+    }
     if !command.count return "A configuration value cannot be empty.";
+    if equal_nocase(name, "hud_enabled") return console_config_bool(name, command, *config.hud.enabled);
+    if equal_nocase(name, "hud_show_level_name") {
+        error = console_config_bool(name, command, *config.hud.show_level_name);
+        if !error.count console_config_hud_item(*config.hud, .LEVEL_NAME);
+        return error;
+    }
+    if equal_nocase(name, "hud_show_position") {
+        error = console_config_bool(name, command, *config.hud.show_position);
+        if !error.count console_config_hud_item(*config.hud, .POSITION);
+        return error;
+    }
+    if equal_nocase(name, "hud_show_notifications") return console_config_bool(name, command, *config.hud.show_notifications);
     if equal_nocase(name, "freecam_speed") return console_config_number("freecam_speed", command, *config.freecam_speed, 100000);
     if equal_nocase(name, "freecam_sensitivity") return console_config_number("freecam_sensitivity", command, *config.freecam_sensitivity, 100);
     if equal_nocase(name, "freecam_shift_multiplier") return console_config_number("freecam_shift_multiplier", command, *config.freecam_shift_multiplier, 1000);
     if equal_nocase(name, "freecam_ctrl_multiplier") return console_config_number("freecam_ctrl_multiplier", command, *config.freecam_ctrl_multiplier, 1000);
-    if equal_nocase(name, "show_startup_blow") {
-        if equal_nocase(command, "true") config.show_startup_blow = true;
-        else if equal_nocase(command, "false") config.show_startup_blow = false;
-        else return "show_startup_blow must be true or false.";
-    } else console_alias_store(*config.aliases, name, command);
+    if equal_nocase(name, "show_startup_blow") return console_config_bool(name, command, *config.show_startup_blow);
+    console_alias_store(*config.aliases, name, command);
     return "";
 }
 
@@ -180,6 +264,12 @@ console_config_parse :: (config: *Console_Config, input: string) -> string {
         }
         if c == 0 return tprint("Line %: unexpected NUL byte.", line);
         array_add(*statement, c);
+    }
+    // Omitted built-in rows retain defaults after all explicitly ordered rows.
+    for fallback: HUD_DEFAULT_ROWS {
+        found := false;
+        for row: parsed.hud.rows if row.kind == fallback.kind { found = true; break; }
+        if !found array_add(*parsed.hud.rows, fallback);
     }
     // A malformed file must not partially replace the current configuration.
     console_config_free(config);

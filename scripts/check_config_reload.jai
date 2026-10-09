@@ -9,6 +9,7 @@
     defer free(directory);
     check(make_directory_if_it_does_not_exist(directory, true), "Create an isolated test directory.");
     defer App.game_font_cache_deinit();
+    defer App.hud_deinit();
     check_replacement();
     check_shortcut_install();
     check_notifications();
@@ -29,6 +30,7 @@ check :: (value: bool, message: string) {
 apply_config :: (state: *App.Console_State, next: *App.Console_Config) -> string {
     if reject_apply return "Simulated shortcut installation failure.";
     App.console_config_replace(state, next, *keys);
+    App.hud_apply_config(state.config.hud);
     applied += 1;
     return "";
 }
@@ -190,9 +192,39 @@ check_notifications :: () {
     reject_apply = false;
     check(write_entire_file(filename, "freecam_speed=27;"), "Retry failed contents after preparation recovers.");
     expect_pump(*reload, 0.8, 1, 0, "A previously failed configuration can be retried unchanged.");
+    check(write_entire_file(filename, "hud_show_position=false; hud_text='Custom'; hud_show_notifications=false; hud_show_level_name=true; hud_text='Second';"), "Save HUD item switches, custom text and order.");
+    expect_pump(*reload, 0.8, 1, 0, "A normal config save applies HUD settings.");
+    check(!App.hud.settings.show_position && !App.hud.settings.show_notifications &&
+          App.hud_details("level", .{}, App.hud.settings) == "Custom\nlevel\nSecond",
+          "Hot reload updates HUD visibility and order without restarting.");
+    check(write_entire_file(filename, "hud_show_level_name=false; hud_text='Changed';\nhud_show_position=invalid;"), "Save an invalid HUD switch after changing text and order.");
+    expect_pump(*reload, 1.8, 0, 1, "An invalid HUD configuration is rejected as a whole.");
+    check(App.hud.settings.show_level_name && !App.hud.settings.show_position &&
+          App.hud_details("level", .{}, App.hud.settings) == "Custom\nlevel\nSecond",
+          "Failed hot reload keeps all the previous HUD settings.");
+    check(write_entire_file(filename, "hud_show_level_name=true;\nhud_text='Custom'; hud_text='Second';\nhud_show_position=false; hud_show_notifications=false;"), "Save only a change to HUD declaration order.");
+    expect_pump(*reload, 0.8, 1, 0, "Moving HUD configuration lines triggers a reload.");
+    check(App.hud_details("level", .{}, App.hud.settings) == "level\nCustom\nSecond", "A reorder-only reload updates visible rows.");
+    check(write_entire_file(filename, "hud_show_level_name=true; hud_text='Updated'; hud_text='Second'; hud_show_position=false; hud_show_notifications=false;"), "Save only a change to HUD text.");
+    expect_pump(*reload, 0.8, 1, 0, "Editing HUD text triggers a reload.");
+    check(App.hud_details("level", .{}, App.hud.settings) == "level\nUpdated\nSecond", "A text-only reload replaces one row while retaining the other.");
+    check(write_entire_file(filename, "hud_show_level_name=true; hud_text='Updated'; hud_text=''; hud_text='Second'; hud_show_position=false; hud_show_notifications=false;"), "Insert a blank HUD row.");
+    expect_pump(*reload, 0.8, 1, 0, "Adding an empty text declaration triggers a reload.");
+    check(App.hud_details("level", .{}, App.hud.settings) == "level\nUpdated\n\nSecond" && App.hud_info_line_count(App.hud.settings) == 4,
+          "Hot reload preserves the blank row and excludes disabled coordinates.");
+    check(write_entire_file(filename, "hud_show_level_name=true; hud_text='Updated\\n\\nSecond'; hud_show_position=false; hud_show_notifications=false;"), "Save multiline custom text.");
+    expect_pump(*reload, 0.8, 1, 0, "Saving newline escapes triggers a reload.");
+    check(App.hud_details("level", .{}, App.hud.settings) == "level\nUpdated\n\nSecond" && App.hud_info_line_count(App.hud.settings) == 4,
+          "Multiline text reloads with the same spacing as separate custom rows.");
+    check(write_entire_file(filename, "hud_show_level_name=true; hud_text='Second'; hud_show_position=false; hud_show_notifications=false;"), "Remove one custom text declaration.");
+    expect_pump(*reload, 0.8, 1, 0, "Deleting a custom text declaration triggers a reload.");
+    check(App.hud_details("level", .{}, App.hud.settings) == "level\nSecond", "Removed text disappears while remaining rows retain their order.");
     check(write_entire_file(filename, ""), "Explicitly clear the config.");
     expect_pump(*reload, 0.8, 1, 0, "Stable empty files restore defaults.");
     check(state.config.freecam_speed == 12 && !state.config.aliases.count, "An empty valid config resets file settings only.");
+    check(App.hud.settings.show_position && App.hud.settings.show_notifications && App.hud_info_line_count(App.hud.settings) == 2 &&
+          App.hud_details("level", .{}, App.hud.settings) == "level\nUnavailable",
+          "Removing HUD configuration hot reloads the default switches and order.");
     check(write_entire_file(filename, "broken='"), "Create another pending change.");
     App.config_reload_deinit(*reload);
     App.config_reload_deinit(*reload);

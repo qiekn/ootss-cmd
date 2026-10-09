@@ -4,6 +4,22 @@
 # Set to false to hide the startup jblow wave gif.
 show_startup_blow = false;
 
+# HUD switches and top-to-bottom order. Saved changes apply immediately.
+# Set hud_show_position = false to show only the level name in the info panel.
+# Info rows follow file order; the last definition wins for built-in switches.
+# Each hud_text adds one line in place; "" adds a blank line for spacing.
+# Inside quoted hud_text, \n starts a new line and \n\n leaves a blank line.
+# Use \\n to display literal backslash-n.
+hud_enabled            = true;
+hud_show_notifications = true;
+
+# Top-left HUD items (item order as blow)
+hud_show_level_name    = true;
+hud_show_position      = false;
+hud_text               = "\nLet's firstly complete this game\nand then play it twice!"; # Custom notes, You can try it!
+hud_text               = "";           # Blank line
+hud_text               = "Cowabunga!"; # Multi-line
+
 # Free camera (freecam): movement speed in world units per second, mouse look
 # sensitivity in degrees per mouse count, and the speed multipliers applied
 # while holding Shift or Ctrl. All values must be positive.

@@ -101,6 +101,7 @@ main :: () {
     reload_error := config_reload_init(*config_reload, *console);
     defer config_reload_deinit(*config_reload);
     config_error := console_config_load(*console.config);
+    hud_apply_config(console.config.hud);
     defer game_font_cache_deinit();
     if !console_load_fonts() return;
     defer console_images_deinit();

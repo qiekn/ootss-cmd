@@ -16,6 +16,7 @@ Hud_Panel :: struct {
 
 Hud_State :: struct {
     enabled: bool = true;
+    settings: Hud_Config;
     info, toast: Hud_Panel;
     message, details: string;
     expires, next_frame, next_sample, retry_at, next_resolve: float64;
@@ -31,7 +32,7 @@ hud_font_height :: (window_height: s32, size: s32) -> s32 {
 }
 
 hud_notify :: (message: string, duration: float64 = 1.0) {
-    if !hud.enabled return;
+    if !hud.enabled || !hud.settings.show_notifications return;
     free(hud.message);
     hud.message = copy_string(message);
     hud.expires = seconds_since_init() + duration;
@@ -43,6 +44,11 @@ command_hud :: (state: *Console_State, arguments: string) {
     if equal_nocase(argument, "enable") enabled = true;
     else if equal_nocase(argument, "disable") enabled = false;
     else if argument.count { console_write(state, "Usage: hud [enable|disable]", .ERROR); return; }
+    hud_set_enabled(enabled);
+    console_write(state, ifx enabled then "HUD enabled." else "HUD disabled.");
+}
+
+hud_set_enabled :: (enabled: bool) {
     hud.enabled = enabled;
     hud.next_sample = 0;
     hud.next_frame = 0;
@@ -53,15 +59,105 @@ command_hud :: (state: *Console_State, arguments: string) {
         free(hud.message); hud.message = "";
         game_position_reader_close(*hud.reader);
     }
-    console_write(state, ifx enabled then "HUD enabled." else "HUD disabled.");
 }
 
-hud_details :: (name: string, sample: Game_Position_Sample) -> string {
-    return tprint("%\n%", ifx name.count then name else "Unavailable",
-        ifx sample.valid then game_position_text(sample.position) else "Unavailable");
+hud_info_line_count :: (settings: Hud_Config) -> s32 {
+    count: s32;
+    if settings.show_level_name count += 1;
+    if settings.show_position count += 1;
+    for row: settings.rows if row.kind == .TEXT {
+        count += 1;
+        for c: row.text if c == #char "\n" count += 1;
+    }
+    return count;
+}
+
+hud_apply_config :: (settings: Hud_Config) {
+    previous := hud.settings;
+    if hud_config_equal(previous, settings) return;
+    // Unrelated saves retain a console-command override. Editing the persistent
+    // master switch deliberately sets the session switch to the new value.
+    if previous.enabled != settings.enabled hud_set_enabled(settings.enabled);
+    hud.settings = hud_config_copy(settings);
+    defer hud_config_free(*previous);
+    hud.next_sample = 0;
+    hud.next_frame = 0;
+    hud.retry_at = 0;
+    hud.next_resolve = 0;
+    if !hud.enabled || !settings.show_notifications {
+        hud_panel_hide(*hud.toast);
+        free(hud.message); hud.message = "";
+        hud.expires = 0;
+    }
+    if !hud.enabled || (!settings.show_level_name && !settings.show_position) || previous.show_position != settings.show_position {
+        game_position_reader_close(*hud.reader);
+    }
+    if !hud.enabled || !hud_info_line_count(settings) {
+        hud_panel_hide(*hud.info);
+        free(hud.details); hud.details = "";
+    }
+}
+
+// The result uses temporary storage; copy it before persisting it.
+hud_details :: (name: string, sample: Game_Position_Sample, settings: Hud_Config = .{}) -> string {
+    push_allocator(temp);
+    builder: String_Builder;
+    builder.allocator = temp;
+    has_line := false;
+    for row: hud_config_rows(settings) {
+        text: string;
+        if row.kind == {
+            case .LEVEL_NAME;
+                if settings.show_level_name text = ifx name.count then name else "Unavailable";
+            case .POSITION;
+                if settings.show_position text = ifx sample.valid then game_position_text(sample.position) else "Unavailable";
+            case .TEXT;
+                text = row.text;
+        }
+        if !text.count && row.kind != .TEXT continue;
+        if has_line append(*builder, "\n");
+        append(*builder, text);
+        has_line = true;
+    }
+    return builder_to_string(*builder);
+}
+
+hud_info_panel_height :: (font_height: s32, rows: s32, available_height: s32) -> s32 {
+    if rows <= 0 || available_height <= 0 return 0;
+    padding := max(cast(s32) 4, font_height / 6);
+    needed := (cast(s64) font_height + padding)*rows + 2*padding;
+    return cast(s32) min(needed, cast(s64) available_height);
+}
+
+// Returns owned text. Disabled items do not query their corresponding game data.
+hud_read_details :: (state: *Hud_State, now: float64) -> (text: string, error: string) {
+    name: string;
+    defer free(name);
+    sample: Game_Position_Sample;
+    scene: Game_Scene_Location;
+    if state.reader.memory.handle {
+        if state.settings.show_level_name {
+            error: string;
+            name, error = game_read_scene_from(state.reader.memory, *state.reader.locator, *scene);
+            if error.count return copy_string(hud_details("", sample, state.settings)), error;
+        }
+        if state.settings.show_position {
+            sample = game_position_reader_sample(*state.reader, allow_resolve = now >= state.next_resolve);
+            if !sample.valid && now >= state.next_resolve state.next_resolve = now + 1;
+            else if sample.valid state.next_resolve = 0;
+            if state.settings.show_level_name {
+                if sample.valid && sample.player.manager != scene.manager sample.valid = false;
+                if !game_scene_location_current(state.reader.memory, scene, name) {
+                    free(name); name = ""; sample.valid = false;
+                }
+            }
+        }
+    }
+    return copy_string(hud_details(name, sample, state.settings)), "";
 }
 
 hud_sample :: (now: float64) {
+    if !hud.enabled return;
     if now < hud.next_sample return;
     hud.next_sample = now + 0.2;
     pid := process_window_pid(overlay.game);
@@ -73,34 +169,18 @@ hud_sample :: (now: float64) {
         hud.info.font = null;
         hud.toast.font = null;
     }
-    if !hud.reader.memory.handle && pid && now >= hud.retry_at {
+    if !hud_info_line_count(hud.settings) return;
+    if (hud.settings.show_level_name || hud.settings.show_position) && !hud.reader.memory.handle && pid && now >= hud.retry_at {
         hud.retry_at = now + 2;
         game_position_reader_open(*hud.reader, overlay.game);
     }
-    name: string;
-    defer free(name);
-    sample: Game_Position_Sample;
-    if hud.reader.memory.handle {
-        scene: Game_Scene_Location;
-        error: string;
-        // This reader is independent of editor recording/playback. Only checked
-        // code evidence is reused; scene and controlled selection stay fresh.
-        name, error = game_read_scene_from(hud.reader.memory, *hud.reader.locator, *scene);
-        if !error.count {
-            sample = game_position_reader_sample(*hud.reader, allow_resolve = now >= hud.next_resolve);
-            if !sample.valid && now >= hud.next_resolve hud.next_resolve = now + 1;
-            else if sample.valid hud.next_resolve = 0;
-            if sample.valid && sample.player.manager != scene.manager sample.valid = false;
-            if !game_scene_location_current(hud.reader.memory, scene, name) {
-                free(name); name = ""; sample.valid = false;
-            }
-        } else {
-            game_position_reader_close(*hud.reader);
-            hud.retry_at = now + 2;
-        }
+    details, error := hud_read_details(*hud, now);
+    if error.count {
+        game_position_reader_close(*hud.reader);
+        hud.retry_at = now + 2;
     }
     free(hud.details);
-    hud.details = copy_string(hud_details(name, sample));
+    hud.details = details;
 }
 
 // Copy FreeType's cached grayscale coverage instead of blending onto black and
@@ -209,9 +289,12 @@ hud_update :: (now: float64) {
     info_height := hud_font_height(bounds.bottom, HUD_INFO_SIZE);
     notice_height := hud_font_height(bounds.bottom, HUD_NOTICE_SIZE);
     margin := max(cast(s32) 8, bounds.bottom / 60);
-    hud_draw_panel(*hud.info, origin.x + margin, origin.y + margin, bounds.right - 2*margin,
-                   info_height*3, hud.details, info_height, false, 255);
-    if hud.message.count && now < hud.expires {
+    rows := hud_info_line_count(hud.settings);
+    if rows {
+        hud_draw_panel(*hud.info, origin.x + margin, origin.y + margin, bounds.right - 2*margin,
+                       hud_info_panel_height(info_height, rows, bounds.bottom - 2*margin), hud.details, info_height, false, 255);
+    } else hud_panel_hide(*hud.info);
+    if hud.settings.show_notifications && hud.message.count && now < hud.expires {
         alpha := cast(u8)(255*clamp((hud.expires-now)/0.3, 0.0, 1.0));
         hud_draw_panel(*hud.toast, origin.x + margin, origin.y + bounds.bottom*30/100,
                        bounds.right - 2*margin, notice_height*2, hud.message, notice_height, true, alpha);
@@ -229,6 +312,7 @@ hud_deinit :: () {
     game_position_reader_close(*hud.reader);
     free(hud.message);
     free(hud.details);
+    hud_config_free(*hud.settings);
     hud = .{};
 }
 

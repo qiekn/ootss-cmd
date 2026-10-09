@@ -14,6 +14,10 @@
 
 配置重载检查：`jai -quiet scripts/check_config_reload.jai -import_dir ../modules`。检查在 `.build/` 中使用独立配置文件，不改动个人配置或游戏状态。
 
+HUD 可用 `hud_enabled` 控制总开关，`hud_show_level_name`、`hud_show_position`、`hud_show_notifications` 分别控制关卡名、坐标和通知。只保留关卡名时设置 `hud_show_position = false;`；每条 `hud_text = "custom text";` 新增一行自定义文字，可以重复写多条，`hud_text = "";` 保留一个空行。信息行直接按各项在文件中的先后顺序排列，把坐标配置移到关卡名配置上方即可先显示坐标。保存后生效，详细规则见 [HUD 配置](docs/map-capture.md#hud)。
+
+引号中的 HUD 文字支持 `\n` 换行，例如 `hud_text = "First line\n\nSecond line";` 会在两段之间留一行空白。开头、结尾的换行会保留；`\\n` 显示字面上的 `\n`。
+
 ```powershell
 jai -quiet first.jai -import_dir modules
 jai -quiet first.jai -optimized -import_dir modules

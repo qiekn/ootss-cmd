@@ -79,6 +79,7 @@ console_config_apply :: (state: *Console_State, next: *Console_Config) -> string
     // Keep an installed hook even when the new map is empty: it must consume
     // key-up events for noremap keys whose key-down was already consumed.
     if console_config_replace(state, next, *shortcuts) console_reload_game_fonts(state);
+    hud_apply_config(state.config.hud);
     return "";
 }
 
