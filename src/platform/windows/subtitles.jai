@@ -8,10 +8,13 @@ game_subtitles_directory :: () -> string {
     return game_subtitles_directory(game_data_directory("strings/subtitles"));
 }
 
+subtitles_game_height :: () -> s32 {
+    bounds: Win.RECT;
+    if !overlay.game || !Win.GetClientRect(overlay.game, *bounds) return 0;
+    return max(cast(s32) 0, bounds.bottom - bounds.top);
+}
+
 #scope_file
-#import "Basic";
-#import "String";
-#import "File";
 
 game_directory_has_subtitles :: (path: string) -> bool {
     for name: string.["en.subtitles", "s-cn.subtitles", "ch.subtitles", "ch-subtitles"] {

@@ -1,15 +1,15 @@
 CONSOLE_CONFIG_FILE :: "config.rc";
 CONSOLE_ALIAS_DEPTH :: 16;
 
-Console_Alias :: struct { name, command: string; }
-Hud_Info_Item :: enum { LEVEL_NAME; POSITION; TEXT; }
-Hud_Info_Row :: struct { kind: Hud_Info_Item; text: string; }
+Console_Alias    :: struct { name, command: string; }
+Hud_Info_Item    :: enum { LEVEL_NAME; POSITION; TEXT; }
+Hud_Info_Row     :: struct { kind: Hud_Info_Item; text: string; }
 HUD_DEFAULT_ROWS :: Hud_Info_Row.[.{kind = .LEVEL_NAME}, .{kind = .POSITION}];
-Hud_Config :: struct {
-    enabled := true;
+Hud_Config       :: struct {
+    enabled            := true;
     hide_on_focus_loss := true;
-    show_level_name := true;
-    show_position := true;
+    show_level_name    := true;
+    show_position      := true;
     show_notifications := true;
     rows: [..] Hud_Info_Row; // Owns the array and each custom text string.
 }
@@ -30,7 +30,7 @@ hud_config_free :: (config: *Hud_Config) {
 hud_config_copy :: (config: Hud_Config) -> Hud_Config {
     result: Hud_Config = .{enabled = config.enabled, hide_on_focus_loss = config.hide_on_focus_loss,
                           show_level_name = config.show_level_name,
-                          show_position = config.show_position, show_notifications = config.show_notifications};
+                          show_position   = config.show_position, show_notifications = config.show_notifications};
     array_reserve(*result.rows, config.rows.count);
     for row: config.rows array_add(*result.rows, .{kind = row.kind, text = copy_string(row.text)});
     return result;
@@ -51,14 +51,15 @@ hud_config_equal :: (a: Hud_Config, b: Hud_Config) -> bool {
 
 Console_Config :: struct {
     show_startup_blow := true;
-    hud: Hud_Config;
-    game_path: string;
-    freecam_speed: float64 = 12;             // World units per second.
-    freecam_sensitivity: float64 = 0.1;      // Degrees of view rotation per mouse count.
+    hud:                      Hud_Config;
+    game_path:                string;
+    subtitle_font_size:       float64 = 30;        // Font rows per game client height; smaller is larger.
+    freecam_speed:            float64 = 12;             // World units per second.
+    freecam_sensitivity:      float64 = 0.1;      // Degrees of view rotation per mouse count.
     freecam_shift_multiplier: float64 = 4;   // Speed scale while Shift is held.
-    freecam_ctrl_multiplier: float64 = 0.25; // Speed scale while Ctrl is held.
-    aliases: [..] Console_Alias;
-    shortcuts: [..] Command_Shortcut;
+    freecam_ctrl_multiplier:  float64 = 0.25; // Speed scale while Ctrl is held.
+    aliases:                  [..] Console_Alias;
+    shortcuts:                [..] Command_Shortcut;
 }
 
 console_alias_find :: (aliases: [] Console_Alias, name: string) -> s64 {
@@ -192,7 +193,7 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
     if !source.count return "";
     cursor: s64;
     first := console_next_argument(source, *cursor);
-    rest := trim(slice(source, cursor, source.count - cursor));
+    rest  := trim(slice(source, cursor, source.count - cursor));
     if (equal_nocase(first, "map") || equal_nocase(first, "nmap") || equal_nocase(first, "noremap")) && rest.count && rest[0] != #char "=" {
         return shortcut_config_assignment(config, rest, consume = equal_nocase(first, "noremap"));
     }
@@ -224,6 +225,12 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         return error;
     }
     if equal_nocase(name, "hud_show_notifications") return console_config_bool(name, command, *config.hud.show_notifications);
+    if equal_nocase(name, "subtitle_font_size") {
+        error = console_config_number(name, command, *config.subtitle_font_size, 1000);
+        if error.count return error;
+        if config.subtitle_font_size < 1 return "subtitle_font_size must be between 1 and 1000.";
+        return "";
+    }
     if equal_nocase(name, "freecam_speed") return console_config_number("freecam_speed", command, *config.freecam_speed, 100000);
     if equal_nocase(name, "freecam_sensitivity") return console_config_number("freecam_sensitivity", command, *config.freecam_sensitivity, 100);
     if equal_nocase(name, "freecam_shift_multiplier") return console_config_number("freecam_shift_multiplier", command, *config.freecam_shift_multiplier, 1000);
@@ -241,15 +248,15 @@ console_config_parse :: (config: *Console_Config, input: string) -> string {
     defer console_config_free(*parsed);
     statement: [..] u8;
     defer array_free(statement);
-    quote: u8;
+    quote:            u8;
     escaped, comment: bool;
-    line: s64 = 1;
+    line:             s64 = 1;
     // Newlines and unquoted semicolons terminate assignments. Nothing is executed while loading.
     for i: 0..source.count {
         c := ifx i == source.count then #char "\n" else source[i];
         if c == #char "\n" || (!quote && !comment && c == #char ";") {
             if quote return tprint("Line %: a configuration value has an unclosed quote.", line);
-            text := string.{data = statement.data, count = statement.count};
+            text  := string.{data = statement.data, count = statement.count};
             error := console_config_assignment(*parsed, text);
             if error.count return tprint("Line %: %", line, error);
             statement.count = 0;
@@ -325,7 +332,7 @@ console_expand_aliases :: (state: *Console_State, source: string) -> (expanded: 
     visited: [CONSOLE_ALIAS_DEPTH] string;
     for depth: 0..visited.count {
         cursor: s64;
-        name := console_next_argument(expanded, *cursor);
+        name  := console_next_argument(expanded, *cursor);
         alias := console_alias_lookup(state, name);
         if !alias return expanded, "";
         for previous: 0..depth-1 if equal_nocase(visited[previous], name) {
@@ -339,7 +346,7 @@ console_expand_aliases :: (state: *Console_State, source: string) -> (expanded: 
         }
         visited[depth] = alias.name;
         arguments := trim(slice(expanded, cursor, expanded.count - cursor));
-        next := ifx arguments.count then tprint("% %", alias.command, arguments) else alias.command;
+        next      := ifx arguments.count then tprint("% %", alias.command, arguments) else alias.command;
         if next.count > CONSOLE_INPUT_LIMIT {
             free(expanded);
             return "", "Alias expansion exceeds the console input limit. No command was run.";
@@ -388,10 +395,3 @@ command_unalias :: (state: *Console_State, arguments: string) {
     array_ordered_remove_by_index(*state.temporary_aliases, index);
     console_write(state, tprint("Removed temporary alias: %", name));
 }
-
-#scope_file
-#import "Basic";
-#import "Math";
-#import "String";
-#import "File";
-#import "File_Utilities";

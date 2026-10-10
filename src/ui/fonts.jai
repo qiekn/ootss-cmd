@@ -1,8 +1,8 @@
-CONSOLE_FONT_FILE :: "Meslo-LG-Mono-Nerd-Regular.ttf";
-CONSOLE_CHINESE_FONT_FILE :: "NotoSansCJKsc-Regular.otf";
-SUBTITLE_ENGLISH_FONT :: "KarminaBold.otf";
+CONSOLE_FONT_FILE             :: "Meslo-LG-Mono-Nerd-Regular.ttf";
+CONSOLE_CHINESE_FONT_FILE     :: "NotoSansCJKsc-Regular.otf";
+SUBTITLE_ENGLISH_FONT         :: "KarminaBold.otf";
 SUBTITLE_ENGLISH_BUNDLED_FONT :: "Karmina-Bold.otf";
-SUBTITLE_CHINESE_FONT :: "SourceHanSerifCN-SemiBold.otf";
+SUBTITLE_CHINESE_FONT         :: "SourceHanSerifCN-SemiBold.otf";
 
 game_font_source :: (game_directory: string, game_name: string, bundled_name: string)
                     -> (directory: string, filename: string) {
@@ -14,7 +14,7 @@ game_font_source :: (game_directory: string, game_name: string, bundled_name: st
 
 get_game_font_at_size :: (game_name: string, bundled_name: string, height: s64) -> *Simp.Dynamic_Font {
     directory, filename := game_font_source(game_data_directory("fonts"), game_name, bundled_name);
-    font := get_game_font_file(directory, filename, height);
+    font                := get_game_font_file(directory, filename, height);
     if !font && directory != "data/fonts" {
         font = get_game_font_file("data/fonts", bundled_name, height);
     }
@@ -47,20 +47,16 @@ console_reload_game_fonts :: (state: *Console_State) {
         else console_config_message(state, "The new game_path has no console Chinese font; keeping the loaded font.", .ERROR);
     }
     if subtitles_view.english_font {
-        width, height := overlay_content_dimensions();
-        error := subtitles_view_load_fonts(*subtitles_view, console_font_dpi, width, force = true);
+        error := subtitles_view_load_fonts(*subtitles_view, console_font_dpi, subtitles_game_height(),
+                                            state.config.subtitle_font_size, force = true);
         if error.count console_config_message(state, tprint("% Keeping the loaded subtitle fonts.", error), .ERROR);
     }
-    hud.info.font = null;
+    hud.info.font  = null;
     hud.toast.font = null;
     hud.next_frame = 0;
 }
 
 #scope_file
-#import "Basic";
-#import "File";
-#import "File_Utilities";
-#import "String";
 
 // Font resources are owned by Simp; only the copied keys and array are ours.
 Game_Font_Cache_Entry :: struct { path: string; height: s64; font: *Simp.Dynamic_Font; }

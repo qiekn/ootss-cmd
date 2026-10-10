@@ -14,13 +14,14 @@
     check_shortcut_install();
     check_notifications();
     check_fonts();
+    check_subtitle_size();
     print("PASS: % config hot-reload checks.\n", checks);
 }
 
 checks, applied: s64;
-directory: string;
-keys: App.Shortcut_State;
-reject_apply: bool;
+directory:       string;
+keys:            App.Shortcut_State;
+reject_apply:    bool;
 
 check :: (value: bool, message: string) {
     checks += 1;
@@ -46,9 +47,9 @@ check_replacement :: () {
     array_add(*state.history, copy_string("previous command"));
     array_add(*state.completion.matches, copy_string("old completion"));
     state.show_subtitles = true;
-    state.scroll = 3;
+    state.scroll         = 3;
     state.scroll_to_line = 2;
-    state.reveal_output = false;
+    state.reveal_output  = false;
     state.pending_action = .NONE;
     local_keys: App.Shortcut_State = .{enabled = true, queue_count = 1};
     local_keys.down[0x4d] = true;
@@ -79,7 +80,7 @@ check_replacement :: () {
 // copy them before another frame resets scratch storage.
 pump :: (reload: *App.Config_Reload, duration: float64) -> (changes: s64, errors: s64, last_error: string) {
     changes, errors: s64;
-    last_error: string;
+    last_error:      string;
     deadline := seconds_since_init() + duration;
     while seconds_since_init() < deadline {
         auto_release_temp();
@@ -108,7 +109,7 @@ check_shortcut_install :: () {
     App.shortcuts.down[0x4d] = true;
     App.shortcuts.consumed[0x4d] = true;
     App.shortcuts.queue_count = 1;
-    error = App.console_config_apply(*App.console, *next);
+    error                     = App.console_config_apply(*App.console, *next);
     check(!error.count && App.shortcuts.enabled && !App.console.config.shortcuts.count, "Removing the last mapping keeps the release hook alive.");
     check(!App.shortcuts.queue_count, "Production config replacement cancels pending shortcut indexes.");
     consumed := App.shortcuts_handle_key(0x4d, false, false, null);
@@ -122,7 +123,7 @@ expect_pump :: (reload: *App.Config_Reload, duration: float64, expected_changes:
 }
 
 check_notifications :: () {
-    filename := copy_string(tprint("%/config.rc", directory));
+    filename  := copy_string(tprint("%/config.rc", directory));
     temporary := copy_string(tprint("%/config.new", directory));
     unrelated := copy_string(tprint("%/unrelated.txt", directory));
     defer free(filename); defer free(temporary); defer free(unrelated);
@@ -252,14 +253,78 @@ check_notifications :: () {
     check(error.count > 0 && !reload.loader.initialized, "Failed watch setup releases its resources.");
 }
 
+check_subtitle_size :: () {
+    config: App.Console_Config;
+    defer App.console_config_free(*config);
+    check(config.subtitle_font_size == 30, "Subtitle size defaults to 30 rows per game height.");
+    error := App.console_config_parse(*config, "subtitle_font_size=20; SUBTITLE_FONT_SIZE=24.5;");
+    check(!error.count && config.subtitle_font_size == 24.5 && !config.aliases.count,
+          "Subtitle size is case-insensitive, allows fractional rows and uses the last definition.");
+    for value: string.["0", "-1", "0.5", "1001", "nan", "inf", "1e999", "abc", "30px", ""] {
+        error = App.console_config_parse(*config, tprint("alpha=changed;\nsubtitle_font_size=%;", value));
+        check(error.count > 0 && contains(error, "Line 2") && config.subtitle_font_size == 24.5 && !config.aliases.count,
+              "Invalid subtitle size reports its line without partially replacing config.");
+    }
+    for value: string.["1", "1000"] {
+        error = App.console_config_parse(*config, tprint("subtitle_font_size=%;", value));
+        check(!error.count, "Accept the subtitle row-count limits.");
+    }
+    error = App.console_config_parse(*config, "");
+    check(!error.count && config.subtitle_font_size == 30, "Removing subtitle size restores the default.");
+
+    // Use the bundled font under both game font names, without a game or GL window.
+    game  := copy_string(tprint("%/subtitle-game", directory));
+    fonts := copy_string(tprint("%/data/fonts", game));
+    defer free(game); defer free(fonts);
+    check(make_directory_if_it_does_not_exist(fonts, true), "Create isolated subtitle fonts.");
+    for name: string.[App.SUBTITLE_ENGLISH_FONT, App.SUBTITLE_CHINESE_FONT] {
+        check(copy_file(tprint("data/fonts/%", App.CONSOLE_FONT_FILE), tprint("%/%", fonts, name)), "Copy a subtitle fixture font.");
+    }
+    defer file_delete(tprint("%/%", fonts, App.SUBTITLE_ENGLISH_FONT));
+    defer file_delete(tprint("%/%", fonts, App.SUBTITLE_CHINESE_FONT));
+    defer App.console_deinit(*App.console);
+    error = App.console_config_parse(*App.console.config, tprint("game_path='%'; subtitle_font_size=30;", game));
+    check(!error.count, "Configure the isolated subtitle font source.");
+    App.console.show_subtitles = true;
+    view: App.Subtitles_View;
+    defer App.subtitles_view_free(*view);
+    for 0..19 array_add(*view.blocks, .{section = "Subtitle wrapping and scrolling remain tied to the console viewport."});
+    error = App.subtitles_view_resize(*view, 1920, 900, 96, 1080, App.console.config.subtitle_font_size);
+    check(!error.count && view.font_height == 36 && view.max_scroll > 0, "1080p game height produces a 36px subtitle font.");
+    original_font := view.english_font;
+    view.scroll = view.max_scroll;
+    error       = App.subtitles_view_resize(*view, 1920, 200, 96, 1080, App.console.config.subtitle_font_size);
+    check(!error.count && view.font_height == 36 && view.english_font == original_font &&
+          view.viewport_height == 200 && view.scroll == view.max_scroll,
+          "Changing only console height keeps the font and updates scrolling at the bottom.");
+    previous_height := view.content_height;
+    error = App.subtitles_view_resize(*view, 640, 200, 96, 1080, App.console.config.subtitle_font_size);
+    check(!error.count && view.english_font == original_font && view.content_height > previous_height,
+          "Changing console width rewraps text without resizing the font.");
+    next: App.Console_Config;
+    defer App.console_config_free(*next);
+    error = App.console_config_parse(*next, tprint("game_path='%'; subtitle_font_size=20;", game));
+    check(!error.count, "Parse a live subtitle size change.");
+    error = App.console_config_apply(*App.console, *next);
+    check(!error.count && App.console.show_subtitles, "Applying subtitle size preserves the active presentation.");
+    error = App.subtitles_view_resize(*view, 640, 200, 96, 1080, App.console.config.subtitle_font_size);
+    check(!error.count && view.font_height == 54 && view.english_font != original_font && view.scroll == view.max_scroll,
+          "The next layout applies the new size and preserves the bottom scroll position.");
+    error = App.subtitles_view_resize(*view, 640, 200, 144, 2160, App.console.config.subtitle_font_size);
+    check(!error.count && view.font_height == 108 && view.small_font.character_height < view.font_height,
+          "Game height scales dialogue and smaller labels without applying DPI twice.");
+    error = App.subtitles_view_resize(*view, 640, 200, 96, 0, App.console.config.subtitle_font_size);
+    check(error.count > 0 && view.font_height == 108, "Missing game dimensions retain the loaded fonts.");
+}
+
 check_fonts :: () {
-    first := copy_string(tprint("%/font-a", directory));
+    first  := copy_string(tprint("%/font-a", directory));
     second := copy_string(tprint("%/font-b", directory));
     defer free(first); defer free(second);
     check(make_directory_if_it_does_not_exist(first) && make_directory_if_it_does_not_exist(second), "Create isolated font directories.");
     name := App.CONSOLE_FONT_FILE;
-    a := copy_string(tprint("%/%", first, name));
-    b := copy_string(tprint("%/%", second, name));
+    a    := copy_string(tprint("%/%", first, name));
+    b    := copy_string(tprint("%/%", second, name));
     defer free(a); defer free(b); defer file_delete(a); defer file_delete(b);
     check(copy_file(tprint("data/fonts/%", name), a) && copy_file(tprint("data/fonts/%", name), b), "Copy the bundled font for cache identity checks.");
     fa := App.get_game_font_file(first, name, 27);
@@ -276,7 +341,7 @@ check_fonts :: () {
 #import "String";
 #import "System";
 #import "Windows_Utf8";
-App :: #import,file "../src/main.jai";
-Win :: #import "Windows";
-kernel32 :: #library,system "kernel32";
+App               :: #import,file "../src/main.jai";
+Win               :: #import "Windows";
+kernel32          :: #library,system "kernel32";
 ReplaceConfigFile :: (from: *u16, to: *u16, flags: u32) -> s32 #foreign kernel32 "MoveFileExW";

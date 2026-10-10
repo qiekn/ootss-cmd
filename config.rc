@@ -4,12 +4,12 @@
 # Set to false to hide the startup jblow wave gif.
 show_startup_blow = false;
 
-# HUD switches and top-to-bottom order. Saved changes apply immediately.
-# Set hud_show_position = false to show only the level name in the info panel.
-# Info rows follow file order; the last definition wins for built-in switches.
-# Each hud_text adds one line in place; "" adds a blank line for spacing.
-# Inside quoted hud_text, \n starts a new line and \n\n leaves a blank line.
-# Use \\n to display literal backslash-n.
+# Subtitle dialogue font size = game client height / this value (1-1000).
+# Smaller values make larger text. Console resizing does not change the size.
+subtitle_font_size = 40;
+
+# HUD switches and top-to-bottom order.
+# Info rows follow file order;
 hud_enabled            = true;
 hud_show_notifications = true;
 hud_hide_on_focus_loss = false;
@@ -17,9 +17,10 @@ hud_hide_on_focus_loss = false;
 # Top-left HUD items (item order as blow)
 hud_show_level_name    = true;
 hud_show_position      = false;
-hud_text               = "\nLet's firstly complete this game\nand then play it twice!"; # Custom notes, You can try it!
-hud_text               = "";           # Blank line
-hud_text               = "Cowabunga!"; # Multi-line
+hud_text               = "\nLet's complete this game firstly\nand then play it twice!";
+hud_text               = "";                          # Blank line
+hud_text               = "Current player: @qiekn\n";  # Custom notes, You can modify it!
+hud_text               = "Cowabunga!\n";              # Multi-line
 
 # Free camera (freecam): movement speed in world units per second, mouse look
 # sensitivity in degrees per mouse count, and the speed multipliers applied

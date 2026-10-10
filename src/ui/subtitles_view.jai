@@ -1,25 +1,23 @@
 SUBTITLE_CONTENT_WIDTH_PERCENT :: 80;
-SUBTITLE_FONT_REFERENCE_WIDTH :: 1920;
-SUBTITLE_FONT_REFERENCE_HEIGHT :: 36;
 
 Subtitle_Draw_Text :: struct {
-    text: string;
-    font: *Simp.Dynamic_Font;
-    color: u32;
+    text:                               string;
+    font:                               *Simp.Dynamic_Font;
+    color:                              u32;
     x, baseline, clip_left, clip_right: s32;
 }
 
 Subtitles_View :: struct {
-    catalog: Subtitles_Catalog;
-    blocks: [..] Subtitle_Block;
-    comments: bool;
-    hide_speakers: bool;
-    language: Console_Subtitle_Language;
-    text: [..] Subtitle_Draw_Text;
-    english_font, chinese_font, small_font, small_chinese_font: *Simp.Dynamic_Font;
+    catalog:                                                          Subtitles_Catalog;
+    blocks:                                                           [..] Subtitle_Block;
+    comments:                                                         bool;
+    hide_speakers:                                                    bool;
+    language:                                                         Console_Subtitle_Language;
+    text:                                                             [..] Subtitle_Draw_Text;
+    english_font, chinese_font, small_font, small_chinese_font:       *Simp.Dynamic_Font;
     dpi, content_left, layout_width, content_height, viewport_height: s32;
-    font_height, line_height, small_line_height: s32;
-    scroll, max_scroll: float64;
+    font_height, line_height, small_line_height:                      s32;
+    scroll, max_scroll:                                               float64;
 }
 
 subtitles_view: Subtitles_View;
@@ -36,7 +34,7 @@ console_open_subtitles :: (console: *Console_State, read_scene: Game_Level_Query
         return;
     }
     next.language = console.pending_subtitle_language;
-    error = subtitles_catalog_load(*next.catalog, directory,
+    error         = subtitles_catalog_load(*next.catalog, directory,
                                     load_english = next.language != .CHINESE, load_chinese = next.language != .ENGLISH,
                                     mapping_file = SUBTITLES_MAPPING_FILE);
     if error.count { console_write(console, error, .ERROR); return; }
@@ -44,42 +42,42 @@ console_open_subtitles :: (console: *Console_State, read_scene: Game_Level_Query
         console_write(console, tprint("No subtitles found for %. Use Tab to complete a subtitle level name.", level), .ERROR);
         return;
     }
-    next.comments = console.pending_subtitle_comments;
+    next.comments      = console.pending_subtitle_comments;
     next.hide_speakers = console.pending_subtitle_hide_speakers;
-    error = subtitles_view_load_fonts(*next, console_font_dpi, overlay.bounds.right - overlay.bounds.left);
+    error              = subtitles_view_load_fonts(*next, console_font_dpi, subtitles_game_height(), console.config.subtitle_font_size);
     if error.count { console_write(console, error, .ERROR); return; }
 
     subtitles_view_free(*subtitles_view);
     subtitles_view = next;
-    next = .{};
+    next           = .{};
     command_clear(console, "");
     console.show_subtitles = true;
-    console.reveal_output = true;
+    console.reveal_output  = true;
 }
 
-subtitles_view_load_fonts :: (view: *Subtitles_View, dpi: s32, window_width: s32, force := false) -> string {
-    // Render dimensions already include DPI scaling; do not scale their contribution twice.
-    height := max(max(1, 18 * dpi / 96),
-                  cast(s64) max(1, window_width) * SUBTITLE_FONT_REFERENCE_HEIGHT / SUBTITLE_FONT_REFERENCE_WIDTH);
+subtitles_view_load_fonts :: (view: *Subtitles_View, dpi: s32, game_height: s32, font_size: float64, force := false) -> string {
+    if game_height <= 0 return "Could not read the game window height for subtitle fonts.";
+    // The game client already includes DPI scaling. Console resizing only changes the layout.
+    height := cast(s32) max(cast(float64) 1, cast(float64) game_height / font_size);
     if !force && view.dpi == dpi && view.font_height == height && view.english_font return "";
-    small := max(1, height * 13 / 24);
-    english_font := get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, height);
-    chinese_font := get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, height);
-    small_font := Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, small);
+    small              := max(1, height * 13 / 24);
+    english_font       := get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, height);
+    chinese_font       := get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, height);
+    small_font         := Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, small);
     small_chinese_font := get_game_font_at_size(SUBTITLE_CHINESE_FONT, SUBTITLE_CHINESE_FONT, small);
     if !english_font || !chinese_font || !small_font || !small_chinese_font {
         return tprint("Could not load subtitle fonts from the game or data/fonts: % (bundled: %), %, %.",
                       SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, SUBTITLE_CHINESE_FONT, CONSOLE_FONT_FILE);
     }
-    view.english_font = english_font;
-    view.chinese_font = chinese_font;
-    view.small_font = small_font;
+    view.english_font       = english_font;
+    view.chinese_font       = chinese_font;
+    view.small_font         = small_font;
     view.small_chinese_font = small_chinese_font;
-    view.font_height = cast(s32) height;
-    view.line_height = cast(s32) max(1, height * 34 / 24);
-    view.small_line_height = cast(s32) max(1, small * 20 / 13);
-    view.dpi = dpi;
-    view.layout_width = 0;
+    view.font_height        = cast(s32) height;
+    view.line_height        = cast(s32) max(1, height * 34 / 24);
+    view.small_line_height  = cast(s32) max(1, small * 20 / 13);
+    view.dpi                = dpi;
+    view.layout_width       = 0;
     return "";
 }
 
@@ -89,12 +87,13 @@ subtitles_view_scroll :: (pixels: float64) {
 
 subtitles_view_set_viewport :: (view: *Subtitles_View, height: s32) {
     view.viewport_height = cast(s32) max(0, height);
-    view.max_scroll = cast(float64) max(0, view.content_height - view.viewport_height);
-    view.scroll = clamp(view.scroll, 0.0, view.max_scroll);
+    view.max_scroll      = cast(float64) max(0, view.content_height - view.viewport_height);
+    view.scroll          = clamp(view.scroll, 0.0, view.max_scroll);
 }
 
-subtitles_view_resize :: (view: *Subtitles_View, window_width: s32, viewport_height: s32, dpi: s32) -> string {
-    error := subtitles_view_load_fonts(view, dpi, window_width);
+subtitles_view_resize :: (view: *Subtitles_View, window_width: s32, viewport_height: s32, dpi: s32,
+                          game_height: s32, font_size: float64) -> string {
+    error := subtitles_view_load_fonts(view, dpi, game_height, font_size);
     if error.count return error;
     width := cast(s32) max(1, cast(s64) max(1, window_width) * SUBTITLE_CONTENT_WIDTH_PERCENT / 100);
     view.content_left = cast(s32)((max(1, window_width) - width) / 2);
@@ -111,10 +110,11 @@ subtitles_view_resize :: (view: *Subtitles_View, window_width: s32, viewport_hei
 
 draw_subtitles :: (console: *Console_State, window_width: s32, top: s32, bottom: s32) {
     if window_width <= 0 || bottom <= top return;
-    view := *subtitles_view;
-    error := subtitles_view_resize(view, window_width, bottom - top, console_font_dpi);
+    view  := *subtitles_view;
+    error := subtitles_view_resize(view, window_width, bottom - top, console_font_dpi,
+                                    subtitles_game_height(), console.config.subtitle_font_size);
     if error.count { console_write(console, error, .ERROR); return; }
-    left := view.content_left;
+    left   := view.content_left;
     offset := cast(s32) view.scroll;
     for line: view.text {
         baseline := top + line.baseline - offset;
@@ -139,10 +139,10 @@ draw_subtitles :: (console: *Console_State, window_width: s32, top: s32, bottom:
 
 subtitles_view_layout :: (view: *Subtitles_View, width: s32) {
     view.text.count = 0;
-    gap := cast(s32) min(max(1, 32 * view.font_height / 24), width / 4);
+    gap    := cast(s32) min(max(1, 32 * view.font_height / 24), width / 4);
     column := cast(s32) max(1, (width - gap) / 2);
-    right := column + gap;
-    small := view.small_line_height;
+    right  := column + gap;
+    small  := view.small_line_height;
     y: s32;
     for block: view.blocks {
         if block.section.count {
@@ -167,7 +167,7 @@ subtitles_view_layout :: (view: *Subtitles_View, width: s32) {
         }
     }
     view.content_height = y + 12 * view.font_height / 24;
-    view.layout_width = width;
+    view.layout_width   = width;
 }
 
 subtitles_view_free :: (view: *Subtitles_View) {
@@ -178,16 +178,12 @@ subtitles_view_free :: (view: *Subtitles_View) {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
-#import "Math";
-Unicode :: #import "Unicode";
+Unicode  :: #import "Unicode";
 FreeType :: #import "freetype";
-Simp :: #import "Simp";
 
 subtitles_layout_cues :: (view: *Subtitles_View, cues: [] Subtitle_Cue,
                           font: *Simp.Dynamic_Font, fallback: *Simp.Dynamic_Font,
-                          x: s32, y: s32, width: s32, missing: string) -> s32 {
+                          x:    s32, y: s32, width: s32, missing: string) -> s32 {
     if !cues.count {
         return subtitles_layout_line(view, missing, view.small_font, view.small_chinese_font,
                                       x, y, width, Naysayer.dimmed_variable, view.small_line_height);
@@ -221,18 +217,18 @@ subtitles_character_font :: (primary: *Simp.Dynamic_Font, fallback: *Simp.Dynami
 
 subtitles_layout_line :: (view: *Subtitles_View, text: string,
                           font: *Simp.Dynamic_Font, fallback: *Simp.Dynamic_Font,
-                          x: s32, y: s32, width: s32, color: u32, line_height: s32) -> s32 {
+                          x:    s32, y: s32, width: s32, color: u32, line_height: s32) -> s32 {
     if !text.count return y + line_height;
     start: s64;
     while start < text.count {
         position := start;
         last_break: s64 = -1;
-        used: s64;
+        used:       s64;
         while position < text.count {
             character, bytes := Unicode.character_utf8_to_utf32(text.data + position, text.count - position);
             bytes = max(1, bytes);
             selected := subtitles_character_font(font, fallback, character);
-            advance := Simp.prepare_text(selected, slice(text, position, bytes), .NO_KERNING);
+            advance  := Simp.prepare_text(selected, slice(text, position, bytes), .NO_KERNING);
             if position > start && used + advance > width {
                 if last_break > start position = last_break;
                 break;
@@ -254,14 +250,14 @@ subtitles_layout_line :: (view: *Subtitles_View, text: string,
 
 subtitles_layout_runs :: (view: *Subtitles_View, text: string,
                           primary: *Simp.Dynamic_Font, fallback: *Simp.Dynamic_Font,
-                          x: s32, baseline: s32, width: s32, color: u32) {
+                          x:       s32, baseline: s32, width: s32, color: u32) {
     first := view.text.count;
-    start: s64;
+    start:  s64;
     offset: s32;
     while start < text.count {
         character, bytes := Unicode.character_utf8_to_utf32(text.data + start, text.count - start);
-        font := subtitles_character_font(primary, fallback, character);
-        end := start + max(1, bytes);
+        font             := subtitles_character_font(primary, fallback, character);
+        end              := start + max(1, bytes);
         while end < text.count {
             character, bytes = Unicode.character_utf8_to_utf32(text.data + end, text.count - end);
             if subtitles_character_font(primary, fallback, character) != font break;
