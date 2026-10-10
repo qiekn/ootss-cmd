@@ -1,19 +1,19 @@
-Game_Position :: [3] float;
-SOLUTIONS_FILE :: "data/solutions.json";
+Game_Position      :: [3] float;
+SOLUTIONS_FILE     :: "data/solutions.json";
 CUSTOM_INPUTS_FILE :: "data/custom_inputs.json";
 
 Solution_Record :: struct {
     position: Game_Position;
-    area: string;
-    name: string;
-    note: string;
+    area:     string;
+    name:     string;
+    note:     string;
     solution: string;
 }
 
 Solutions_Database :: struct {
-    entries: [..] Solution_Record;
-    imported: s64;
-    prefilled: s64;
+    entries:           [..] Solution_Record;
+    imported:          s64;
+    prefilled:         s64;
     unmatched_answers: s64;
 }
 
@@ -50,7 +50,7 @@ solutions_load :: (db: *Solutions_Database, filename := SOLUTIONS_FILE,
         }
     }
 
-    answers: [] string;
+    answers:     [] string;
     answer_text: string;
     if answer_file.count && file_exists(answer_file) {
         success: bool;
@@ -81,7 +81,7 @@ solutions_load :: (db: *Solutions_Database, filename := SOLUTIONS_FILE,
                 colon := find_index_from_left(line, ":");
                 if colon < 0 continue;
                 if trim(slice(line, 0, colon)) != entry.name continue;
-                source := trim(slice(line, colon + 1, line.count - colon - 1));
+                source      := trim(slice(line, colon + 1, line.count - colon - 1));
                 keys, error := timeline_parse(source);
                 free(keys);
                 if error.count {
@@ -144,9 +144,9 @@ custom_inputs_load :: (db: *Solutions_Database, filename := CUSTOM_INPUTS_FILE) 
 
 solution_record_copy :: (source: Solution_Record) -> Solution_Record {
     result := source;
-    result.area = copy_string(source.area);
-    result.name = copy_string(source.name);
-    result.note = copy_string(source.note);
+    result.area     = copy_string(source.area);
+    result.name     = copy_string(source.name);
+    result.note     = copy_string(source.note);
     result.solution = copy_string(source.solution);
     return result;
 }
@@ -166,17 +166,11 @@ solutions_free :: (db: *Solutions_Database) {
 }
 
 #scope_file
-#import "Basic";
-#import "Math";
-#import "String";
-#import "File";
-#import "File_Utilities";
-Json :: #import "Json";
 
 Marker_Collection :: struct {
-    type: string;
+    type:     string;
     features: [..] struct {
-        geometry: struct { type: string; coordinates: [..] float; };
+        geometry:   struct { type: string; coordinates: [..] float; };
         properties: struct { type: string; area: string; name: string; };
     };
 }

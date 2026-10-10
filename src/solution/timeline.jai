@@ -1,9 +1,9 @@
 Solution_Timeline :: struct {
-    keys: [..] u8;
+    keys:     [..] u8;
     playhead: s64;
-    caret: s64;
-    anchor: s64;
-    dirty: bool;
+    caret:    s64;
+    anchor:   s64;
+    dirty:    bool;
 }
 
 timeline_free :: (timeline: *Solution_Timeline) {
@@ -64,9 +64,9 @@ timeline_caret_is_executed :: (timeline: *Solution_Timeline) -> bool {
 }
 
 timeline_select_side :: (timeline: *Solution_Timeline) {
-    past := timeline_caret_is_executed(timeline);
+    past  := timeline_caret_is_executed(timeline);
     first := ifx past then 0 else timeline.playhead;
-    last := ifx past then timeline.playhead else timeline.keys.count;
+    last  := ifx past then timeline.playhead else timeline.keys.count;
     timeline_move_caret(timeline, first);
     timeline_move_caret(timeline, last, select = true);
 }
@@ -124,7 +124,7 @@ timeline_advance :: (timeline: *Solution_Timeline, direction: s64) {
     following := timeline.caret == timeline.playhead && timeline.anchor == timeline.playhead;
     timeline.playhead = max(0, min(timeline.keys.count, timeline.playhead + direction));
     if following {
-        timeline.caret = timeline.playhead;
+        timeline.caret  = timeline.playhead;
         timeline.anchor = timeline.playhead;
     }
 }
@@ -144,7 +144,7 @@ timeline_apply_game_undo :: (timeline: *Solution_Timeline) -> bool {
 timeline_clear_executed :: (timeline: *Solution_Timeline) {
     count := timeline.playhead;
     timeline_erase(timeline, 0, count);
-    timeline.caret = 0;
+    timeline.caret  = 0;
     timeline.anchor = 0;
 }
 
@@ -160,7 +160,3 @@ timeline_serialize :: (timeline: *Solution_Timeline) -> string {
     }
     return builder_to_string(*result);
 }
-
-#scope_file
-#import "Basic";
-#import "String";

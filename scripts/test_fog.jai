@@ -35,6 +35,6 @@ live_test :: () -> string {
 #load "../src/platform/windows/console.jai";
 #import "Basic";
 #import "Compiler";
-Win :: #import "Windows";
-Fog :: #import,file "../src/game/fog_memory.jai";
+Win     :: #import "Windows";
+Fog     :: #import,file "../src/game/fog_memory.jai";
 Process :: #import,file "../src/platform/windows/process.jai";

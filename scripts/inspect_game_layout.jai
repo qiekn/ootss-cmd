@@ -46,12 +46,12 @@ inspect :: () -> string {
         snapshot, snapshot_error := App.game_camera_snapshot(memory, layout);
         print("Camera position=%, mode=%, error=%\n", snapshot.position, snapshot.mode, snapshot_error);
     }
-    fog,fog_error:=Fog.fog_inspect(window);
+    fog,fog_error := Fog.fog_inspect(window);
     print("Production fog: % %\n",fog,fog_error);
     catalog: App.Subtitles_Catalog;
     defer App.subtitles_catalog_free(*catalog);
     subtitle_error := App.subtitles_catalog_load(*catalog, App.game_subtitles_directory(),
-                                               mapping_file=tprint("%/../data/subtitles.json", #filepath));
+                                               mapping_file = tprint("%/../data/subtitles.json", #filepath));
     print("Subtitles: English sections=%, Chinese sections=%, error=%\n",
           catalog.english.sections.count, catalog.chinese.sections.count, subtitle_error);
     if !scene_error.count && !subtitle_error.count {
@@ -71,7 +71,7 @@ inspect_roots :: (memory: App.Process_Memory, code: [] u8, code_rva: u64) {
     pe := memory.module.base + (cast(*u32)(dos.data + 0x3c)).*;
     header: [24] u8;
     assert(App.process_read_memory(memory.handle, pe, *header, header.count));
-    count := (cast(*u16)(header.data + 6)).*;
+    count    := (cast(*u16)(header.data + 6)).*;
     optional := (cast(*u16)(header.data + 20)).*;
     for section_index: 0..cast(s64) count-1 {
         section: [40] u8;
@@ -79,7 +79,7 @@ inspect_roots :: (memory: App.Process_Memory, code: [] u8, code_rva: u64) {
         flags := (cast(*u32)(section.data + 36)).*;
         if (flags & 0xe0000000) != 0xc0000000 continue;
         size := (cast(*u32)(section.data + 8)).*;
-        rva := (cast(*u32)(section.data + 12)).*;
+        rva  := (cast(*u32)(section.data + 12)).*;
         if !size || size > 64*1024*1024 || !App.process_module_contains(memory.module, memory.module.base+rva, size) continue;
         data := NewArray(size, u8);
         defer free(data.data);
@@ -88,7 +88,7 @@ inspect_roots :: (memory: App.Process_Memory, code: [] u8, code_rva: u64) {
             root := (cast(*u64)(data.data + offset * 8)).*;
             if root < 0x100000000 || root & 7 || !App.process_memory_range_valid(root, 0x380) ||
                App.process_module_contains(memory.module, root, 1) continue;
-            name: [2] u64;
+            name:  [2] u64;
             bytes: [128] u8;
             if !App.process_read_memory(memory.handle, root, *name, 16) || !name[0] || name[0] > 128 ||
                !App.process_read_memory(memory.handle, name[1], *bytes, name[0]) continue;

@@ -26,7 +26,7 @@ send_alt :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = D
 Send_Result :: struct {
     success := false;
     sent_keys: s64;
-    error: string;
+    error:     string;
 }
 
 SEND_KEY_LIMIT :: 65536;
@@ -66,7 +66,7 @@ expand_send :: (commands: string, alternate := false) -> (expanded: string, erro
         }
         if c >= #char "A" && c <= #char "Z" c += #char "a" - #char "A";
         letter := c >= #char "a" && c <= #char "z";
-        wait := c == #char "_";
+        wait   := c == #char "_";
         if !letter && !wait && (c < #char "0" || c > #char "9") {
             return "", "Use letters, repeat groups, _ waits, digit keys, or whitespace (example: w3 (ad)3 _2 2).";
         }
@@ -120,8 +120,8 @@ send_key_event :: (scan: u16, key_up := false, extended := false) -> (success: b
 // A complete press/release cycle also supports rebound and extended game keys.
 send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL,
                    target_window: Windows.HWND = null, poll: () -> bool = null,
-                   emit: (scan: u16, key_up: bool, extended: bool) -> (bool, string) = send_key_event,
-                   wait: (milliseconds: s32, target: Windows.HWND, poll: () -> bool) -> string = null,
+                   emit:          (scan: u16, key_up: bool, extended: bool) -> (bool, string) = send_key_event,
+                   wait:          (milliseconds: s32, target: Windows.HWND, poll: () -> bool) -> string = null,
                    after_release: (data: *void) -> string = null, release_data: *void = null) -> Send_Result {
     result: Send_Result;
     if !wait wait = send_wait;
@@ -136,7 +136,7 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
     pressed, press_error := emit(scan, false, extended);
     if !pressed { result.error = press_error; return result; }
     result.sent_keys = 1;
-    hold_error := wait(hold_ms, target, poll);
+    hold_error              := wait(hold_ms, target, poll);
     released, release_error := emit(scan, true, extended);
     if !released {
         emit(scan, true, extended); // Retry the release even if focus was lost during the hold.
@@ -151,7 +151,7 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
         result.error = after_release(release_data);
         if result.error.count return result;
     }
-    result.error = wait(interval_ms, target, poll);
+    result.error   = wait(interval_ms, target, poll);
     result.success = !result.error.count;
     return result;
 }
@@ -204,7 +204,7 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
         if !released {
             send_scan_code(modifier_scan, key_up = true, extended = modifier_extended);
             result.success = false;
-            result.error = error;
+            result.error   = error;
         }
     }
     return result;
@@ -212,7 +212,6 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
 
 #scope_file
 
-#import "Basic";
 Windows :: #import "Windows";
 
 send_repeat_count :: (commands: string, position: *s64) -> (count: s64, error: string) {
@@ -317,8 +316,8 @@ scan_code_for_char :: (c: u8) -> u16 {
 
 send_scan_code :: (scan: u16, key_up := false, extended := false) -> (success: bool, error: string) {
     input: Win_Input;
-    input.type = INPUT_KEYBOARD;
-    input.keyboard.scan = scan;
+    input.type           = INPUT_KEYBOARD;
+    input.keyboard.scan  = scan;
     input.keyboard.flags = KEYEVENTF_SCANCODE;
     if extended input.keyboard.flags |= 0x0001;
     if key_up input.keyboard.flags |= KEYEVENTF_KEYUP;
@@ -330,26 +329,26 @@ send_scan_code :: (scan: u16, key_up := false, extended := false) -> (success: b
     return true, "";
 }
 
-// -----------------------------------------------------------------------------: Win32 ABI
+// ----------------------------------------------------------------------------: Win32 ABI
 
 INPUT_KEYBOARD     :: 1;
 KEYEVENTF_KEYUP    :: 0x0002;
 KEYEVENTF_SCANCODE :: 0x0008;
 
 Win_Mouse_Input :: struct {
-    dx: s32;
-    dy: s32;
+    dx:         s32;
+    dy:         s32;
     mouse_data: u32;
-    flags: u32;
-    time: u32;
+    flags:      u32;
+    time:       u32;
     extra_info: u64;
 }
 
 Win_Keyboard_Input :: struct {
-    vk: u16;
-    scan: u16;
-    flags: u32;
-    time: u32;
+    vk:         u16;
+    scan:       u16;
+    flags:      u32;
+    time:       u32;
     extra_info: u64;
 }
 
@@ -362,7 +361,7 @@ Win_Hardware_Input :: struct {
 Win_Input :: struct {
     type: u32;
     union {
-        mouse: Win_Mouse_Input;
+        mouse:    Win_Mouse_Input;
         keyboard: Win_Keyboard_Input;
         hardware: Win_Hardware_Input;
     }
@@ -374,5 +373,5 @@ Win_Input :: struct {
 #assert(size_of(Win_Keyboard_Input) == 24);
 #assert(size_of(Win_Input) == 40);
 
-user32 :: #library,system "user32";
+user32    :: #library,system "user32";
 SendInput :: (count: u32, inputs: *Win_Input, input_size: s32) -> u32 #foreign user32;

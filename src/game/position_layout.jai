@@ -1,16 +1,16 @@
-Game_Position_Field :: enum { LOGICAL; VISUAL; OUTPUT; PRE_MOVE; VELOCITY; }
+Game_Position_Field  :: enum { LOGICAL; VISUAL; OUTPUT; PRE_MOVE; VELOCITY; }
 Game_Position_Layout :: struct { offsets: [5] u64; }
 Game_Position_Target :: struct {
-    player: Game_Player_Location;
-    layout: Game_Position_Layout;
+    player:              Game_Player_Location;
+    layout:              Game_Position_Layout;
     before, destination: Game_Position;
 }
 Game_Struct_Member :: struct {
     name_count, name_data, type: u64;
-    offset: s64;
-    flags, padding: u32;
-    notes_count, notes_data: u64;
-    constant_offset: s64;
+    offset:                      s64;
+    flags, padding:              u32;
+    notes_count, notes_data:     u64;
+    constant_offset:             s64;
 }
 #assert(size_of(Game_Struct_Member) == 64);
 
@@ -27,14 +27,14 @@ game_metadata_name_matches :: (memory: Process_Memory, count: u64, data: u64, na
 game_position_member :: (memory: Process_Memory, owner: u64, name: string, child_name: string,
                          kind: u32 = 7, size: u32 = 0) -> (member: Game_Struct_Member, error: string) {
     missing := tprint("This game version's position field '%' could not be verified.", name);
-    info: Game_Entity_Type;
+    info:    Game_Entity_Type;
     members: Game_Entity_List;
     if !process_module_contains(memory.module, owner, 0x50) ||
        !process_read_memory(memory.handle, owner, *info, size_of(Game_Entity_Type)) || info.kind != 7 ||
        !process_read_memory(memory.handle, owner + 0x40, *members, size_of(Game_Entity_List)) ||
        !members.count || members.count > 256 ||
        !process_module_contains(memory.module, members.data, members.count * size_of(Game_Struct_Member)) return .{}, missing;
-    found: Game_Struct_Member;
+    found:   Game_Struct_Member;
     matches: s64;
     for i: 0..cast(s64) members.count-1 {
         candidate: Game_Struct_Member;
@@ -57,7 +57,7 @@ game_position_member :: (memory: Process_Memory, owner: u64, name: string, child
 
 game_position_layout :: (memory: Process_Memory, player: Game_Player_Location) -> (layout: Game_Position_Layout, error: string) {
     layout: Game_Position_Layout;
-    guy: u64;
+    guy:    u64;
     if !process_read_memory(memory.handle, player.entity + 0x108, *guy, 8) return layout, "Could not read the player's type.";
     entity, error := game_position_member(memory, guy, "entity", "Entity");
     if error.count return layout, error;
@@ -66,8 +66,8 @@ game_position_layout :: (memory: Process_Memory, player: Game_Player_Location) -
     names := string.["position", "visual_position", "output_position", "pre_move_position", "velocity"];
     vector_type: u64;
     for name: names {
-        owner := ifx it_index < 2 then undo.type else ifx it_index == 2 then entity.type else guy;
-        base := ifx it_index < 2 then entity.offset + undo.offset else ifx it_index == 2 then entity.offset else 0;
+        owner               := ifx it_index < 2 then undo.type else ifx it_index == 2 then entity.type else guy;
+        base                := ifx it_index < 2 then entity.offset + undo.offset else ifx it_index == 2 then entity.offset else 0;
         member, field_error := game_position_member(memory, owner, name, "Vector3", size = 12);
         if field_error.count return layout, field_error;
         if it_index == 0 {
@@ -155,8 +155,8 @@ game_commit_positions :: (reader: *Game_Position_Reader, original: Game_Position
             if !game_position_writer_current(reader, original) {
                 return "The controlled characters changed during teleport. No further fields were written.", changed;
             }
-            index := ifx instant then order[field] else 0;
-            value := ifx index == 4 then zero else target.destination;
+            index            := ifx instant then order[field] else 0;
+            value            := ifx index == 4 then zero else target.destination;
             success, written := process_write_memory(memory.handle, target.player.entity + target.layout.offsets[index], *value, 12);
             changed = changed || written > 0;
             if !success return tprint("Could not finish teleport (% of 12 bytes; Windows error %).", written, Win.GetLastError()), changed;
@@ -179,7 +179,3 @@ game_commit_positions :: (reader: *Game_Position_Reader, original: Game_Position
     }
     return "", changed;
 }
-
-#scope_file
-#import "Basic";
-Win :: #import "Windows";

@@ -111,7 +111,7 @@ check_text_newlines :: () {
     config: App.Console_Config;
     defer App.console_config_free(*config);
     hidden := "hud_show_level_name=false; hud_show_position=false; ";
-    error := App.console_config_parse(*config, tprint("%hud_text=\"First\\nSecond\"; hud_text='Third\\n\\nFourth';", hidden));
+    error  := App.console_config_parse(*config, tprint("%hud_text=\"First\\nSecond\"; hud_text='Third\\n\\nFourth';", hidden));
     check(!error.count && App.hud_details("", .{}, config.hud) == "First\nSecond\nThird\n\nFourth" &&
           App.hud_info_line_count(config.hud) == 5, "Both quote styles decode newlines and count every displayed row.");
     error = App.console_config_parse(*config, tprint("%hud_text='\\nBody\\n';", hidden));
@@ -150,7 +150,7 @@ check_config_application :: () {
     check(App.hud.next_sample == 0 && App.hud.next_frame == 0, "Changed HUD settings refresh on the next frame.");
     App.hud_notify("notification");
     check(App.hud.message == "notification", "Notifications remain available with only the level name enabled.");
-    App.hud.toast.visible = true;
+    App.hud.toast.visible       = true;
     settings.show_notifications = false;
     App.hud_apply_config(settings);
     check(!App.hud.toast.visible && !App.hud.message.count, "Disabling notifications hides and clears the current one immediately.");
@@ -159,7 +159,7 @@ check_config_application :: () {
     settings.show_notifications = true;
     App.hud_apply_config(settings);
     check(!App.hud.message.count, "Re-enabling notifications does not resurrect an old message.");
-    App.hud.info.visible = true;
+    App.hud.info.visible     = true;
     settings.show_level_name = false;
     App.hud_apply_config(settings);
     check(!App.hud.info.visible && !App.hud.details.count, "Disabling both information items removes their panel.");
@@ -247,15 +247,15 @@ check_level_only :: () {
     base := cast(u64) memory.data;
     memory[0x40] = 0x90;
     (cast(*u64)(memory.data + 0x80)).* = base + 0x200;
-    name := "mirror_12";
+    name   := "mirror_12";
     header := cast(*App.Game_Entity_List)(memory.data + 0x200);
     header.* = .{count = cast(u64) name.count, data = base + 0x300};
     for c: name memory[0x300 + it_index] = c;
     state: App.Hud_State;
     defer App.game_position_reader_close(*state.reader);
     state.settings.show_position = false;
-    state.reader.memory = .{handle = Win.GetCurrentProcess(), module = .{base = base, size = cast(u64) memory.count}};
-    state.reader.locator = .{slot = base + 0x80, instruction = base + 0x40, count = 1};
+    state.reader.memory          = .{handle = Win.GetCurrentProcess(), module = .{base = base, size = cast(u64) memory.count}};
+    state.reader.locator         = .{slot = base + 0x80, instruction = base + 0x40, count = 1};
     state.reader.locator.bytes[0] = 0x90;
     state.reader.error = "position reader untouched";
     details, error := App.hud_read_details(*state, 1);
@@ -263,16 +263,16 @@ check_level_only :: () {
     check(state.reader.error == "position reader untouched" && !state.reader.resolutions && !state.reader.scratch.count,
           "Level-only HUD never calls the position sampler.");
     free(details);
-    header.data = 0;
+    header.data    = 0;
     details, error = App.hud_read_details(*state, 2);
     check(error.count > 0 && details == "Unavailable", "Invalid scene data never reuses a stale level name.");
     free(details);
     state.settings.show_level_name = false;
-    details, error = App.hud_read_details(*state, 3);
+    details, error                 = App.hud_read_details(*state, 3);
     check(!error.count && !details.count && state.reader.error == "position reader untouched", "With both items disabled, even invalid scene memory is never read.");
     free(details);
     state.settings.show_position = true;
-    details, error = App.hud_read_details(*state, 4);
+    details, error               = App.hud_read_details(*state, 4);
     check(!error.count && details == "Unavailable" && state.reader.error != "position reader untouched",
           "Position-only mode queries characters without requiring a level-name read.");
     free(details);
@@ -280,7 +280,7 @@ check_level_only :: () {
 
 check_window :: () {
     before := Win.GetForegroundWindow();
-    dc := Win.wglGetCurrentDC();
+    dc     := Win.wglGetCurrentDC();
     panel: App.Hud_Panel;
     defer {
         App.hud_panel_hide(*panel);
@@ -316,7 +316,7 @@ check_layout :: () {
     check(App.hud_details("overworld", .{}) == "overworld\nUnavailable", "A missing player never reuses stale coordinates.");
     App.overlay.visible = true;
     defer App.overlay.visible = false;
-    App.hud.info.visible = true;
+    App.hud.info.visible  = true;
     App.hud.toast.visible = true;
     App.hud_update(1);
     check(!App.hud.info.visible && !App.hud.toast.visible, "Opening either console mode hides both HUD panels.");
@@ -336,7 +336,7 @@ check_layout :: () {
 }
 
 check_alpha :: () {
-    mask: [81] u8;
+    mask:   [81] u8;
     pixels: [324] u8;
     App.hud_compose_pixels(mask, pixels.data, 9, 9, 1);
     empty := true;
@@ -363,7 +363,7 @@ check_font :: (directory: string) {
         check(font != null, "Load the game's Karmina Bold font without a GL drawable.");
         width: s32 = 1920;
         height := size*2;
-        mask := NewArray(width*height, u8);
+        mask   := NewArray(width*height, u8);
         pixels := NewArray(width*height*4, u8);
         defer free(mask.data); defer free(pixels.data);
         App.hud_raster_line(mask, width, height, font, "Freecam enabled", 8, size);
@@ -385,6 +385,6 @@ check_font :: (directory: string) {
 #import "Compiler";
 #import "System";
 #import "String";
-App :: #import,file "../src/main.jai";
+App  :: #import,file "../src/main.jai";
 Simp :: #import "Simp";
-Win :: #import "Windows";
+Win  :: #import "Windows";

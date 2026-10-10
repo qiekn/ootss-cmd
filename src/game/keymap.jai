@@ -1,11 +1,11 @@
-Game_Key :: struct { vk: u32; scan: u16; extended: bool; }
+Game_Key    :: struct { vk: u32; scan: u16; extended: bool; }
 Game_Keymap :: struct {
-    up, down, left, right: Game_Key;
+    up, down, left, right:                                               Game_Key;
     undo, activate, switch_character, dragon, take, restart, fast, slow: Game_Key;
 }
 
 game_key_for_vk :: (vk: u32) -> Game_Key {
-    code := MapVirtualKeyW(vk, 4); // MAPVK_VK_TO_VSC_EX preserves E0 for arrow keys.
+    code     := MapVirtualKeyW(vk, 4); // MAPVK_VK_TO_VSC_EX preserves E0 for arrow keys.
     extended := (code & 0xff00) == 0xe000 || (vk >= 0x21 && vk <= 0x28) ||
                 vk == 0x2d || vk == 0x2e || vk == 0xa3 || vk == 0xa5;
     return .{vk, cast(u16)(code & 0xff), extended};
@@ -35,8 +35,8 @@ game_keymap_parse :: (source: string, map: *Game_Keymap, only_action: string = "
         end: s64;
         while end < line.count && line[end] != #char " " && line[end] != #char "\t" end += 1;
         if end == line.count continue;
-        name := slice(line, 0, end);
-        action := trim(slice(line, end, line.count - end));
+        name    := slice(line, 0, end);
+        action  := trim(slice(line, end, line.count - end));
         comment := find_index_from_left(action, "#");
         if comment >= 0 action = trim(slice(action, 0, comment));
         if only_action.count && !equal_nocase(action, only_action) continue;
@@ -70,7 +70,7 @@ game_keymap_load :: (map: *Game_Keymap, only_action: string = "") -> (message: s
     defer CoTaskMemFree(folder);
     length: s32;
     while folder[length] length += 1;
-    path := tprint("%/Order of the Sinking Star/User.keymap", wide_to_utf8(folder, length,, temp));
+    path          := tprint("%/Order of the Sinking Star/User.keymap", wide_to_utf8(folder, length,, temp));
     text, success := read_entire_file(path, log_errors = false);
     if !success return "User.keymap was not found; using the game's default keyboard bindings.", true;
     defer free(text);
@@ -99,11 +99,6 @@ game_symbol_for_vk :: (map: *Game_Keymap, vk: u32) -> u8 {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
-#import "File";
-#import "Windows_Utf8";
-Win :: #import "Windows";
 
 game_parse_key_name :: (name: string) -> Game_Key {
     if name.count == 1 {
@@ -120,9 +115,9 @@ game_parse_key_name :: (name: string) -> Game_Key {
     return .{};
 }
 
-user32 :: #library,system "user32";
-shell32 :: #library,system "shell32";
-ole32 :: #library,system "ole32";
-MapVirtualKeyW :: (code: u32, mode: u32) -> u32 #foreign user32;
+user32               :: #library,system "user32";
+shell32              :: #library,system "shell32";
+ole32                :: #library,system "ole32";
+MapVirtualKeyW       :: (code: u32, mode: u32) -> u32 #foreign user32;
 SHGetKnownFolderPath :: (folder: *Win.GUID, flags: u32, token: Win.HANDLE, path: **u16) -> s32 #foreign shell32;
-CoTaskMemFree :: (memory: *void) #foreign ole32;
+CoTaskMemFree        :: (memory: *void) #foreign ole32;

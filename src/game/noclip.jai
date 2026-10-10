@@ -1,16 +1,16 @@
 NOCLIP_REPEAT_DELAY :: 150; // Milliseconds between grid steps while a movement key stays held.
 
 Noclip_State :: struct {
-    enabled: bool;
-    game: Win.HWND;
-    pid: u32;
-    locator: Game_Manager_Locator;
-    down, consumed, repeat: [4] bool;
-    last_direction: s64;
-    queue: [64] u8;
+    enabled:                  bool;
+    game:                     Win.HWND;
+    pid:                      u32;
+    locator:                  Game_Manager_Locator;
+    down, consumed, repeat:   [4] bool;
+    last_direction:           s64;
+    queue:                    [64] u8;
     queue_start, queue_count: s64;
-    last_step_at: float64;
-    overflow: bool;
+    last_step_at:             float64;
+    overflow:                 bool;
 }
 
 noclip: Noclip_State;
@@ -24,10 +24,10 @@ noclip_direction_index :: (vk: u32) -> s64 {
 }
 
 noclip_clear_motion :: () {
-    noclip.queue_start = 0;
-    noclip.queue_count = 0;
+    noclip.queue_start  = 0;
+    noclip.queue_count  = 0;
     noclip.last_step_at = 0;
-    noclip.overflow = false;
+    noclip.overflow     = false;
     for *held: noclip.repeat held.* = false;
     // Keep consumed/down until release, so a key held across focus loss cannot restart movement.
 }
@@ -62,7 +62,7 @@ noclip_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND,
 noclip_next_direction :: (now: float64, fast := false) -> u8 {
     direction: u8;
     if noclip.queue_count {
-        direction = noclip.queue[noclip.queue_start];
+        direction          = noclip.queue[noclip.queue_start];
         noclip.queue_start = (noclip.queue_start + 1) % noclip.queue.count;
         noclip.queue_count -= 1;
     } else {
@@ -97,10 +97,10 @@ console_set_noclip :: (state: *Console_State) {
         if enabled {
             error := noclip_install_hook();
             if error.count { console_write(state, error, .ERROR); return; }
-            noclip = .{};
+            noclip         = .{};
             noclip.enabled = true;
-            noclip.game = find_game_window();
-            noclip.pid = process_window_pid(noclip.game);
+            noclip.game    = find_game_window();
+            noclip.pid     = process_window_pid(noclip.game);
             for vk: "WSAD" noclip.down[it_index] = Win.GetAsyncKeyState(cast(s32) vk) < 0;
         } else noclip_deinit();
         hud_notify(ifx noclip.enabled then "Noclip enabled" else "Noclip disabled");
@@ -113,11 +113,11 @@ noclip_update :: (state: *Console_State, now: float64) {
     if !noclip.enabled return;
     if freecam.enabled || freecam.stopping { noclip_clear_motion(); return; }
     game := overlay.game;
-    pid := process_window_pid(game);
+    pid  := process_window_pid(game);
     if game != noclip.game || pid != noclip.pid {
         noclip_clear_motion();
-        noclip.game = game;
-        noclip.pid = pid;
+        noclip.game    = game;
+        noclip.pid     = pid;
         noclip.locator = .{};
     }
     if !game || !pid || Win.GetForegroundWindow() != game || overlay.quit_requested || editor_save_prompt.active ||
@@ -143,8 +143,3 @@ noclip_deinit :: () {
     noclip_remove_hook();
     noclip = .{};
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-Win :: #import "Windows";

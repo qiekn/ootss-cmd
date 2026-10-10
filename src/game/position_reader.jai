@@ -1,34 +1,34 @@
 // A read-only session. Every sample rechecks selection, even when the scene and
 // entity list are unchanged (C / number-key selection does not replace entities).
 Game_Position_Sample :: struct {
-    valid: bool;
-    position: Game_Position;
-    player: Game_Player_Location;
-    entity_id: u32;
-    controlled_count: s64;
+    valid:             bool;
+    position:          Game_Position;
+    player:            Game_Player_Location;
+    entity_id:         u32;
+    controlled_count:  s64;
     selection_version: u64;
 }
 
 Game_Position_Guy :: struct {
-    entity: u64;
-    selection: Game_Selection_Layout;
-    entity_id, observed_id: u32;
+    entity:                  u64;
+    selection:               Game_Selection_Layout;
+    entity_id, observed_id:  u32;
     status, observed_status: u16;
-    position: Game_Position;
+    position:                Game_Position;
 }
 
 Game_Position_Reader :: struct {
-    memory: Process_Memory;
-    owns_memory: bool;
-    locator: Game_Manager_Locator;
-    player: Game_Player_Location;
-    objects, scratch: [] u64;
-    guys: [] Game_Position_Guy;
-    guy_count: s64;
+    memory:                Process_Memory;
+    owns_memory:           bool;
+    locator:               Game_Manager_Locator;
+    player:                Game_Player_Location;
+    objects, scratch:      [] u64;
+    guys:                  [] Game_Position_Guy;
+    guy_count:             s64;
     selection_initialized: bool;
-    selection_version: u64;
-    resolutions: u64;
-    error: string;
+    selection_version:     u64;
+    resolutions:           u64;
+    error:                 string;
 }
 
 game_position_reader_close :: (reader: *Game_Position_Reader) {
@@ -49,7 +49,7 @@ game_position_reader_init :: (reader: *Game_Position_Reader, memory: Process_Mem
 game_position_reader_open :: (reader: *Game_Position_Reader, window: Win.HWND) -> string {
     memory, error := process_open_memory(window, GAME_EXECUTABLE);
     if error.count return error;
-    error = game_position_reader_init(reader, memory);
+    error              = game_position_reader_init(reader, memory);
     reader.owns_memory = true;
     if error.count game_position_reader_close(reader);
     return error;
@@ -65,7 +65,7 @@ game_position_sample_same_group :: (a: Game_Position_Sample, b: Game_Position_Sa
 }
 
 game_position_reader_resolve :: (reader: *Game_Position_Reader, manager: u64, objects: Game_Entity_List) -> bool {
-    reader.player = .{};
+    reader.player                = .{};
     reader.selection_initialized = false;
     reader.selection_version += 1;
     reader.resolutions += 1;
@@ -174,8 +174,8 @@ game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := 
     for i: 0..reader.guy_count-1 {
         guy := *reader.guys[i];
         owner, type: u64;
-        id: u32;
-        status: u16;
+        id:          u32;
+        status:      u16;
         if !process_read_memory(memory.handle, guy.entity + 0xf0, *owner, 8) || owner != manager ||
            !process_read_memory(memory.handle, guy.entity + 0x108, *type, 8) || type != guy.selection.type ||
            !process_read_memory(memory.handle, guy.entity + 0x100, *id, 4) || id != guy.observed_id ||
@@ -192,17 +192,13 @@ game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := 
     reader.selection_initialized = true;
     if anchor < 0 { reader.error = "No currently controlled character was found in this scene."; return result; }
     guy := reader.guys[anchor];
-    reader.player.entity = guy.entity;
-    reader.player.entity_id = guy.entity_id;
-    result.player = reader.player;
-    result.entity_id = guy.entity_id;
-    result.position = guy.position;
+    reader.player.entity     = guy.entity;
+    reader.player.entity_id  = guy.entity_id;
+    result.player            = reader.player;
+    result.entity_id         = guy.entity_id;
+    result.position          = guy.position;
     result.selection_version = reader.selection_version;
-    result.valid = true;
-    reader.error = "";
+    result.valid             = true;
+    reader.error             = "";
     return result;
 }
-
-#scope_file
-#import "Basic";
-Win :: #import "Windows";

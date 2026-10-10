@@ -34,6 +34,3 @@ console_color :: inline (rgb: u32) -> Vector4 {
 // All subtitle speakers use the trader's dark green.
 SUBTITLE_SPEAKER_COLOR :: 0x398e82;
 SUBTITLE_COMMENT_COLOR :: 0xe6cb6f;
-
-#scope_file
-#import "Math";

@@ -1,28 +1,28 @@
 // Size is the number of font rows that fit vertically in the game client.
-HUD_INFO_SIZE :: 40;
+HUD_INFO_SIZE   :: 40;
 HUD_NOTICE_SIZE :: 30;  // which means, max lines of window_height, e.g. 10 means 10 lines full the window height. less is bigger
 
 Hud_Panel :: struct {
-    window: Win.HWND;
-    surface: Overlay_Image_Surface;
-    mask: [] u8;
-    font: *Simp.Dynamic_Font;
-    text: string;
+    window:                       Win.HWND;
+    surface:                      Overlay_Image_Surface;
+    mask:                         [] u8;
+    font:                         *Simp.Dynamic_Font;
+    text:                         string;
     font_height, available_width: s32;
-    x, y: s32;
-    opacity: u8;
-    visible: bool;
+    x, y:                         s32;
+    opacity:                      u8;
+    visible:                      bool;
 }
 
 Hud_State :: struct {
-    enabled: bool = true;
-    settings: Hud_Config;
-    info, toast: Hud_Panel;
-    message, details: string;
+    enabled:                                                  bool = true;
+    settings:                                                 Hud_Config;
+    info, toast:                                              Hud_Panel;
+    message, details:                                         string;
     expires, next_frame, next_sample, retry_at, next_resolve: float64;
-    reader: Game_Position_Reader;
-    pid: u32;
-    suppressed: bool;
+    reader:                                                   Game_Position_Reader;
+    pid:                                                      u32;
+    suppressed:                                               bool;
 }
 hud: Hud_State;
 
@@ -40,7 +40,7 @@ hud_notify :: (message: string, duration: float64 = 1.0) {
 
 command_hud :: (state: *Console_State, arguments: string) {
     argument := trim(arguments);
-    enabled := !hud.enabled;
+    enabled  := !hud.enabled;
     if equal_nocase(argument, "enable") enabled = true;
     else if equal_nocase(argument, "disable") enabled = false;
     else if argument.count { console_write(state, "Usage: hud [enable|disable]", .ERROR); return; }
@@ -49,10 +49,10 @@ command_hud :: (state: *Console_State, arguments: string) {
 }
 
 hud_set_enabled :: (enabled: bool) {
-    hud.enabled = enabled;
-    hud.next_sample = 0;
-    hud.next_frame = 0;
-    hud.retry_at = 0;
+    hud.enabled      = enabled;
+    hud.next_sample  = 0;
+    hud.next_frame   = 0;
+    hud.retry_at     = 0;
     hud.next_resolve = 0;
     if !enabled {
         hud_hide();
@@ -80,9 +80,9 @@ hud_apply_config :: (settings: Hud_Config) {
     if previous.enabled != settings.enabled hud_set_enabled(settings.enabled);
     hud.settings = hud_config_copy(settings);
     defer hud_config_free(*previous);
-    hud.next_sample = 0;
-    hud.next_frame = 0;
-    hud.retry_at = 0;
+    hud.next_sample  = 0;
+    hud.next_frame   = 0;
+    hud.retry_at     = 0;
     hud.next_resolve = 0;
     if !hud.enabled || !settings.show_notifications {
         hud_panel_hide(*hud.toast);
@@ -125,7 +125,7 @@ hud_details :: (name: string, sample: Game_Position_Sample, settings: Hud_Config
 hud_info_panel_height :: (font_height: s32, rows: s32, available_height: s32) -> s32 {
     if rows <= 0 || available_height <= 0 return 0;
     padding := max(cast(s32) 4, font_height / 6);
-    needed := (cast(s64) font_height + padding)*rows + 2*padding;
+    needed  := (cast(s64) font_height + padding)*rows + 2*padding;
     return cast(s32) min(needed, cast(s64) available_height);
 }
 
@@ -134,7 +134,7 @@ hud_read_details :: (state: *Hud_State, now: float64) -> (text: string, error: s
     name: string;
     defer free(name);
     sample: Game_Position_Sample;
-    scene: Game_Scene_Location;
+    scene:  Game_Scene_Location;
     if state.reader.memory.handle {
         if state.settings.show_level_name {
             error: string;
@@ -163,11 +163,11 @@ hud_sample :: (now: float64) {
     pid := process_window_pid(overlay.game);
     if pid != hud.pid {
         game_position_reader_close(*hud.reader);
-        hud.pid = pid;
-        hud.retry_at = 0;
+        hud.pid          = pid;
+        hud.retry_at     = 0;
         hud.next_resolve = 0;
-        hud.info.font = null;
-        hud.toast.font = null;
+        hud.info.font    = null;
+        hud.toast.font   = null;
     }
     if !hud_info_line_count(hud.settings) return;
     if (hud.settings.show_level_name || hud.settings.show_position) && !hud.reader.memory.handle && pid && now >= hud.retry_at {
@@ -192,8 +192,8 @@ hud_raster_line :: (mask: [] u8, width: s32, height: s32, font: *Simp.Dynamic_Fo
     for glyph: font.temporary_glyphs {
         if glyph.page {
             atlas := glyph.page.bitmap_data;
-            left := pen + glyph.offset_x;
-            top := baseline - glyph.ascent;
+            left  := pen + glyph.offset_x;
+            top   := baseline - glyph.ascent;
             for gy: 0..cast(s64) glyph.height-1 {
                 y := top + gy;
                 if y < 0 || y >= height continue;
@@ -201,9 +201,9 @@ hud_raster_line :: (mask: [] u8, width: s32, height: s32, font: *Simp.Dynamic_Fo
                     dx := left + gx;
                     if dx < 0 || dx >= width continue;
                     // The atlas is bottom-up; the DIB is top-down.
-                    source := ((cast(s64) glyph.y0 + glyph.height - 1 - gy) * atlas.width + glyph.x0 + gx) * 4;
+                    source   := ((cast(s64) glyph.y0 + glyph.height - 1 - gy) * atlas.width + glyph.x0 + gx) * 4;
                     coverage := cast(u32) atlas.data[source + 3];
-                    target := *mask[y * width + dx];
+                    target   := *mask[y * width + dx];
                     target.* = cast(u8)(coverage + (target.* * (255 - coverage) + 127) / 255);
                 }
             }
@@ -240,16 +240,16 @@ hud_draw_panel :: (panel: *Hud_Panel, x: s32, y: s32, width: s32, height: s32,
     if width <= 0 || height <= 0 || !hud_panel_create(panel) return;
     font_changed := !panel.font || panel.font_height != font_height;
     if font_changed {
-        panel.font = get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, font_height);
+        panel.font        = get_game_font_at_size(SUBTITLE_ENGLISH_FONT, SUBTITLE_ENGLISH_BUNDLED_FONT, font_height);
         panel.font_height = font_height;
     }
     if !panel.font { hud_panel_hide(panel); return; }
     redraw := font_changed || panel.text != text || panel.available_width != width || panel.surface.height != height;
     if redraw {
-        font := panel.font;
+        font  := panel.font;
         lines := split(text, #char "\n");
         defer array_free(lines);
-        padding := max(cast(s32) 4, font_height / 6);
+        padding      := max(cast(s32) 4, font_height / 6);
         render_width := width;
         if !centered {
             measured: s64;
@@ -261,7 +261,7 @@ hud_draw_panel :: (panel: *Hud_Panel, x: s32, y: s32, width: s32, height: s32,
         if panel.mask.count != count { free(panel.mask.data); panel.mask = NewArray(count, u8); }
         memset(panel.mask.data, 0, count);
         for line: lines {
-            left := ifx centered then (render_width-Simp.prepare_text(font, line))/2 else cast(s64) padding;
+            left     := ifx centered then (render_width-Simp.prepare_text(font, line))/2 else cast(s64) padding;
             baseline := padding + font.max_ascender + it_index * (font_height + padding);
             hud_raster_line(panel.mask, render_width, height, font, line, left, baseline);
         }
@@ -286,10 +286,10 @@ hud_update :: (now: float64) {
     bounds: Win.RECT;
     origin: Win.POINT;
     if !Win.GetClientRect(overlay.game, *bounds) || !Win.ClientToScreen(overlay.game, *origin) return;
-    info_height := hud_font_height(bounds.bottom, HUD_INFO_SIZE);
+    info_height   := hud_font_height(bounds.bottom, HUD_INFO_SIZE);
     notice_height := hud_font_height(bounds.bottom, HUD_NOTICE_SIZE);
-    margin := max(cast(s32) 8, bounds.bottom / 60);
-    rows := hud_info_line_count(hud.settings);
+    margin        := max(cast(s32) 8, bounds.bottom / 60);
+    rows          := hud_info_line_count(hud.settings);
     if rows {
         hud_draw_panel(*hud.info, origin.x + margin, origin.y + margin, bounds.right - 2*margin,
                        hud_info_panel_height(info_height, rows, bounds.bottom - 2*margin), hud.details, info_height, false, 255);
@@ -315,11 +315,3 @@ hud_deinit :: () {
     hud_config_free(*hud.settings);
     hud = .{};
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-#import "Math";
-#import "System";
-Win :: #import "Windows";
-Simp :: #import "Simp";

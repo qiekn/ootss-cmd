@@ -1,13 +1,13 @@
 SUBTITLES_MAPPING_FILE :: "data/subtitles.json";
 
 Subtitle_Level_Mapping :: struct {
-    level_name: string;
+    level_name:     string;
     subtitle_names: [..] string;
 }
 
 Subtitles_Mapping :: struct {
     version: s64;
-    levels: [..] Subtitle_Level_Mapping;
+    levels:  [..] Subtitle_Level_Mapping;
 }
 
 subtitles_mapping_find_level :: (mapping: *Subtitles_Mapping, name: string) -> *Subtitle_Level_Mapping {
@@ -71,10 +71,6 @@ subtitles_mapping_free :: (mapping: *Subtitles_Mapping) {
 }
 
 #scope_file
-#import "Basic";
-#import "File";
-#import "String";
-Json :: #import "Json";
 
 subtitles_mapping_valid_name :: (name: string) -> bool {
     if !name.count return false;

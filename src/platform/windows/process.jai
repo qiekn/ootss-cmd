@@ -63,7 +63,7 @@ process_module_writable_data :: (memory: Process_Memory, address: u64, bytes: u6
        !process_read_memory(memory.handle, pe, *header, header.count) ||
        (cast(*u32) header.data).* != 0x00004550 || (cast(*u16)(header.data + 4)).* != 0x8664 ||
        (cast(*u16)(header.data + 24)).* != 0x20b return false;
-    count := (cast(*u16)(header.data + 6)).*;
+    count         := (cast(*u16)(header.data + 6)).*;
     optional_size := (cast(*u16)(header.data + 20)).*;
     if !count || count > 96 || optional_size < 0xf0 return false;
     table := pe + 24 + optional_size;
@@ -123,7 +123,7 @@ process_read_module_section :: (memory: Process_Memory, wanted_name: string, req
        (cast(*u32) header.data).* != 0x00004550 ||
        (cast(*u16)(header.data + 4)).* != 0x8664 ||
        (cast(*u16)(header.data + 24)).* != 0x20b return .[], 0, "Expected a 64-bit Windows game executable.";
-    count := (cast(*u16)(header.data + 6)).*;
+    count         := (cast(*u16)(header.data + 6)).*;
     optional_size := (cast(*u16)(header.data + 20)).*;
     if count == 0 || count > 96 || optional_size < 0xf0 return .[], 0, "Invalid game section table.";
     sections := NewArray(count, Process_PE_Section);
@@ -181,25 +181,25 @@ process_find_module :: (pid: u32, executable: string) -> (module: Process_Module
 
 Process_Module_Entry :: struct {
     size, module_id, process_id, global_usage, process_usage: u32;
-    base: *u8;
-    base_size: u32;
-    module: Win.HMODULE;
-    name: [256] u16;
-    path: [260] u16;
+    base:                                                     *u8;
+    base_size:                                                u32;
+    module:                                                   Win.HMODULE;
+    name:                                                     [256] u16;
+    path:                                                     [260] u16;
 }
 #assert(size_of(Process_Module_Entry) == 1080);
 
 Process_PE_Section :: struct {
-    name: [8] u8;
+    name:                                                               [8] u8;
     virtual_size, rva, raw_size, raw_offset, relocations, line_numbers: u32;
-    relocation_count, line_count: u16;
-    flags: u32;
+    relocation_count, line_count:                                       u16;
+    flags:                                                              u32;
 }
 #assert(size_of(Process_PE_Section) == 40);
 
 Process_Window_Search :: struct {
     executable, window_class, preferred_title: string;
-    result: Win.HWND;
+    result:                                    Win.HWND;
 }
 
 process_find_window_callback :: (window: Win.HWND, parameter: s64) -> s32 #c_call {
@@ -210,7 +210,7 @@ process_find_window_callback :: (window: Win.HWND, parameter: s64) -> s32 #c_cal
         length := GetClassNameW(window, class_buffer.data, class_buffer.count);
         if wide_to_utf8(class_buffer.data, length,, temp) != search.window_class return 1;
 
-        pid := process_window_pid(window);
+        pid     := process_window_pid(window);
         process := OpenProcess(0x1000, 0, pid); // PROCESS_QUERY_LIMITED_INFORMATION
         if !process return 1;
         defer Win.CloseHandle(process);
@@ -233,18 +233,18 @@ process_find_window_callback :: (window: Win.HWND, parameter: s64) -> s32 #c_cal
     }
 }
 
-user32 :: #library,system "user32";
-kernel32 :: #library,system "kernel32";
-EnumWindows :: (callback: (window: Win.HWND, parameter: s64) -> s32 #c_call, parameter: s64) -> s32 #foreign user32;
-GetClassNameW :: (window: Win.HWND, text: *u16, capacity: s32) -> s32 #foreign user32;
-GetWindowTextW :: (window: Win.HWND, text: *u16, capacity: s32) -> s32 #foreign user32;
-GetWindowThreadProcessId :: (window: Win.HWND, pid: *u32) -> u32 #foreign user32;
-IsWindowVisible :: (window: Win.HWND) -> s32 #foreign user32;
-OpenProcess :: (access: u32, inherit: s32, pid: u32) -> Win.HANDLE #foreign kernel32;
-GetExitCodeProcess :: (process: Win.HANDLE, status: *u32) -> s32 #foreign kernel32;
+user32                     :: #library,system "user32";
+kernel32                   :: #library,system "kernel32";
+EnumWindows                :: (callback: (window: Win.HWND, parameter: s64) -> s32 #c_call, parameter: s64) -> s32 #foreign user32;
+GetClassNameW              :: (window: Win.HWND, text: *u16, capacity: s32) -> s32 #foreign user32;
+GetWindowTextW             :: (window: Win.HWND, text: *u16, capacity: s32) -> s32 #foreign user32;
+GetWindowThreadProcessId   :: (window: Win.HWND, pid: *u32) -> u32 #foreign user32;
+IsWindowVisible            :: (window: Win.HWND) -> s32 #foreign user32;
+OpenProcess                :: (access: u32, inherit: s32, pid: u32) -> Win.HANDLE #foreign kernel32;
+GetExitCodeProcess         :: (process: Win.HANDLE, status: *u32) -> s32 #foreign kernel32;
 QueryFullProcessImageNameW :: (process: Win.HANDLE, flags: u32, path: *u16, length: *u32) -> s32 #foreign kernel32;
-ReadProcessMemory :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, received: *u64) -> s32 #foreign kernel32;
-WriteProcessMemory :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, written: *u64) -> s32 #foreign kernel32;
-CreateToolhelp32Snapshot :: (flags: u32, pid: u32) -> Win.HANDLE #foreign kernel32;
-Module32FirstW :: (snapshot: Win.HANDLE, entry: *Process_Module_Entry) -> s32 #foreign kernel32;
-Module32NextW :: (snapshot: Win.HANDLE, entry: *Process_Module_Entry) -> s32 #foreign kernel32;
+ReadProcessMemory          :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, received: *u64) -> s32 #foreign kernel32;
+WriteProcessMemory         :: (process: Win.HANDLE, address: *void, buffer: *void, bytes: u64, written: *u64) -> s32 #foreign kernel32;
+CreateToolhelp32Snapshot   :: (flags: u32, pid: u32) -> Win.HANDLE #foreign kernel32;
+Module32FirstW             :: (snapshot: Win.HANDLE, entry: *Process_Module_Entry) -> s32 #foreign kernel32;
+Module32NextW              :: (snapshot: Win.HANDLE, entry: *Process_Module_Entry) -> s32 #foreign kernel32;

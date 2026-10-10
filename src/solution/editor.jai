@@ -1,28 +1,28 @@
 Solution_Editor :: struct {
-    open: bool;
+    open:      bool;
     recording: bool;
-    custom: bool;
+    custom:    bool;
     synchronized := true; // Advisory only; manual game alignment never locks transport.
-    game: Win.HWND;
-    game_pid: u32;
-    record: Solution_Record;
-    timeline: Solution_Timeline;
-    transport: Editor_Transport;
-    keymap: Game_Keymap;
-    status: string;
-    status_error: bool;
-    focus_requested: bool;
+    game:               Win.HWND;
+    game_pid:           u32;
+    record:             Solution_Record;
+    timeline:           Solution_Timeline;
+    transport:          Editor_Transport;
+    keymap:             Game_Keymap;
+    status:             string;
+    status_error:       bool;
+    focus_requested:    bool;
     focus_from_console: bool;
-    focus_deadline: float64;
-    ready_at: float64;
-    reset_requested: bool;
-    reset_timeline: Solution_Timeline;
+    focus_deadline:     float64;
+    ready_at:           float64;
+    reset_requested:    bool;
+    reset_timeline:     Solution_Timeline;
 }
 editor: Solution_Editor;
 
 editor_set_status :: (message: string, error := false) {
     free(editor.status);
-    editor.status = copy_string(message);
+    editor.status       = copy_string(message);
     editor.status_error = error;
     if error console_write(*console, message, .ERROR);
 }
@@ -30,7 +30,7 @@ editor_set_status :: (message: string, error := false) {
 // Resolve and validate the requested record before touching an open editor.
 editor_load_record :: (requested: string, custom_only := false, filename := SOLUTIONS_FILE,
                        custom_filename := CUSTOM_INPUTS_FILE, marker_file := "data/marker.json",
-                       answer_file := "data/solutions.txt", read_scene: Game_Level_Query = game_read_scene)
+                       answer_file     := "data/solutions.txt", read_scene: Game_Level_Query = game_read_scene)
                       -> (record: Solution_Record, custom: bool, temporary: bool, error: string) {
     temporary := !custom_only && equal_nocase(requested, "temp");
     if temporary return .{area = copy_string("none")}, true, true, "";
@@ -47,7 +47,7 @@ editor_load_record :: (requested: string, custom_only := false, filename := SOLU
     if index < 0 && requested.count && !custom {
         error = custom_inputs_load(*database, custom_filename);
         if error.count return .{}, false, false, error;
-        index = solution_find_name(*database, name, ignore_case = true);
+        index  = solution_find_name(*database, name, ignore_case = true);
         custom = true;
     }
     if index < 0 && !requested.count {
@@ -80,7 +80,7 @@ editor_open_solution :: (level_name: string = "", custom_only := false) {
         console_write(*console, error, .ERROR);
         return;
     }
-    keymap: Game_Keymap;
+    keymap:       Game_Keymap;
     keymap_ready: bool;
     error, keymap_ready = game_keymap_load(*keymap);
     if error.count console_write(*console, error, ifx keymap_ready then .INFO else .ERROR);
@@ -93,22 +93,22 @@ editor_open_solution :: (level_name: string = "", custom_only := false) {
         console_write(*console, "Could not create the solution editor or install its input hook.", .ERROR);
         return;
     }
-    editor.record = record;
-    record = .{};
-    editor.timeline = timeline;
-    timeline = .{};
-    editor.keymap = keymap;
-    editor.custom = custom;
-    editor.transport = .{};
-    editor.game = game;
-    editor.game_pid = game_window_pid(game);
-    editor.open = true;
-    editor.recording = false;
-    editor.synchronized = true;
-    editor.focus_requested = false;
+    editor.record             = record;
+    record                    = .{};
+    editor.timeline           = timeline;
+    timeline                  = .{};
+    editor.keymap             = keymap;
+    editor.custom             = custom;
+    editor.transport          = .{};
+    editor.game               = game;
+    editor.game_pid           = game_window_pid(game);
+    editor.open               = true;
+    editor.recording          = false;
+    editor.synchronized       = true;
+    editor.focus_requested    = false;
     editor.focus_from_console = false;
-    editor.ready_at = 0;
-    editor_view.minimized = false;
+    editor.ready_at           = 0;
+    editor_view.minimized     = false;
     editor_view_reset();
     if temporary editor_set_status("Temporary input. Record or edit, then Save with a custom name.");
     else editor_set_status("Click future cells, then use WASD or arrow keys; drag the strip to seek.");
@@ -125,9 +125,9 @@ editor_pause :: () {
     error := editor_transport_stop(*editor.transport, *editor.timeline, editor_emit_key);
     editor.reset_requested = false;
     timeline_free(*editor.reset_timeline);
-    editor.focus_requested = false;
+    editor.focus_requested    = false;
     editor.focus_from_console = false;
-    editor.ready_at = 0;
+    editor.ready_at           = 0;
     if error.count editor_set_status(error, true);
     editor_view.wheeling = false;
 }
@@ -141,12 +141,12 @@ editor_seek :: (position: s64, playing := false, scrubbing := false) {
     if editor_save_prompt.active { editor_set_status("Finish or cancel the save confirmation before seeking."); return; }
     if playing && !editor_validate_playback_speed(editor.transport.speed) return;
     if !editor_transport_busy(*editor.transport, *editor.timeline) editor.ready_at = 0;
-    editor.transport.target = max(0, min(editor.timeline.keys.count, position));
-    editor.transport.playing = playing;
-    editor.transport.scrubbing = scrubbing;
-    editor.transport.held_step = 0;
+    editor.transport.target        = max(0, min(editor.timeline.keys.count, position));
+    editor.transport.playing       = playing;
+    editor.transport.scrubbing     = scrubbing;
+    editor.transport.held_step     = 0;
     editor.transport.undo_delay_ms = EDITOR_FORWARD_DELAY;
-    editor_view.recording_motion = false;
+    editor_view.recording_motion   = false;
     if !scrubbing editor_view.wheeling = false;
     editor.focus_from_console = Win.GetForegroundWindow() == overlay.window;
     editor_set_status(ifx playing then "Playing" else "Paused");
@@ -195,7 +195,7 @@ editor_reset :: () {
     if editor.transport.held.scan || editor.transport.time_held return;
     error := timeline_load(*editor.reset_timeline, editor.record.solution);
     if error.count { editor_set_status(error, true); return; }
-    editor.reset_requested = true;
+    editor.reset_requested    = true;
     editor.focus_from_console = Win.GetForegroundWindow() == overlay.window;
     editor_view_cancel_drag();
     editor_set_status("Resetting the game and restoring the last saved solution...");
@@ -203,12 +203,12 @@ editor_reset :: () {
 
 editor_finish_reset :: () {
     timeline_free(*editor.timeline);
-    editor.timeline = editor.reset_timeline;
-    editor.reset_timeline = .{};
-    editor.reset_requested = false;
-    editor.transport.target = 0;
+    editor.timeline          = editor.reset_timeline;
+    editor.reset_timeline    = .{};
+    editor.reset_requested   = false;
+    editor.transport.target  = 0;
     editor.transport.playing = false;
-    editor.synchronized = true;
+    editor.synchronized      = true;
     editor_view_reset();
     editor_set_status("Game reset. Last saved solution restored.");
 }
@@ -238,7 +238,7 @@ editor_export_solution :: () {
 editor_validate_playback_speed :: (speed: Editor_Playback_Speed, last: s64 = -1) -> bool {
     if speed == .RABBIT || speed == .TURTLE {
         modifier := editor_playback_time_key(*editor.keymap, speed);
-        action := ifx speed == .RABBIT then "HoldForFastTime" else "HoldForSlowTime";
+        action   := ifx speed == .RABBIT then "HoldForFastTime" else "HoldForSlowTime";
         if !modifier.scan { editor_set_status(tprint("No keyboard binding for %.", action), true); return false; }
         end := ifx last < 0 then editor.timeline.keys.count else min(last, editor.timeline.keys.count);
         for i: editor.timeline.playhead..end-1 {
@@ -323,7 +323,7 @@ editor_on_game_reset :: (clear_executed := false) {
     editor.timeline.playhead = 0;
     timeline_move_caret(*editor.timeline, 0);
     editor.transport.target = 0;
-    editor.synchronized = true;
+    editor.synchronized     = true;
     editor_view_reset();
     if clear_executed editor_set_status("Executed moves cleared. Recording continues.");
     else editor_set_status("Game reset. Timeline is back at the beginning.");
@@ -341,7 +341,7 @@ editor_close :: (discard := false, after: Editor_After_Save = .CLOSE, next_level
         return false;
     }
     editor_clear_save_prompt();
-    editor.open = false;
+    editor.open      = false;
     editor.recording = false;
     editor_remove_keyboard_hook();
     if Win.GetForegroundWindow() == editor_window_handle() editor_focus_game();
@@ -366,7 +366,7 @@ editor_on_game_position_changed :: () {
     if !editor.open return;
     editor_pause();
     editor_view_cancel_drag();
-    editor.recording = false;
+    editor.recording    = false;
     editor.synchronized = false;
     editor_set_status("Position changed. Playback and recording paused; the timeline is ready to continue.");
 }
@@ -385,13 +385,13 @@ editor_on_game_key :: (vk: u32) {
         editor_view_cancel_drag();
         timeline_apply_game_undo(*editor.timeline);
         editor_view.recording_motion = false;
-        editor.transport.target = editor.timeline.playhead;
+        editor.transport.target      = editor.timeline.playhead;
         return;
     }
     if symbol && editor.recording && timeline_record(*editor.timeline, symbol) {
         editor_view_cancel_drag();
         editor_view.recording_motion = true;
-        editor.transport.target = editor.timeline.playhead;
+        editor.transport.target      = editor.timeline.playhead;
         return;
     }
     // Manual navigation remains available with an open editor, including during
@@ -403,7 +403,7 @@ editor_update :: (now: float64) {
     if !editor.open return;
     if editor_input_overflowed() {
         editor_pause();
-        editor.recording = false;
+        editor.recording    = false;
         editor.synchronized = false;
         editor_set_status("Recording input overflowed. Recording paused; review the timeline before continuing.", true);
     }
@@ -411,10 +411,10 @@ editor_update :: (now: float64) {
     if !editor_game_valid() {
         editor_pause();
         editor.synchronized = false;
-        editor.recording = false;
+        editor.recording    = false;
         return;
     }
-    foreground := Win.GetForegroundWindow();
+    foreground   := Win.GetForegroundWindow();
     from_console := foreground == overlay.window && editor.focus_from_console;
     if (!from_console && foreground != editor.game && foreground != editor_window_handle()) ||
        process_console_should_exit() || overlay.quit_requested {
@@ -427,14 +427,14 @@ editor_update :: (now: float64) {
         if !editor.focus_requested {
             editor_focus_game();
             editor.focus_requested = true;
-            editor.focus_deadline = now + 1;
+            editor.focus_deadline  = now + 1;
         } else if now >= editor.focus_deadline {
             editor_pause();
             editor_set_status("Could not focus the game. Playback paused.", true);
         }
         return;
     }
-    editor.focus_requested = false;
+    editor.focus_requested    = false;
     editor.focus_from_console = false;
     if editor.transport.phase == .IDLE && !editor.transport.time_held {
         // Wait for the user's transport key and modifiers, not our injected accelerator.
@@ -455,8 +455,3 @@ editor_update :: (now: float64) {
         editor_set_status(error, true);
     }
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-Win :: #import "Windows";

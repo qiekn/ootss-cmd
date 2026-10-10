@@ -1,12 +1,12 @@
-EDITOR_BUTTON_COUNT :: 11;
-EDITOR_RESET_BUTTON :: 4;
-EDITOR_RABBIT_BUTTON :: 5;
+EDITOR_BUTTON_COUNT     :: 11;
+EDITOR_RESET_BUTTON     :: 4;
+EDITOR_RABBIT_BUTTON    :: 5;
 EDITOR_DRAG_GAME_BUTTON :: 6;
-EDITOR_EXPORT_BUTTON :: 7;
-EDITOR_MINIMIZE_BUTTON :: 8;
-EDITOR_SAVE_BUTTON :: 9;
-EDITOR_EXIT_BUTTON :: 10;
-EDITOR_INPUT_HINT :: "W/A/S/D or arrows: move; C/X/F/V and digits: actions; B or _: wait.";
+EDITOR_EXPORT_BUTTON    :: 7;
+EDITOR_MINIMIZE_BUTTON  :: 8;
+EDITOR_SAVE_BUTTON      :: 9;
+EDITOR_EXIT_BUTTON      :: 10;
+EDITOR_INPUT_HINT       :: "W/A/S/D or arrows: move; C/X/F/V and digits: actions; B or _: wait.";
 
 // Nerd Font glyphs: Font Awesome controls/arrows and the Material Design swap icon.
 // https://www.nerdfonts.com/cheat-sheet
@@ -28,30 +28,30 @@ Editor_Icon :: struct {
     EDIT      :: ""; // nf-fa-edit (U+F044)
     EXIT      :: "⏻"; // 
     KEYBOARD  :: "";
-    UP :: ""; DOWN :: ""; LEFT :: ""; RIGHT :: "";
-    SWAP :: "󰣁";
-    SLEEP :: "󰒲";
-    FUNCTION :: ""; // 󰊕
+    UP        :: ""; DOWN :: ""; LEFT :: ""; RIGHT :: "";
+    SWAP      :: "󰣁";
+    SLEEP     :: "󰒲";
+    FUNCTION  :: ""; // 󰊕
 }
 
 
 Editor_View :: struct {
     font, small_font: *Simp.Dynamic_Font;
-    font_dpi: s32;
-    minimized: bool;
+    font_dpi:         s32;
+    minimized:        bool;
     drag_affects_game := true;
-    cell_width: float = 36;
-    compact_cell_width: float = 28;
-    mouse_down, dragging, strip_down: bool;
-    down_x: s32;
-    origin_head: s64;
+    cell_width:                                float = 36;
+    compact_cell_width:                        float = 28;
+    mouse_down, dragging, strip_down:          bool;
+    down_x:                                    s32;
+    origin_head:                               s64;
     origin_view_head, display_head, drag_head: float;
-    wheeling: bool;
-    wheel_head: float;
-    wheel_last_time: float64;
-    recording_motion: bool;
-    animation_time: float64 = -1;
-    button_down: s64 = -1;
+    wheeling:                                  bool;
+    wheel_head:                                float;
+    wheel_last_time:                           float64;
+    recording_motion:                          bool;
+    animation_time:                            float64 = -1;
+    button_down:                               s64 = -1;
 }
 editor_view: Editor_View;
 
@@ -76,20 +76,20 @@ editor_set_minimized :: (minimized: bool) {
 
 editor_view_cancel_drag :: () {
     was_dragging := editor_view.dragging;
-    editor_view.mouse_down = false;
-    editor_view.dragging = false;
-    editor_view.strip_down = false;
+    editor_view.mouse_down  = false;
+    editor_view.dragging    = false;
+    editor_view.strip_down  = false;
     editor_view.button_down = -1;
     if was_dragging editor_window_set_drag_cursor(false);
 }
 
 editor_view_reset :: () {
     editor_view_cancel_drag();
-    editor_view.wheeling = false;
+    editor_view.wheeling         = false;
     editor_view.recording_motion = false;
-    editor_view.display_head = cast(float) editor.timeline.playhead;
-    editor_view.drag_head = editor_view.display_head;
-    editor_view.animation_time = -1;
+    editor_view.display_head     = cast(float) editor.timeline.playhead;
+    editor_view.drag_head        = editor_view.display_head;
+    editor_view.animation_time   = -1;
 }
 
 editor_view_tick :: (now: float64) {
@@ -122,7 +122,7 @@ editor_wheel :: (delta: s32, now: float64) {
         editor_pause();
         editor_view_cancel_drag();
         editor_view.wheel_head = cast(float) editor.timeline.playhead;
-        editor_view.wheeling = true;
+        editor_view.wheeling   = true;
     }
     editor_view.wheel_last_time = now;
     // Keep partial wheel deltas and the requested destination, even while the game catches up.
@@ -143,8 +143,8 @@ editor_scrub_to :: (position: s64) {
     // local execution boundary without queuing undo, redo, or a later catch-up.
     if editor.transport.held.scan || editor.transport.time_held || editor_busy() return;
     timeline_advance(*editor.timeline, target - editor.timeline.playhead);
-    editor.transport.target = editor.timeline.playhead;
-    editor.ready_at = 0;
+    editor.transport.target      = editor.timeline.playhead;
+    editor.ready_at              = 0;
     editor_view.recording_motion = false;
 }
 
@@ -156,9 +156,9 @@ editor_toggle_drag_game :: () {
         if !editor.transport.playing return;
     }
     editor_view_cancel_drag();
-    editor_view.wheeling = false;
+    editor_view.wheeling          = false;
     editor_view.drag_affects_game = !editor_view.drag_affects_game;
-    editor_view.recording_motion = false;
+    editor_view.recording_motion  = false;
     editor_set_status(ifx editor_view.drag_affects_game then "Timeline drag/wheel: apply game undo and redo."
                                                        else "Timeline drag/wheel: move the playhead without game input.");
 }
@@ -185,7 +185,7 @@ editor_button_rect :: (index: s64) -> RectUI.Rect {
         if index == EDITOR_DRAG_GAME_BUTTON return RectUI.get_rect(controls.x - 40 * editor_scale(), strip.y, controls.w, strip.h);
         return controls;
     }
-    gap := 8 * editor_scale();
+    gap   := 8 * editor_scale();
     width := min(44 * editor_scale(), (controls.w - gap * (EDITOR_BUTTON_COUNT - 1)) / EDITOR_BUTTON_COUNT);
     total := width * EDITOR_BUTTON_COUNT + gap * (EDITOR_BUTTON_COUNT - 1);
     return RectUI.get_rect(controls.x + (controls.w - total) / 2 + cast(float) index * (width + gap),
@@ -264,9 +264,9 @@ editor_handle_event :: (event: Editor_Event) {
     if editor_save_prompt.active { editor_save_prompt_event(event); return; }
     strip, controls := editor_layout();
     if event.kind == .DOWN {
-        editor_view.mouse_down = true;
-        editor_view.dragging = false;
-        editor_view.down_x = event.x;
+        editor_view.mouse_down  = true;
+        editor_view.dragging    = false;
+        editor_view.down_x      = event.x;
         editor_view.button_down = -1;
         for i: 0..EDITOR_BUTTON_COUNT-1 {
             if editor_view.minimized && i != 0 && i != EDITOR_DRAG_GAME_BUTTON && i != EDITOR_MINIMIZE_BUTTON continue;
@@ -275,9 +275,9 @@ editor_handle_event :: (event: Editor_Event) {
         editor_view.strip_down = editor_hit(strip, event.x, event.y);
         if editor_view.strip_down {
             editor_pause();
-            editor_view.origin_head = editor.timeline.playhead;
+            editor_view.origin_head      = editor.timeline.playhead;
             editor_view.origin_view_head = editor_view.display_head;
-            editor_view.drag_head = editor_view.display_head;
+            editor_view.drag_head        = editor_view.display_head;
         }
     } else if event.kind == .MOVE && editor_view.mouse_down && editor_view.strip_down {
         delta := event.x - editor_view.down_x;
@@ -286,7 +286,7 @@ editor_handle_event :: (event: Editor_Event) {
             editor_window_set_drag_cursor(true);
             editor_view.drag_head = max(0.0, min(cast(float) editor.timeline.keys.count,
                                                editor_view.origin_view_head - cast(float) delta / editor_pitch()));
-            steps := cast(s64)(cast(float) delta / editor_pitch());
+            steps  := cast(s64)(cast(float) delta / editor_pitch());
             target := max(0, min(editor.timeline.keys.count, editor_view.origin_head - steps));
             editor_scrub_to(target);
         }
@@ -296,8 +296,8 @@ editor_handle_event :: (event: Editor_Event) {
                 editor_button_action(editor_view.button_down);
             } else if editor_view.strip_down && !editor_view.dragging {
                 center := strip.x + strip.w / 2;
-                head := ifx cast(float) event.x < center then editor_view.display_head else editor_future_head();
-                index := cast(s64) floor(head + (cast(float) event.x - center) / editor_pitch() + 0.5);
+                head   := ifx cast(float) event.x < center then editor_view.display_head else editor_future_head();
+                index  := cast(s64) floor(head + (cast(float) event.x - center) / editor_pitch() + 0.5);
                 timeline_move_caret(*editor.timeline, index, event.shift);
                 editor_focus_text();
             }
@@ -366,8 +366,8 @@ editor_key_input :: (event: Editor_Event) {
     }
     if !event.ctrl && !event.alt && event.key >= 0x25 && event.key <= 0x28 {
         directions := "LURD"; // VK_LEFT, VK_UP, VK_RIGHT, VK_DOWN.
-        key := directions[event.key - 0x25];
-        error := timeline_insert(*editor.timeline, .{data = *key, count = 1});
+        key        := directions[event.key - 0x25];
+        error      := timeline_insert(*editor.timeline, .{data = *key, count = 1});
         if error.count editor_set_status(error, true);
         return;
     }
@@ -387,19 +387,19 @@ draw_solution_editor :: () {
     Simp.set_render_target(editor_window.handle, .LEFT_HANDED);
     Simp.update_window(editor_window.handle);
     width, height := Simp.get_render_dimensions(editor_window.handle);
-    scale := editor_scale();
+    scale         := editor_scale();
     if editor_view.font_dpi != editor_window.dpi {
-        editor_view.font = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(21 * scale));
+        editor_view.font       = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(21 * scale));
         editor_view.small_font = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(13 * scale));
-        editor_view.font_dpi = editor_window.dpi;
+        editor_view.font_dpi   = editor_window.dpi;
     }
     if !editor_view.font || !editor_view.small_font return;
     background := console_color(Naysayer.background);
     Simp.clear_scissor();
     Simp.clear_render_target(background.x, background.y, background.z, 1);
     primary := console_color(Naysayer.text);
-    muted := console_color(Naysayer.dimmed_variable);
-    accent := console_color(Naysayer.punctuation);
+    muted   := console_color(Naysayer.dimmed_variable);
+    accent  := console_color(Naysayer.punctuation);
     if editor_save_prompt.active {
         editor_draw_save_prompt(cast(float) width);
         Simp.immediate_flush();
@@ -413,10 +413,10 @@ draw_solution_editor :: () {
         return;
     }
     strip, controls := editor_layout();
-    center := strip.x + strip.w / 2;
-    header := tprint("% / %  %", editor.record.area, editor_record_title(), ifx editor.timeline.dirty then "*" else "");
+    center          := strip.x + strip.w / 2;
+    header          := tprint("% / %  %", editor.record.area, editor_record_title(), ifx editor.timeline.dirty then "*" else "");
     editor_draw_text(editor_view.small_font, 20 * scale, 24 * scale, header, primary);
-    position := game_position_text(editor.record.position);
+    position       := game_position_text(editor.record.position);
     position_width := editor_text_width(editor_view.small_font, position);
     editor_draw_text(editor_view.small_font, cast(float) width - 20 * scale - position_width, 24 * scale, position, muted);
     editor_draw_text(editor_view.small_font, strip.x, 54 * scale, "EXECUTED", muted);
@@ -439,7 +439,7 @@ draw_solution_editor :: () {
                       "Minimize (N)", "Save", "Exit"];
     hovered: s64 = -1;
     for label: labels {
-        r := editor_button_rect(it_index);
+        r     := editor_button_rect(it_index);
         hover := editor_hit(r, mouse.x, mouse.y);
         if hover hovered = it_index;
         editor_draw_button(it_index, hover);
@@ -459,13 +459,13 @@ draw_solution_editor :: () {
 }
 
 editor_draw_timeline :: (strip: RectUI.Rect) {
-    scale := editor_scale();
+    scale   := editor_scale();
     compact := editor_view.minimized;
-    pitch := editor_pitch();
-    center := strip.x + strip.w / 2;
+    pitch   := editor_pitch();
+    center  := strip.x + strip.w / 2;
     primary := console_color(Naysayer.text);
-    muted := console_color(Naysayer.dimmed_variable);
-    accent := console_color(Naysayer.punctuation);
+    muted   := console_color(Naysayer.dimmed_variable);
+    accent  := console_color(Naysayer.punctuation);
     editor_draw_rect(strip, console_color(Naysayer.highlight));
     editor_draw_timeline_cells(strip, editor_view.display_head, past = true);
     editor_draw_timeline_cells(strip, editor_future_head(), past = false);
@@ -474,7 +474,7 @@ editor_draw_timeline :: (strip: RectUI.Rect) {
     editor_draw_rect(RectUI.get_rect(boundary - scale, strip.y - 2 * scale, 2 * scale, strip.h + 6 * scale), accent);
     if Win.GetForegroundWindow() == editor_window.handle && (cast(s64)(seconds_since_init() * 2) % 2) == 0 {
         head := ifx timeline_caret_is_executed(*editor.timeline) then editor_view.display_head else editor_future_head();
-        x := center + (cast(float) editor.timeline.caret - head) * pitch;
+        x    := center + (cast(float) editor.timeline.caret - head) * pitch;
         editor_draw_rect(RectUI.get_rect(x, strip.y + (ifx compact then 4 else 20) * scale,
                                          2 * scale, (ifx compact then 32 else 46) * scale), console_color(Naysayer.white));
     }
@@ -482,21 +482,21 @@ editor_draw_timeline :: (strip: RectUI.Rect) {
 }
 
 editor_draw_timeline_cells :: (strip: RectUI.Rect, head: float, past: bool) {
-    scale := editor_scale();
+    scale   := editor_scale();
     compact := editor_view.minimized;
-    pitch := editor_pitch();
-    center := strip.x + strip.w / 2;
-    right := ifx past && editor_view.recording_motion then center else strip.x + strip.w;
+    pitch   := editor_pitch();
+    center  := strip.x + strip.w / 2;
+    right   := ifx past && editor_view.recording_motion then center else strip.x + strip.w;
     Simp.set_scissor(cast(s32) strip.x, cast(s32) strip.y, cast(s32) right, cast(s32)(strip.y + strip.h + 16 * scale));
     // Each side has its own visible range, so a burst of recording cannot push the future offscreen.
     first := max(ifx past then 0 else editor.timeline.playhead, cast(s64) floor(head - strip.w / (2 * pitch)) - 1);
-    last := min(ifx past then editor.timeline.playhead else editor.timeline.keys.count,
+    last  := min(ifx past then editor.timeline.playhead else editor.timeline.keys.count,
                 cast(s64) floor(head + strip.w / (2 * pitch)) + 2);
-    primary := console_color(Naysayer.text);
-    muted := console_color(Naysayer.dimmed_variable);
+    primary                       := console_color(Naysayer.text);
+    muted                         := console_color(Naysayer.dimmed_variable);
     selected_first, selected_last := timeline_selection(*editor.timeline);
     for i: first..last-1 {
-        x := center + (cast(float) i - head) * pitch;
+        x    := center + (cast(float) i - head) * pitch;
         cell := RectUI.get_rect(x + 3 * scale, strip.y + (ifx compact then 4 else 21) * scale,
                                pitch - 6 * scale, (ifx compact then 32 else 43) * scale);
         color := ifx past then console_color(Naysayer.background) else console_color(Naysayer.selection);
@@ -510,7 +510,7 @@ editor_draw_timeline_cells :: (strip: RectUI.Rect, head: float, past: bool) {
         editor_draw_text(editor_view.font, cell.x + (cell.w - text_width) / 2, cell.y + (ifx compact then 24 else 29) * scale, text,
                        ifx past then muted else primary);
         if !compact {
-            number := tprint("%", i + 1);
+            number       := tprint("%", i + 1);
             number_width := editor_text_width(editor_view.small_font, number);
             editor_draw_text(editor_view.small_font, x + (pitch - number_width) / 2, strip.y + 14 * scale, number, muted);
         }
@@ -519,31 +519,31 @@ editor_draw_timeline_cells :: (strip: RectUI.Rect, head: float, past: bool) {
 }
 
 editor_draw_button :: (index: s64, hover: bool) {
-    r := editor_button_rect(index);
+    r      := editor_button_rect(index);
     active := (index == 0 && editor.recording) || (index == 3 && editor.transport.playing) ||
               (index == EDITOR_RESET_BUTTON && editor.reset_requested) ||
               (index == EDITOR_RABBIT_BUTTON && editor.transport.playing && editor.transport.speed == .RABBIT) ||
               (index == EDITOR_DRAG_GAME_BUTTON && editor_view.drag_affects_game);
     color := ifx active || hover then console_color(Naysayer.line_fg) else console_color(Naysayer.selection);
     editor_draw_rect(r, color);
-    icon := editor_button_icon(index);
+    icon       := editor_button_icon(index);
     text_width := editor_text_width(editor_view.font, icon);
     editor_draw_text(editor_view.font, r.x + (r.w - text_width) / 2, r.y + (r.h + 14 * editor_scale()) / 2,
                    icon, ifx active then console_color(Naysayer.punctuation) else console_color(Naysayer.text));
 }
 
 editor_draw_preview :: (width: float) {
-    scale := editor_scale();
-    primary := console_color(Naysayer.text);
-    muted := console_color(Naysayer.dimmed_variable);
+    scale           := editor_scale();
+    primary         := console_color(Naysayer.text);
+    muted           := console_color(Naysayer.dimmed_variable);
     strip, controls := editor_layout();
     mouse: Win.POINT;
     Win.GetCursorPos(*mouse);
     Win.ScreenToClient(editor_window.handle, *mouse);
-    hover := editor_hit(controls, mouse.x, mouse.y);
+    hover        := editor_hit(controls, mouse.x, mouse.y);
     record_hover := editor_hit(editor_button_rect(0), mouse.x, mouse.y);
-    drag_hover := editor_hit(editor_button_rect(EDITOR_DRAG_GAME_BUTTON), mouse.x, mouse.y);
-    progress := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
+    drag_hover   := editor_hit(editor_button_rect(EDITOR_DRAG_GAME_BUTTON), mouse.x, mouse.y);
+    progress     := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
                        editor_playback_speed_name(editor.transport.speed));
     progress_x := width - 12 * scale - editor_text_width(editor_view.small_font, progress);
     Simp.set_scissor(cast(s32)(12 * scale), 0, cast(s32)(progress_x - 12 * scale), cast(s32)(28 * scale));
@@ -571,10 +571,10 @@ editor_save_name_rect :: () -> RectUI.Rect {
 
 editor_save_button_rect :: (index: s64) -> RectUI.Rect {
     strip, controls := editor_layout();
-    count := ifx editor_save_prompt.after == .NONE then 2 else 3;
-    gap := 12 * editor_scale();
-    width := min(132 * editor_scale(), (controls.w - gap * (count - 1)) / count);
-    total := width * count + gap * (count - 1);
+    count           := ifx editor_save_prompt.after == .NONE then 2 else 3;
+    gap             := 12 * editor_scale();
+    width           := min(132 * editor_scale(), (controls.w - gap * (count - 1)) / count);
+    total           := width * count + gap * (count - 1);
     return RectUI.get_rect(controls.x + (controls.w - total) / 2 + cast(float) index * (width + gap),
                            controls.y, width, controls.h);
 }
@@ -590,7 +590,7 @@ editor_save_prompt_event :: (event: Editor_Event) {
         }
         if editor.custom && editor_hit(editor_save_name_rect(), event.x, event.y) {
             editor_save_prompt.name.cursor = editor_save_prompt.name.input.count;
-            editor_save_prompt.select_all = false;
+            editor_save_prompt.select_all  = false;
         }
         editor_focus_text();
     } else if event.kind == .UP {
@@ -601,11 +601,11 @@ editor_save_prompt_event :: (event: Editor_Event) {
 }
 
 editor_draw_save_prompt :: (width: float) {
-    scale := editor_scale();
-    font := editor_view.small_font;
+    scale   := editor_scale();
+    font    := editor_view.small_font;
     primary := console_color(Naysayer.text);
-    muted := console_color(Naysayer.dimmed_variable);
-    title := ifx editor_save_prompt.after != .NONE then "Unsaved changes" else
+    muted   := console_color(Naysayer.dimmed_variable);
+    title   := ifx editor_save_prompt.after != .NONE then "Unsaved changes" else
              ifx editor.custom then "Save custom input" else "Save solution";
     editor_draw_text(font, 20 * scale, 29 * scale, title, primary);
     target := ifx editor.custom then CUSTOM_INPUTS_FILE else SOLUTIONS_FILE;
@@ -613,11 +613,11 @@ editor_draw_save_prompt :: (width: float) {
                      tprint("% steps  /  %", editor.timeline.keys.count, target), muted);
     field := editor_save_name_rect();
     editor_draw_rect(field, ifx editor_save_prompt.select_all then console_color(Naysayer.line_fg) else console_color(Naysayer.selection));
-    text := console_input(*editor_save_prompt.name);
-    prefix := slice(text, 0, editor_save_prompt.name.cursor);
+    text        := console_input(*editor_save_prompt.name);
+    prefix      := slice(text, 0, editor_save_prompt.name.cursor);
     caret_width := editor_text_width(font, prefix);
-    baseline := field.y + (field.h + cast(float)(font.typical_ascender + font.typical_descender)) / 2;
-    offset := max(0.0, caret_width - field.w + 24 * scale);
+    baseline    := field.y + (field.h + cast(float)(font.typical_ascender + font.typical_descender)) / 2;
+    offset      := max(0.0, caret_width - field.w + 24 * scale);
     Simp.set_scissor(cast(s32)(field.x + 8 * scale), cast(s32) field.y,
                      cast(s32)(field.x + field.w - 8 * scale), cast(s32)(field.y + field.h));
     if text.count editor_draw_text(font, field.x + 10 * scale - offset, baseline, text, primary);
@@ -637,12 +637,12 @@ editor_draw_save_prompt :: (width: float) {
     Win.GetCursorPos(*mouse);
     Win.ScreenToClient(editor_window_handle(), *mouse);
     for i: 0..count-1 {
-        r := editor_save_button_rect(i);
+        r     := editor_save_button_rect(i);
         hover := editor_hit(r, mouse.x, mouse.y);
         editor_draw_rect(r, ifx hover then console_color(Naysayer.line_fg) else console_color(Naysayer.selection));
         label := ifx i == 0 then (ifx editor_save_prompt.overwrite then "Overwrite" else "Save")
                  else ifx i == 1 && count == 3 then "Discard" else "Cancel";
-        text_width := editor_text_width(font, label);
+        text_width      := editor_text_width(font, label);
         button_baseline := r.y + (r.h + cast(float)(font.typical_ascender + font.typical_descender)) / 2;
         editor_draw_text(font, r.x + (r.w - text_width) / 2, button_baseline, label,
                          ifx i == 0 then console_color(Naysayer.punctuation) else primary);
@@ -652,12 +652,7 @@ editor_draw_save_prompt :: (width: float) {
 }
 
 #scope_file
-#import "Basic";
-#import "Math";
-#import "String";
-Simp :: #import "Simp";
 RectUI :: #import "GetRect";
-Win :: #import "Windows";
 
 editor_draw_rect :: (r: RectUI.Rect, color: Vector4) {
     Simp.set_shader_for_color();

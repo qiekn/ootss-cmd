@@ -30,7 +30,7 @@ game_write_position :: (position: Game_Position) -> (error: string, changed: boo
 
 game_read_position_from :: (memory: Process_Memory) -> (position: Game_Position, error: string) {
     position: Game_Position;
-    reader: Game_Position_Reader;
+    reader:   Game_Position_Reader;
     defer game_position_reader_close(*reader);
     error := game_position_reader_init(*reader, memory);
     if error.count return position, error;
@@ -41,12 +41,12 @@ game_read_position_from :: (memory: Process_Memory) -> (position: Game_Position,
 
 game_write_position_to :: (memory: Process_Memory, requested: Game_Position, relative := false,
                           written_position: *Game_Position = null, written_player: *Game_Player_Location = null,
-                          expected_player: *Game_Player_Location = null, expected_position: *Game_Position = null,
+                          expected_player:  *Game_Player_Location = null, expected_position: *Game_Position = null,
                           instant := false, required_scene: string = "", locator: *Game_Manager_Locator = null)
                           -> (error: string, changed: bool) {
     if !game_position_valid(requested) return "Coordinates must be finite numbers between -1000000 and 1000000.", false;
     resolved: Game_Manager_Locator;
-    error: string;
+    error:    string;
     if locator && game_manager_locator_current(memory, locator.*) resolved = locator.*;
     else {
         slot: u64;
@@ -56,7 +56,7 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
     }
     reader: Game_Position_Reader;
     defer game_position_reader_close(*reader);
-    reader.memory = memory;
+    reader.memory  = memory;
     reader.locator = resolved;
     sample := game_position_reader_sample(*reader);
     if !sample.valid return tprint("% Nothing was written.", reader.error), false;
@@ -81,16 +81,16 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
                           else cast(float64) requested[i] - cast(float64) sample.position[i];
     targets := NewArray(sample.controlled_count, Game_Position_Target);
     defer free(targets.data);
-    target_index: s64;
+    target_index:       s64;
     anchor_destination: Game_Position;
     for i: 0..reader.guy_count-1 {
         guy := reader.guys[i];
         if !(guy.status & guy.selection.active_mask) continue;
         target := *targets[target_index];
-        target.player = sample.player;
-        target.player.entity = guy.entity;
+        target.player           = sample.player;
+        target.player.entity    = guy.entity;
         target.player.entity_id = guy.entity_id;
-        target.before = guy.position;
+        target.before           = guy.position;
         for axis: 0..2 {
             coordinate := cast(float64) guy.position[axis] + delta[axis];
             if !is_finite(coordinate) || abs(coordinate) > GAME_POSITION_LIMIT {
@@ -142,8 +142,8 @@ GAME_MANAGER_RETAIL_SIGNATURE :: u8.[
 
 Game_Manager_Locator :: struct {
     slot, instruction: u64;
-    bytes: [32] u8;
-    count: s64;
+    bytes:             [32] u8;
+    count:             s64;
 }
 
 game_manager_locator_current :: (memory: Process_Memory, locator: Game_Manager_Locator) -> bool {
@@ -161,8 +161,8 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
     if error.count return 0, error;
     defer free(code.data);
     rva, instruction: u64;
-    matched_count: s64;
-    matches: s64;
+    matched_count:    s64;
+    matches:          s64;
     if code.count >= GAME_MANAGER_SIGNATURE.count for i: 0..code.count - GAME_MANAGER_SIGNATURE.count {
         if code[i] != GAME_MANAGER_SIGNATURE[0] continue;
         count := GAME_MANAGER_SIGNATURE.count;
@@ -173,12 +173,12 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
         matches += 1;
         if matches > 1 return 0, "The game's current-level signature is ambiguous. Position access was stopped.";
         displacement := (cast(*s32)(code.data + i + 3)).*;
-        target := cast(s64) code_rva + i + 7 + displacement;
+        target       := cast(s64) code_rva + i + 7 + displacement;
         if target < 0 || cast(u64) target > memory.module.size || memory.module.size - cast(u64) target < 8 {
             return 0, "The game's current-level signature points outside its module.";
         }
-        rva = cast(u64) target;
-        instruction = cast(u64) i;
+        rva           = cast(u64) target;
+        instruction   = cast(u64) i;
         matched_count = count;
     }
     if matches == 1 {
@@ -196,7 +196,7 @@ game_entity_manager_slot :: (memory: Process_Memory, locator: *Game_Manager_Loca
        process_read_memory(memory.handle, memory.module.base + 0x2af0cc, *original, original.count) &&
        process_module_contains(memory.module, memory.module.base + 0x9acb50, 8) {
         expected := u8.[0x80, 0x7c, 0x24, 0x60, 0, 0x75, 0x51, 0x80, 0x7c, 0x24, 0x76, 0, 0x74, 0x4a, 0x45, 0x84, 0xf6, 0x74, 0x2c];
-        same := true;
+        same     := true;
         for byte: expected if byte != original[it_index] same = false;
         if same {
             if locator {
@@ -228,11 +228,11 @@ game_manager_signature_matches :: (bytes: [] u8) -> bool {
     return true;
 }
 
-Game_Entity_List :: struct { count, data: u64; }
+Game_Entity_List     :: struct { count, data: u64; }
 Game_Player_Location :: struct {
     slot, manager, entity: u64;
-    objects: Game_Entity_List;
-    entity_id: u32;
+    objects:               Game_Entity_List;
+    entity_id:             u32;
 }
 
 game_find_player :: (memory: Process_Memory, slot: u64) -> (player: Game_Player_Location, error: string) {
@@ -274,13 +274,7 @@ game_player_location_current :: (memory: Process_Memory, previous: Game_Player_L
 
 Game_Entity_Type :: struct {
     kind, id, size, padding: u32;
-    name_length, name_data: u64;
+    name_length, name_data:  u64;
 }
 #assert(size_of(Game_Entity_Type) == 32);
 #assert(size_of(Game_Position) == 12);
-
-#scope_file
-#import "Basic";
-#import "Math";
-#import "String";
-Win :: #import "Windows";

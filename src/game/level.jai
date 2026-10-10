@@ -6,7 +6,7 @@ Game_Level_Query :: #type () -> (name: string, error: string);
 Game_Scene_Location :: struct {
     locator: Game_Manager_Locator;
     manager: u64;
-    name: Game_Entity_List; // Remote Jai string: count, data.
+    name:    Game_Entity_List; // Remote Jai string: count, data.
 }
 
 game_read_scene :: () -> (name: string, error: string) {
@@ -53,8 +53,8 @@ game_read_scene_from :: (memory: Process_Memory, locator: *Game_Manager_Locator 
 
 game_scene_location_current :: (memory: Process_Memory, scene: Game_Scene_Location, name: string) -> bool {
     manager: u64;
-    header: Game_Entity_List;
-    bytes: [128] u8;
+    header:  Game_Entity_List;
+    bytes:   [128] u8;
     if name.count <= 0 || name.count > bytes.count || cast(u64) name.count != scene.name.count ||
        !game_manager_locator_current(memory, scene.locator) ||
        !process_read_memory(memory.handle, scene.locator.slot, *manager, 8) || manager != scene.manager ||
@@ -95,8 +95,6 @@ game_resolve_level_name :: (requested: string, read_scene: Game_Level_Query = ga
 }
 
 #scope_file
-#import "Basic";
-#import "String";
 
 game_scene_name_valid :: (name: string) -> bool {
     if !name.count || name.count > 128 || name == "." || name == ".." return false;

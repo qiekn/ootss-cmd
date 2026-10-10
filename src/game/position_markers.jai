@@ -1,6 +1,6 @@
-POSITION_MARKERS_FILE :: "data/markers.json";
+POSITION_MARKERS_FILE        :: "data/markers.json";
 LEGACY_POSITION_MARKERS_FILE :: "data/position_markers.json";
-POSITION_MARKER_REGISTERS :: "abcdefghijklmnopqrstuvwxyz";
+POSITION_MARKER_REGISTERS    :: "abcdefghijklmnopqrstuvwxyz";
 
 Position_Marker :: struct {
     name: string;
@@ -10,7 +10,7 @@ Position_Marker :: struct {
 
 Position_Markers :: struct {
     next_register: s64;
-    entries: [..] Position_Marker;
+    entries:       [..] Position_Marker;
 }
 
 position_marker_name_valid :: (name: string) -> bool {
@@ -138,18 +138,12 @@ position_marker_registers_reset :: (markers: *Position_Markers) {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
-#import "File";
-#import "File_Utilities";
-#import "Math";
-Json :: #import "Json";
 
 // Validate persisted numbers before narrowing, just like console coordinate arguments.
 Position_Markers_File :: struct {
     next_register: s64;
-    entries: [..] struct {
-        name: string;
+    entries:       [..] struct {
+        name:     string;
         position: [3] float64 = .[1_000_001, 1_000_001, 1_000_001];
     };
 }

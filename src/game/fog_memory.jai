@@ -1,14 +1,14 @@
 // A session owns only its own 1 -> 0 change. The executable on disk is untouched.
 Fog_Session :: struct {
-    memory: Process.Process_Memory;
-    instruction: u64;
-    metadata, upload: u64;
-    code: [40] u8;
-    upload_code: [47] u8;
-    writable: bool;
-    changed: bool;
+    memory:             Process.Process_Memory;
+    instruction:        u64;
+    metadata, upload:   u64;
+    code:               [40] u8;
+    upload_code:        [47] u8;
+    writable:           bool;
+    changed:            bool;
     protection_pending: bool;
-    protection: u32;
+    protection:         u32;
 }
 
 fog_session_exited :: (session: *Fog_Session) -> bool {
@@ -29,11 +29,11 @@ fog_session_open :: (session: *Fog_Session, window: Win.HWND, writable := true) 
     metadata := fog_find_metadata(memory);
     if !metadata return "Fog layout: parameter metadata is missing, ambiguous or differs.";
     // Verify that this stack block is uploaded as the complete 480-byte params.
-    address := memory.module.base + rva + cast(u64) offset;
+    address       := memory.module.base + rva + cast(u64) offset;
     upload_offset := fog_find_upload(code,offset);
     if upload_offset<0 return "Fog layout: nearby parameter upload is missing or ambiguous.";
     session.* = .{memory=memory, instruction=address, metadata=metadata,
-                  upload=memory.module.base+rva+cast(u64)upload_offset, writable=writable};
+                  upload = memory.module.base+rva+cast(u64)upload_offset, writable=writable};
     for byte: session.code session.code[it_index]=code[offset+it_index];
     for byte: session.upload_code session.upload_code[it_index]=code[upload_offset+it_index];
     keep = true;
@@ -110,9 +110,9 @@ fog_session_write :: (session: *Fog_Session, value: u8) -> string {
     if !VirtualProtectEx(session.memory.handle, cast(*void) address, 1, Win.PAGE_EXECUTE_READWRITE, *session.protection)
         return "Could not make the fog instruction writable.";
     session.protection_pending = true;
-    written_ok, written := Process.process_write_memory(session.memory.handle, address, *value, 1);
-    flushed := FlushInstructionCache(session.memory.handle, cast(*void) address, 1) != 0;
-    protected := fog_restore_protection(session);
+    written_ok, written  := Process.process_write_memory(session.memory.handle, address, *value, 1);
+    flushed              := FlushInstructionCache(session.memory.handle, cast(*void) address, 1) != 0;
+    protected            := fog_restore_protection(session);
     observed, read_error := fog_session_read(session);
     if !protected return "Could not restore fog page protection; retry fog.";
     if !written_ok || !flushed || read_error.count || observed != value
@@ -174,7 +174,7 @@ fog_find_upload :: (code: [] u8, instruction: s64) -> s64 {
         if code[at]!=FOG_UPLOAD[0] || code[at+1]!=FOG_UPLOAD[1] continue;
         if !fog_upload_matches(.{data=code.data+at,count=FOG_UPLOAD.count}) continue;
         if found>=0 return -1;
-        found=at;
+        found = at;
     }
     return found;
 }
@@ -189,10 +189,10 @@ fog_find_metadata :: (memory: Process.Process_Memory) -> u64 {
     for i: 0..(bytes.count-0x50)/8 {
         owner := cast(*Fog_Type)(bytes.data+i*8);
         if owner.kind!=7 || owner.size!=0x1e0 || owner.name.count!="Fog_Voxelization_Params".count continue;
-        at:=memory.module.base+rva+cast(u64)i*8;
+        at := memory.module.base+rva+cast(u64)i*8;
         if !fog_validate_metadata(memory,at) continue;
         if found return 0;
-        found=at;
+        found = at;
     }
     return found;
 }
@@ -232,18 +232,18 @@ fog_name_equals :: (memory: Process.Process_Memory, remote: Fog_Remote_Array, ex
 }
 
 Fog_Remote_Array :: struct { count, data: u64; }
-Fog_Type :: struct { kind, id, size, padding: u32; name: Fog_Remote_Array; }
-Fog_Member :: struct {
-    name: Fog_Remote_Array;
-    type: u64;
-    offset: s64;
-    flags, padding: u32;
-    notes: Fog_Remote_Array;
+Fog_Type         :: struct { kind, id, size, padding: u32; name: Fog_Remote_Array; }
+Fog_Member       :: struct {
+    name:            Fog_Remote_Array;
+    type:            u64;
+    offset:          s64;
+    flags, padding:  u32;
+    notes:           Fog_Remote_Array;
     constant_offset: s64;
 }
 #assert(size_of(Fog_Type) == 32);
 #assert(size_of(Fog_Member) == 64);
-FOG_IMMEDIATE :: 11;
+FOG_IMMEDIATE   :: 11;
 FOG_INSTRUCTION :: u8.[0xf3,0x0f,0x5d,0xc1, 0xc7,0x84,0x24,0x84,0x07,0,0, 1,0,0,0,
     0x48,0x8b,0x94,0x24,0x20,0x01,0,0, 0xf3,0x0f,0x10,0x8a,0x3c,0x03,0,0,
     0xf3,0x0f,0x11,0x8c,0x24,0x8c,0x07,0,0];
@@ -254,8 +254,8 @@ FOG_UPLOAD :: u8.[0x48,0x8d,0x84,0x24,0,0x06,0,0, 0x48,0x89,0x44,0x24,0x20,
 
 #import "Basic";
 #import "String";
-Process :: #import,file "../platform/windows/process.jai";
-Win :: #import "Windows";
-kernel32 :: #library,system "kernel32";
-VirtualProtectEx :: (process: Win.HANDLE, address: *void, bytes: u64, protection: u32, previous: *u32) -> s32 #foreign kernel32;
+Process               :: #import,file "../platform/windows/process.jai";
+Win                   :: #import "Windows";
+kernel32              :: #library,system "kernel32";
+VirtualProtectEx      :: (process: Win.HANDLE, address: *void, bytes: u64, protection: u32, previous: *u32) -> s32 #foreign kernel32;
 FlushInstructionCache :: (process: Win.HANDLE, address: *void, bytes: u64) -> s32 #foreign kernel32;

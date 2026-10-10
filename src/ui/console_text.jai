@@ -1,8 +1,8 @@
 // Return one row as a slice of the original text. Meslo is monospaced; reserve two cells for non-ASCII glyphs.
 console_wrapped_row :: (text: string, position: *s64, columns: s64) -> string {
-    start := position.*;
+    start  := position.*;
     cursor := start;
-    cells: s64;
+    cells:      s64;
     last_space: s64 = -1;
     limit := max(1, columns);
     while cursor < text.count {
@@ -16,7 +16,7 @@ console_wrapped_row :: (text: string, position: *s64, columns: s64) -> string {
     }
     end := cursor;
     if cursor < text.count && text[cursor] != #char " " && last_space > start {
-        end = last_space;
+        end    = last_space;
         cursor = last_space + 1;
     }
     while cursor < text.count && text[cursor] == #char " " cursor += 1;
@@ -25,7 +25,4 @@ console_wrapped_row :: (text: string, position: *s64, columns: s64) -> string {
 }
 
 #scope_file
-#import "Basic";
-#import "Math";
-#import "String";
 Unicode :: #import "Unicode";

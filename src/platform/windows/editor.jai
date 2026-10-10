@@ -1,23 +1,23 @@
 Editor_Event :: struct {
-    kind: enum { KEY; TEXT; DOWN; UP; MOVE; WHEEL; CANCEL; PLAY; STEP; UNDO; TOGGLE_SIZE; SPEED_UP; SPEED_DOWN; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; CLOSE; };
-    x, y: s32;
-    key: u32;
+    kind:                     enum { KEY; TEXT; DOWN; UP; MOVE; WHEEL; CANCEL; PLAY; STEP; UNDO; TOGGLE_SIZE; SPEED_UP; SPEED_DOWN; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; CLOSE; };
+    x, y:                     s32;
+    key:                      u32;
     shift, ctrl, alt, repeat: bool;
 }
 
 Editor_Window :: struct {
-    handle: Win.HWND;
-    dc: Win.HDC;
-    bounds: Win.RECT;
-    visible: bool;
-    dpi: s32 = 96;
-    hook: *void;
-    physical_down: [256] bool;
+    handle:                 Win.HWND;
+    dc:                     Win.HDC;
+    bounds:                 Win.RECT;
+    visible:                bool;
+    dpi:                    s32 = 96;
+    hook:                   *void;
+    physical_down:          [256] bool;
     transport_key_consumed: [256] bool;
-    speed_key_consumed: [256] bool;
-    events: [1024] Editor_Event;
-    event_count: s64;
-    overflow: bool;
+    speed_key_consumed:     [256] bool;
+    events:                 [1024] Editor_Event;
+    event_count:            s64;
+    overflow:               bool;
 }
 editor_window: Editor_Window;
 
@@ -26,15 +26,15 @@ editor_window_handle :: () -> Win.HWND { return editor_window.handle; }
 editor_window_create :: () -> bool {
     if editor_window.handle return true;
     instance := Win.GetModuleHandleW(null);
-    name := utf8_to_wide("OOTSS Solution Editor",, temp);
+    name     := utf8_to_wide("OOTSS Solution Editor",, temp);
     wc: Win.WNDCLASSEXW;
-    wc.cbSize = size_of(Win.WNDCLASSEXW);
-    wc.style = Win.CS_HREDRAW | Win.CS_VREDRAW;
-    wc.lpfnWndProc = editor_window_proc;
-    wc.hInstance = instance;
-    wc.hIcon = Win.LoadIconW(instance, cast(*u16) APP_ICON_RESOURCE_ID);
-    wc.hIconSm = wc.hIcon;
-    wc.hCursor = Win.LoadCursorW(null, Win.IDC_ARROW);
+    wc.cbSize        = size_of(Win.WNDCLASSEXW);
+    wc.style         = Win.CS_HREDRAW | Win.CS_VREDRAW;
+    wc.lpfnWndProc   = editor_window_proc;
+    wc.hInstance     = instance;
+    wc.hIcon         = Win.LoadIconW(instance, cast(*u16) APP_ICON_RESOURCE_ID);
+    wc.hIconSm       = wc.hIcon;
+    wc.hCursor       = Win.LoadCursorW(null, Win.IDC_ARROW);
     wc.lpszClassName = name;
     if !Win.RegisterClassExW(*wc) && Win.GetLastError() != 1410 return false;
     editor_window.handle = Win.CreateWindowExW(
@@ -69,7 +69,7 @@ editor_window_update :: () {
         return;
     }
     foreground := Win.GetForegroundWindow();
-    wanted := editor.open && editor_game_valid() && !IsIconic(editor.game) &&
+    wanted     := editor.open && editor_game_valid() && !IsIconic(editor.game) &&
               (editor_save_prompt.active || overlay.visible || foreground == editor.game || foreground == editor_window.handle);
     if !wanted { editor_window_hide(); return; }
     bounds: Win.RECT;
@@ -80,16 +80,16 @@ editor_window_update :: () {
     }
     dpi := cast(s32) GetDpiForWindow(editor.game);
     editor_window.dpi = ifx dpi > 0 then dpi else 96;
-    scale := cast(float) editor_window.dpi / 96;
-    width := min(bounds.right, cast(s32)((ifx editor_view.minimized then 720 else 1120) * scale));
+    scale  := cast(float) editor_window.dpi / 96;
+    width  := min(bounds.right, cast(s32)((ifx editor_view.minimized then 720 else 1120) * scale));
     height := min(bounds.bottom, cast(s32)((ifx editor_view.minimized then 84 else 248) * scale));
     margin := cast(s32)((ifx editor_view.minimized then 18 else 36) * scale);
-    x := origin.x + (bounds.right - width) / 2;
-    y := origin.y + bounds.bottom - height - min(margin, max(cast(s32) 0, bounds.bottom - height));
-    old := editor_window.bounds;
+    x      := origin.x + (bounds.right - width) / 2;
+    y      := origin.y + bounds.bottom - height - min(margin, max(cast(s32) 0, bounds.bottom - height));
+    old    := editor_window.bounds;
     if x != old.left || y != old.top || width != old.right - old.left || height != old.bottom - old.top || !editor_window.visible {
         Win.SetWindowPos(editor_window.handle, Win.HWND_TOPMOST, x, y, width, height, Win.SWP_NOACTIVATE | Win.SWP_SHOWWINDOW);
-        editor_window.bounds = .{x, y, x + width, y + height};
+        editor_window.bounds  = .{x, y, x + width, y + height};
         editor_window.visible = true;
     }
     editor_window_update_z_order();
@@ -148,7 +148,7 @@ editor_install_keyboard_hook :: () -> bool {
     if editor_window.hook return true;
     for i: 0..255 editor_window.physical_down[i] = Win.GetAsyncKeyState(cast(s32) i) < 0;
     editor_window.event_count = 0;
-    editor_window.overflow = false;
+    editor_window.overflow    = false;
     for *consumed: editor_window.transport_key_consumed consumed.* = false;
     for *consumed: editor_window.speed_key_consumed consumed.* = false;
     editor_window.hook = SetWindowsHookExW(13, editor_keyboard_hook, Win.GetModuleHandleW(null), 0);
@@ -157,7 +157,7 @@ editor_install_keyboard_hook :: () -> bool {
 
 editor_remove_keyboard_hook :: () {
     if editor_window.hook UnhookWindowsHookEx(editor_window.hook);
-    editor_window.hook = null;
+    editor_window.hook        = null;
     editor_window.event_count = 0;
 }
 
@@ -240,7 +240,7 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
         return true;
     }
     // Editor shortcuts take priority over the game's time-modifier bindings.
-    step := editor_step_key_direction(vk);
+    step     := editor_step_key_direction(vk);
     shortcut := vk == 0x20 || ((step != 0 || vk == #char "N" || vk == #char "J" ||
                               vk == #char "K" || vk == #char "L") && !editor_modifiers_down());
     if shortcut && active {
@@ -274,10 +274,6 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
 }
 
 #scope_file
-#import "Basic";
-#import "Windows_Utf8";
-Win :: #import "Windows";
-Simp :: #import "Simp";
 
 editor_queue_event :: (event: Editor_Event) {
     if editor_window.event_count == editor_window.events.count { editor_window.overflow = true; return; }
@@ -308,11 +304,11 @@ editor_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64)
         if message == Win.WM_ERASEBKGND || message == Win.WM_DPICHANGED return 0;
         event: Editor_Event;
         // Win32 packs signed 16-bit coordinates; creation messages may contain pointer bits here.
-        event.x = cast,trunc(s16) lparam;
-        event.y = cast,trunc(s16) (lparam >> 16);
-        event.ctrl = Win.GetKeyState(Win.VK_CONTROL) < 0;
+        event.x     = cast,trunc(s16) lparam;
+        event.y     = cast,trunc(s16) (lparam >> 16);
+        event.ctrl  = Win.GetKeyState(Win.VK_CONTROL) < 0;
         event.shift = Win.GetKeyState(Win.VK_SHIFT) < 0;
-        event.alt = Win.GetKeyState(Win.VK_MENU) < 0;
+        event.alt   = Win.GetKeyState(Win.VK_MENU) < 0;
         if message == Win.WM_LBUTTONDOWN {
             event.kind = .DOWN;
             Win.SetCapture(window);
@@ -324,18 +320,18 @@ editor_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64)
         } else if message == Win.WM_MOUSEMOVE event.kind = .MOVE;
         else if message == Win.WM_MOUSEWHEEL {
             event.kind = .WHEEL;
-            event.y = cast,trunc(s16) (wparam >> 16);
+            event.y    = cast,trunc(s16) (wparam >> 16);
         } else if message == 0x215 event.kind = .CANCEL; // WM_CAPTURECHANGED
         else if message == Win.WM_KEYDOWN || message == Win.WM_SYSKEYDOWN {
-            event.kind = .KEY;
-            event.key = cast(u32) wparam;
+            event.kind   = .KEY;
+            event.key    = cast(u32) wparam;
             event.repeat = (lparam & 0x40000000) != 0;
             if wparam == Win.VK_OEM_3 && !event.ctrl { overlay.show_requested = true; return 0; }
         } else if message == Win.WM_CHAR {
             if wparam == #char ":" { overlay.show_requested = true; return 0; }
             if wparam == #char ";" { overlay.quick_requested = true; return 0; }
             event.kind = .TEXT;
-            event.key = cast(u32) wparam;
+            event.key  = cast(u32) wparam;
         } else return Win.DefWindowProcW(window, message, wparam, lparam);
         editor_queue_event(event);
         return 0;
@@ -343,17 +339,17 @@ editor_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64)
 }
 
 Keyboard_Hook_Event :: struct { vk, scan, flags, time: u32; extra: u64; }
-GW_HWNDNEXT :: 2;
-GW_HWNDPREV :: 3;
-user32 :: #library,system "user32";
-GetWindow :: (window: Win.HWND, relation: u32) -> Win.HWND #foreign user32;
-SetWindowsHookExW :: (kind: s32, callback: (code: s32, message: u64, data: s64) -> s64 #c_call,
+GW_HWNDNEXT         :: 2;
+GW_HWNDPREV         :: 3;
+user32              :: #library,system "user32";
+GetWindow           :: (window: Win.HWND, relation: u32) -> Win.HWND #foreign user32;
+SetWindowsHookExW   :: (kind: s32, callback: (code: s32, message: u64, data: s64) -> s64 #c_call,
                      instance: Win.HINSTANCE, thread: u32) -> *void #foreign user32;
-UnhookWindowsHookEx :: (hook: *void) -> s32 #foreign user32;
-CallNextHookEx :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
-IsWindow :: (window: Win.HWND) -> s32 #foreign user32;
-IsIconic :: (window: Win.HWND) -> s32 #foreign user32;
-GetDpiForWindow :: (window: Win.HWND) -> u32 #foreign user32;
-SetForegroundWindow :: (window: Win.HWND) -> s32 #foreign user32;
-SetFocus :: (window: Win.HWND) -> Win.HWND #foreign user32;
+UnhookWindowsHookEx        :: (hook: *void) -> s32 #foreign user32;
+CallNextHookEx             :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
+IsWindow                   :: (window: Win.HWND) -> s32 #foreign user32;
+IsIconic                   :: (window: Win.HWND) -> s32 #foreign user32;
+GetDpiForWindow            :: (window: Win.HWND) -> u32 #foreign user32;
+SetForegroundWindow        :: (window: Win.HWND) -> s32 #foreign user32;
+SetFocus                   :: (window: Win.HWND) -> Win.HWND #foreign user32;
 SetLayeredWindowAttributes :: (window: Win.HWND, color: u32, alpha: u8, flags: u32) -> s32 #foreign user32;

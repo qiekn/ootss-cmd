@@ -1,24 +1,24 @@
 Overlay_Image_Placement :: struct {
-    bounds: Win.RECT;
+    bounds:                                           Win.RECT;
     image_left, image_top, image_width, image_height: s32;
 }
 
 Overlay_Image_Surface :: struct {
-    dc: Win.HDC;
+    dc:               Win.HDC;
     bitmap, previous: Win.HGDIOBJ;
-    pixels: *u8;
-    width, height: s32;
+    pixels:           *u8;
+    width, height:    s32;
 }
 
 Overlay_Image_State :: struct {
-    window: Win.HWND;
-    pixels: *u8;
-    bitmap: Win.BITMAPINFO;
-    placement: Overlay_Image_Placement;
-    screen_bounds: Win.RECT;
-    visible: bool;
+    window:          Win.HWND;
+    pixels:          *u8;
+    bitmap:          Win.BITMAPINFO;
+    placement:       Overlay_Image_Placement;
+    screen_bounds:   Win.RECT;
+    visible:         bool;
     per_pixel_alpha: bool;
-    surface: Overlay_Image_Surface;
+    surface:         Overlay_Image_Surface;
 }
 
 overlay_image: Overlay_Image_State;
@@ -32,7 +32,7 @@ overlay_image_fit :: (width: s32, height: s32, left: s32, top: s32, right: s32, 
     bottom -= padding;
     if width <= 0 || height <= 0 || right <= left || bottom <= top return result;
     scale := min(cast(float64)(right - left) / width, cast(float64)(bottom - top) / height);
-    result.image_width = max(cast(s32) 1, cast(s32)(width * scale));
+    result.image_width  = max(cast(s32) 1, cast(s32)(width * scale));
     result.image_height = max(cast(s32) 1, cast(s32)(height * scale));
     x := left + (right - left - result.image_width) / 2;
     y := top + (bottom - top - result.image_height) / 2;
@@ -49,14 +49,14 @@ overlay_image_fit_integer :: (width: s32, height: s32, left: s32, top: s32, righ
     bottom -= padding;
     if width <= 0 || height <= 0 || right <= left || bottom <= top return result;
     scale := max(cast(s32) 1, min((right - left) / width, (bottom - top) / height));
-    result.image_width = width * scale;
+    result.image_width  = width * scale;
     result.image_height = height * scale;
     x := left + (right - left - result.image_width) / 2;
     y := top + (bottom - top - result.image_height) / 2;
     // If even 1x cannot fit, clip within the padded viewport instead of distorting the pixels.
-    result.bounds = .{max(left, x), max(top, y), min(right, x + result.image_width), min(bottom, y + result.image_height)};
+    result.bounds     = .{max(left, x), max(top, y), min(right, x + result.image_width), min(bottom, y + result.image_height)};
     result.image_left = x - result.bounds.left;
-    result.image_top = y - result.bounds.top;
+    result.image_top  = y - result.bounds.top;
     return result;
 }
 
@@ -65,13 +65,13 @@ overlay_image_create :: (per_pixel_alpha := false) -> bool {
     if overlay_image.window overlay_image_destroy();
     if !overlay.window return false;
     instance := Win.GetModuleHandleW(null);
-    name := utf8_to_wide("OOTSS Console GIF",, temp);
+    name     := utf8_to_wide("OOTSS Console GIF",, temp);
     wc: Win.WNDCLASSEXW;
-    wc.cbSize = size_of(Win.WNDCLASSEXW);
-    wc.style = Win.CS_HREDRAW | Win.CS_VREDRAW;
-    wc.lpfnWndProc = overlay_image_window_proc;
-    wc.hInstance = instance;
-    wc.hCursor = Win.LoadCursorW(null, Win.IDC_ARROW);
+    wc.cbSize        = size_of(Win.WNDCLASSEXW);
+    wc.style         = Win.CS_HREDRAW | Win.CS_VREDRAW;
+    wc.lpfnWndProc   = overlay_image_window_proc;
+    wc.hInstance     = instance;
+    wc.hCursor       = Win.LoadCursorW(null, Win.IDC_ARROW);
     wc.lpszClassName = name;
     if !Win.RegisterClassExW(*wc) && Win.GetLastError() != 1410 return false;
 
@@ -98,7 +98,7 @@ overlay_image_show :: (pixels: *u8, width: s32, height: s32, placement: Overlay_
         return false;
     }
     screen: Win.RECT = .{origin.x, origin.y, origin.x + r.right - r.left, origin.y + r.bottom - r.top};
-    old := overlay_image.screen_bounds;
+    old   := overlay_image.screen_bounds;
     moved := !overlay_image.visible || screen.left != old.left || screen.top != old.top ||
              screen.right != old.right || screen.bottom != old.bottom;
     redraw := moved || pixels_changed || overlay_image.pixels != pixels ||
@@ -107,10 +107,10 @@ overlay_image_show :: (pixels: *u8, width: s32, height: s32, placement: Overlay_
               overlay_image.placement.image_top != placement.image_top ||
               overlay_image.placement.image_width != placement.image_width ||
               overlay_image.placement.image_height != placement.image_height;
-    overlay_image.pixels = pixels;
-    overlay_image.placement = placement;
+    overlay_image.pixels           = pixels;
+    overlay_image.placement        = placement;
     overlay_image.bitmap.bmiHeader = .{
-        biSize = size_of(Win.BITMAPINFOHEADER), biWidth = width, biHeight = -height,
+        biSize   = size_of(Win.BITMAPINFOHEADER), biWidth = width, biHeight = -height,
         biPlanes = 1, biBitCount = 32, biCompression = Win.BI_RGB
     };
     if redraw && per_pixel_alpha {
@@ -121,9 +121,9 @@ overlay_image_show :: (pixels: *u8, width: s32, height: s32, placement: Overlay_
         }
         overlay_image_scale_alpha(pixels, width, height, placement, surface);
         destination: Win.POINT = .{screen.left, screen.top};
-        source: Win.POINT;
-        size: Win.SIZE = .{surface.width, surface.height};
-        blend: Image_Blend_Function = .{0, 0, 255, 1}; // AC_SRC_OVER, full opacity, AC_SRC_ALPHA.
+        source:      Win.POINT;
+        size:        Win.SIZE = .{surface.width, surface.height};
+        blend:       Image_Blend_Function = .{0, 0, 255, 1}; // AC_SRC_OVER, full opacity, AC_SRC_ALPHA.
         if !UpdateLayeredWindow(overlay_image.window, null, *destination, *size, surface.dc, *source, 0, *blend, 2) {
             overlay_image_hide();
             return false;
@@ -137,7 +137,7 @@ overlay_image_show :: (pixels: *u8, width: s32, height: s32, placement: Overlay_
             return false;
         }
         overlay_image.screen_bounds = screen;
-        overlay_image.visible = true;
+        overlay_image.visible       = true;
     }
     if redraw && !per_pixel_alpha {
         InvalidateRect(overlay_image.window, null, 0);
@@ -164,9 +164,9 @@ overlay_image_surface_resize :: (surface: *Overlay_Image_Surface, width: s32, he
         surface.previous = null;
         return false;
     }
-    surface.width = width;
+    surface.width  = width;
     surface.height = height;
-    ready = true;
+    ready          = true;
     return true;
 }
 
@@ -189,16 +189,16 @@ overlay_image_scale_alpha :: (pixels: *u8, width: s32, height: s32, placement: O
         for x: 0..surface.width - 1 {
             source_x := max(cast(float64) 0, min(cast(float64)(width - 1),
                 (cast(float64)(x - placement.image_left) + 0.5) * width / placement.image_width - 0.5));
-            x0 := cast(s32) source_x;
-            x1 := min(x0 + 1, width - 1);
-            fx := source_x - x0;
-            top_left := pixels + (cast(s64) y0 * width + x0) * 4;
-            top_right := pixels + (cast(s64) y0 * width + x1) * 4;
-            bottom_left := pixels + (cast(s64) y1 * width + x0) * 4;
+            x0           := cast(s32) source_x;
+            x1           := min(x0 + 1, width - 1);
+            fx           := source_x - x0;
+            top_left     := pixels + (cast(s64) y0 * width + x0) * 4;
+            top_right    := pixels + (cast(s64) y0 * width + x1) * 4;
+            bottom_left  := pixels + (cast(s64) y1 * width + x0) * 4;
             bottom_right := pixels + (cast(s64) y1 * width + x1) * 4;
-            output := surface.pixels + (cast(s64) y * surface.width + x) * 4;
+            output       := surface.pixels + (cast(s64) y * surface.width + x) * 4;
             for channel: 0..3 {
-                top := top_left[channel] * (1 - fx) + top_right[channel] * fx;
+                top    := top_left[channel] * (1 - fx) + top_right[channel] * fx;
                 bottom := bottom_left[channel] * (1 - fx) + bottom_right[channel] * fx;
                 output[channel] = cast(u8)(top * (1 - fy) + bottom * fy + 0.5);
             }
@@ -231,9 +231,6 @@ overlay_image_paint :: (dc: Win.HDC) {
 }
 
 #scope_file
-#import "Basic";
-#import "Windows_Utf8";
-Win :: #import "Windows";
 
 overlay_image_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64) -> s64 #c_call {
     push_context {
@@ -250,35 +247,35 @@ overlay_image_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lpara
             return 0;
         }
         if message == Win.WM_NCDESTROY && window == overlay_image.window {
-            overlay_image.window = null;
+            overlay_image.window  = null;
             overlay_image.visible = false;
-            overlay_image.pixels = null;
+            overlay_image.pixels  = null;
         }
         return Win.DefWindowProcW(window, message, wparam, lparam);
     }
 }
 
 Paint_Struct :: struct {
-    dc: Win.HDC;
-    erase: s32;
-    bounds: Win.RECT;
+    dc:                   Win.HDC;
+    erase:                s32;
+    bounds:               Win.RECT;
     restore, incremental: s32;
-    reserved: [32] u8;
+    reserved:             [32] u8;
 }
 
 Image_Blend_Function :: struct { operation, flags, opacity, alpha_format: u8; }
 
-user32 :: #library,system "user32";
-gdi32 :: #library,system "gdi32";
+user32           :: #library,system "user32";
+gdi32            :: #library,system "gdi32";
 CreateDIBSection :: (dc: Win.HDC, info: *Win.BITMAPINFO, usage: u32, pixels: **u8,
                      section: Win.HANDLE, offset: u32) -> Win.HGDIOBJ #foreign gdi32;
 UpdateLayeredWindow :: (window: Win.HWND, destination_dc: Win.HDC, destination: *Win.POINT, size: *Win.SIZE,
                         source_dc: Win.HDC, source: *Win.POINT, color_key: u32,
-                        blend: *Image_Blend_Function, flags: u32) -> s32 #foreign user32;
-BeginPaint :: (window: Win.HWND, paint: *Paint_Struct) -> Win.HDC #foreign user32;
-EndPaint :: (window: Win.HWND, paint: *Paint_Struct) -> s32 #foreign user32;
+                        blend:     *Image_Blend_Function, flags: u32) -> s32 #foreign user32;
+BeginPaint     :: (window: Win.HWND, paint: *Paint_Struct) -> Win.HDC #foreign user32;
+EndPaint       :: (window: Win.HWND, paint: *Paint_Struct) -> s32 #foreign user32;
 InvalidateRect :: (window: Win.HWND, bounds: *Win.RECT, erase: s32) -> s32 #foreign user32;
-SetBrushOrgEx :: (dc: Win.HDC, x: s32, y: s32, previous: *Win.POINT) -> s32 #foreign gdi32;
-StretchDIBits :: (dc: Win.HDC, x: s32, y: s32, width: s32, height: s32,
+SetBrushOrgEx  :: (dc: Win.HDC, x: s32, y: s32, previous: *Win.POINT) -> s32 #foreign gdi32;
+StretchDIBits  :: (dc: Win.HDC, x: s32, y: s32, width: s32, height: s32,
                   source_x: s32, source_y: s32, source_width: s32, source_height: s32,
-                  pixels: *void, bitmap: *Win.BITMAPINFO, usage: u32, operation: Win.ROP) -> s32 #foreign gdi32;
+                  pixels:   *void, bitmap: *Win.BITMAPINFO, usage: u32, operation: Win.ROP) -> s32 #foreign gdi32;

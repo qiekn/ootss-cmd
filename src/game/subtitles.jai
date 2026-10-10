@@ -1,11 +1,11 @@
 Subtitle_Line :: struct {
-    text: string;
+    text:    string;
     comment: bool;
 }
 
 Subtitle_Cue :: struct {
     speaker: string;
-    lines: [..] Subtitle_Line;
+    lines:   [..] Subtitle_Line;
 }
 
 Subtitle_Section :: struct {
@@ -15,17 +15,17 @@ Subtitle_Section :: struct {
 
 Subtitle_File :: struct {
     // Names and lines borrow slices of this owned UTF-8 buffer.
-    source: string;
+    source:   string;
     sections: [..] Subtitle_Section;
 }
 
 Subtitles_Catalog :: struct {
     english, chinese: Subtitle_File;
-    mapping: Subtitles_Mapping;
+    mapping:          Subtitles_Mapping;
 }
 
 Subtitle_Block :: struct {
-    section: string; // A nonempty name introduces a section; otherwise this is a dialogue block.
+    section:          string; // A nonempty name introduces a section; otherwise this is a dialogue block.
     english, chinese: [] Subtitle_Cue;
 }
 
@@ -39,7 +39,7 @@ subtitles_parse :: (file: *Subtitle_File, source: string) -> string {
     lines := split(text, #char "\n");
     defer array_free(lines);
     section: s64 = -1;
-    cue: s64 = -1;
+    cue:     s64 = -1;
     for raw: lines {
         line := trim(raw);
         if line.count && line[0] == #char ":" {
@@ -69,7 +69,7 @@ subtitles_parse :: (file: *Subtitle_File, source: string) -> string {
             continue;
         }
         if cue < 0 continue;
-        output := *file.sections[section].cues[cue].lines;
+        output  := *file.sections[section].cues[cue].lines;
         comment := find_index_from_left(line, "++");
         if comment >= 0 {
             dialogue := trim(slice(line, 0, comment));
@@ -146,7 +146,7 @@ subtitles_catalog_load :: (catalog: *Subtitles_Catalog, directory: string, load_
         if error.count return error;
     }
     if load_english {
-        path := tprint("%/en.subtitles", directory);
+        path       := tprint("%/en.subtitles", directory);
         source, ok := read_entire_file(path, log_errors = false);
         defer free(source);
         if !ok return tprint("Could not read %.", path);
@@ -207,9 +207,6 @@ subtitles_catalog_free :: (catalog: *Subtitles_Catalog) {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
-#import "File";
 
 subtitles_add_name :: (names: *[..] string, name: string) {
     for previous: names.* if equal_nocase(previous, name) return;
@@ -233,7 +230,7 @@ subtitles_phase_suffix :: (suffix: string) -> bool {
 
 Subtitle_Turn :: struct {
     speaker: string;
-    cues: [] Subtitle_Cue;
+    cues:    [] Subtitle_Cue;
 }
 
 subtitles_turns :: (section: *Subtitle_Section) -> [..] Subtitle_Turn {
@@ -260,7 +257,7 @@ subtitles_pair_section :: (english: *Subtitle_Section, chinese: *Subtitle_Sectio
 
     // Align speaker turns, not timestamps: translations have different timings and sometimes split cues.
     // Within equal-length turns each cue aligns separately. Unequal turns remain together without lost text.
-    stride := zh.count + 1;
+    stride  := zh.count + 1;
     matches := NewArray((en.count + 1) * stride, s64);
     defer array_free(matches);
     e := en.count - 1;

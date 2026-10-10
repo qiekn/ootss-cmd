@@ -1,23 +1,23 @@
-Editor_Emit_Key :: #type (key: Game_Key, key_up: bool) -> string;
-Editor_Playback_Speed :: enum { NORMAL; FAST; RABBIT; SLOW; TURTLE; }
-EDITOR_FORWARD_DELAY :: 250;
-EDITOR_SCRUB_DELAY :: 75;
+Editor_Emit_Key         :: #type (key: Game_Key, key_up: bool) -> string;
+Editor_Playback_Speed   :: enum { NORMAL; FAST; RABBIT; SLOW; TURTLE; }
+EDITOR_FORWARD_DELAY    :: 250;
+EDITOR_SCRUB_DELAY      :: 75;
 EDITOR_SCRUB_UNDO_DELAY :: 10;
-EDITOR_HELD_UNDO_DELAY :: 125;
-Editor_Transport :: struct {
-    playing: bool;
-    speed: Editor_Playback_Speed;
-    scrubbing: bool;
-    held_step: s64;
-    target: s64;
-    phase: enum { IDLE; HOLD; GAP; WAIT; };
-    deadline: float64;
-    held: Game_Key;
-    time_held: bool;
-    time_key: Game_Key;
-    gap_ms: s32;
+EDITOR_HELD_UNDO_DELAY  :: 125;
+Editor_Transport        :: struct {
+    playing:          bool;
+    speed:            Editor_Playback_Speed;
+    scrubbing:        bool;
+    held_step:        s64;
+    target:           s64;
+    phase:            enum { IDLE; HOLD; GAP; WAIT; };
+    deadline:         float64;
+    held:             Game_Key;
+    time_held:        bool;
+    time_key:         Game_Key;
+    gap_ms:           s32;
     forward_delay_ms: s32 = EDITOR_FORWARD_DELAY;
-    undo_delay_ms: s32 = EDITOR_FORWARD_DELAY;
+    undo_delay_ms:    s32 = EDITOR_FORWARD_DELAY;
 }
 
 editor_transport_busy :: (transport: *Editor_Transport, timeline: *Solution_Timeline) -> bool {
@@ -26,11 +26,11 @@ editor_transport_busy :: (transport: *Editor_Transport, timeline: *Solution_Time
 }
 
 editor_transport_stop :: (transport: *Editor_Transport, timeline: *Solution_Timeline, emit: Editor_Emit_Key) -> string {
-    transport.playing = false;
+    transport.playing   = false;
     transport.scrubbing = false;
     transport.held_step = 0;
-    transport.target = timeline.playhead;
-    transport.phase = .IDLE;
+    transport.target    = timeline.playhead;
+    transport.phase     = .IDLE;
     error: string;
     if transport.held.scan {
         error = emit(transport.held, true);
@@ -89,8 +89,8 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
         if now < transport.deadline return "";
         error := emit(transport.held, true);
         if error.count return error;
-        transport.held = .{};
-        transport.phase = .GAP;
+        transport.held     = .{};
+        transport.phase    = .GAP;
         transport.deadline = now + cast(float64) transport.gap_ms / 1000;
     }
     if transport.phase == .GAP {
@@ -106,7 +106,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
     }
 
     forward := transport.target > timeline.playhead;
-    speed := ifx transport.playing then transport.speed else .NORMAL;
+    speed   := ifx transport.playing then transport.speed else .NORMAL;
     time_key: Game_Key;
     if forward time_key = editor_playback_time_key(map, ifx transport.scrubbing then .RABBIT else speed);
     if transport.time_held && (time_key.scan != transport.time_key.scan || time_key.extended != transport.time_key.extended) {
@@ -117,7 +117,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
     if time_key.scan && !transport.time_held {
         error := emit(time_key, false);
         if error.count return error;
-        transport.time_key = time_key;
+        transport.time_key  = time_key;
         transport.time_held = true;
     }
     if !forward {
@@ -130,7 +130,7 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
         if transport.target == timeline.playhead {
             if transport.held_step != 0 {
                 // Empty undo cells still take the selected interval during held repetition.
-                transport.phase = .GAP;
+                transport.phase    = .GAP;
                 transport.deadline = now + cast(float64) transport.undo_delay_ms / 1000;
                 return "";
             }
@@ -141,11 +141,11 @@ editor_transport_tick :: (transport: *Editor_Transport, timeline: *Solution_Time
                                  editor_playback_delay(speed, transport.forward_delay_ms))
                            else (ifx transport.scrubbing then EDITOR_SCRUB_UNDO_DELAY else transport.undo_delay_ms);
     if forward && timeline.keys[timeline.playhead] == #char "_" {
-        transport.phase = .WAIT;
+        transport.phase    = .WAIT;
         transport.deadline = now + cast(float64) delay_ms / 1000;
         return "";
     }
-    key := ifx forward then game_key_for_symbol(map, timeline.keys[timeline.playhead]) else map.undo;
+    key   := ifx forward then game_key_for_symbol(map, timeline.keys[timeline.playhead]) else map.undo;
     error := editor_transport_press(transport, key, cast(s32) delay_ms, now, emit);
     if error.count return error;
     // Once key-down succeeds this step belongs to the game, including when pause follows immediately.
@@ -162,11 +162,8 @@ editor_transport_press :: (transport: *Editor_Transport, key: Game_Key, delay_ms
     if error.count return error;
     transport.held = key;
     hold_ms := send_hold_for_delay(delay_ms);
-    transport.gap_ms = delay_ms - cast(s32) hold_ms;
-    transport.phase = .HOLD;
+    transport.gap_ms   = delay_ms - cast(s32) hold_ms;
+    transport.phase    = .HOLD;
     transport.deadline = now + cast(float64) hold_ms / 1000;
     return "";
 }
-
-#scope_file
-#import "Basic";

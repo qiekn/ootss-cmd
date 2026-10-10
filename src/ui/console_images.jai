@@ -1,9 +1,9 @@
-CONSOLE_BLOW_FILE :: "data/images/blow-wave.gif";
-CONSOLE_BLOW_COLOR_WEIGHT :: 153; // Mix 60% image color with the theme before opaque presentation.
-CONSOLE_BLOW_SEAM_PIXELS :: 4; // Feather this many source pixels on each side of the mirror seam.
-CONSOLE_BLOW_PADDING :: 24;
-CONSOLE_BLOW_CAPTION :: "Powered by blowave & jai";
-CONSOLE_BLOW_CAPTION_HEIGHT :: 10;
+CONSOLE_BLOW_FILE            :: "data/images/blow-wave.gif";
+CONSOLE_BLOW_COLOR_WEIGHT    :: 153; // Mix 60% image color with the theme before opaque presentation.
+CONSOLE_BLOW_SEAM_PIXELS     :: 4; // Feather this many source pixels on each side of the mirror seam.
+CONSOLE_BLOW_PADDING         :: 24;
+CONSOLE_BLOW_CAPTION         :: "Powered by blowave & jai";
+CONSOLE_BLOW_CAPTION_HEIGHT  :: 10;
 CONSOLE_BLOW_CAPTION_PADDING :: 8;
 
 CONSOLE_ICON_FILE :: "data/images/icon.png";
@@ -18,27 +18,27 @@ CONSOLE_PICTURE_FILES :: string.[
 Console_Blow_Effect :: enum { ALIEN; MIRROR; WAVE; } // Same order as CONSOLE_BLOW_NAMES.
 
 Console_Gif :: struct {
-    pixels: *u8;
-    delays: *s32;
+    pixels:                     *u8;
+    delays:                     *s32;
     width, height, frame_count: s32;
-    duration_ms: s64;
-    started_at: float64;
-    frame: s32 = -1;
-    effect: Console_Blow_Effect = .WAVE;
-    opaque_pixels: [] u8;
-    frame_changed: bool;
+    duration_ms:                s64;
+    started_at:                 float64;
+    frame:                      s32 = -1;
+    effect:                     Console_Blow_Effect = .WAVE;
+    opaque_pixels:              [] u8;
+    frame_changed:              bool;
 }
 
-console_blow: Console_Gif;
+console_blow:              Console_Gif;
 console_blow_caption_font: *Simp.Dynamic_Font;
-console_icon: Simp.Texture;
-console_icon_attempted: bool;
-console_icon_loaded: bool;
+console_icon:              Simp.Texture;
+console_icon_attempted:    bool;
+console_icon_loaded:       bool;
 
 Console_Still_Image :: struct {
-    pixels: *u8;
+    pixels:        *u8;
     width, height: s32;
-    has_alpha: bool;
+    has_alpha:     bool;
 }
 console_pictures: [CONSOLE_PICTURE_FILES.count] Console_Still_Image;
 
@@ -82,8 +82,8 @@ console_prepare_picture :: (console: *Console_State) {
 
 console_draw_picture :: (left: s32, top: s32, right: s32, bottom: s32) {
     if console.picture == .NONE return;
-    picture := *console_pictures[cast(s64) console.picture - 1];
-    padding := cast(s32)(CONSOLE_BLOW_PADDING * cast(float) console_font_dpi / 96);
+    picture   := *console_pictures[cast(s64) console.picture - 1];
+    padding   := cast(s32)(CONSOLE_BLOW_PADDING * cast(float) console_font_dpi / 96);
     placement := overlay_image_fit(picture.width, picture.height, left, top, right, bottom, padding);
     if !overlay_image_show(picture.pixels, picture.width, picture.height, placement, false, per_pixel_alpha = picture.has_alpha) {
         console.picture = .NONE;
@@ -147,17 +147,17 @@ console_prepare_blow :: (console: *Console_State, now: float64) {
     }
     gif := *console_blow;
     if !console_load_blow() {
-        console.show_blow = false;
+        console.show_blow    = false;
         console.restart_blow = false;
         console_write(console, tprint("Unable to load % next to ootss-cmd.exe.", CONSOLE_BLOW_FILE), .ERROR);
         return;
     }
     if console.restart_blow {
-        gif.started_at = now;
+        gif.started_at       = now;
         console.restart_blow = false;
     }
 
-    frame := console_gif_frame_at(gif, now);
+    frame  := console_gif_frame_at(gif, now);
     effect := cast(Console_Blow_Effect) console.blow_index;
     if frame == gif.frame && effect == gif.effect return;
     console_gif_blend_frame(gif, frame, effect);
@@ -166,8 +166,8 @@ console_prepare_blow :: (console: *Console_State, now: float64) {
 
 console_gif_blend_frame :: (gif: *Console_Gif, frame: s32, effect: Console_Blow_Effect = .WAVE) {
     frame_bytes := cast(s64) gif.width * gif.height * 4;
-    source := gif.pixels + frame_bytes * frame;
-    background := u32.[Naysayer.background & 0xff, (Naysayer.background >> 8) & 0xff,
+    source      := gif.pixels + frame_bytes * frame;
+    background  := u32.[Naysayer.background & 0xff, (Naysayer.background >> 8) & 0xff,
                       (Naysayer.background >> 16) & 0xff];
     // GDI takes BGRA, while stb supplies RGBA. Transparent GIF pixels become solid theme background.
     for y: 0..gif.height - 1 {
@@ -185,11 +185,11 @@ console_gif_blend_frame :: (gif: *Console_Gif, frame: s32, effect: Console_Blow_
                 t := 1.0 - cast(float) distance / (2 * CONSOLE_BLOW_SEAM_PIXELS);
                 seam_weight = cast(u32)(128 * t * t * (3 - 2 * t) + 0.5);
             }
-            pixel := row + source_x * 4;
-            reflected := row + (gif.width - 1 - source_x) * 4;
-            output := gif.opaque_pixels.data + (y * gif.width + x) * 4;
-            alpha := (cast(u32) pixel[3] * CONSOLE_BLOW_COLOR_WEIGHT + 127) / 255;
-            inverse := 255 - alpha;
+            pixel           := row + source_x * 4;
+            reflected       := row + (gif.width - 1 - source_x) * 4;
+            output          := gif.opaque_pixels.data + (y * gif.width + x) * 4;
+            alpha           := (cast(u32) pixel[3] * CONSOLE_BLOW_COLOR_WEIGHT + 127) / 255;
+            inverse         := 255 - alpha;
             reflected_alpha := (cast(u32) reflected[3] * CONSOLE_BLOW_COLOR_WEIGHT + 127) / 255;
             for channel: 0..2 {
                 value := (cast(u32) pixel[2 - channel] * alpha + background[channel] * inverse + 127) / 255;
@@ -203,8 +203,8 @@ console_gif_blend_frame :: (gif: *Console_Gif, frame: s32, effect: Console_Blow_
             output[3] = 255;
         }
     }
-    gif.frame = frame;
-    gif.effect = effect;
+    gif.frame         = frame;
+    gif.effect        = effect;
     gif.frame_changed = true;
 }
 
@@ -223,7 +223,7 @@ console_gif_draw_caption :: (gif: *Console_Gif) {
     // The caption then scales with the image at the same integer zoom, without a separate window or font system.
     for pass: 0..1 {
         offset := ifx pass == 0 then 1 else 0;
-        color := ifx pass == 0 then Naysayer.background else Naysayer.text;
+        color  := ifx pass == 0 then Naysayer.background else Naysayer.text;
         cursor := (gif.width - width) / 2;
         for glyph: font.temporary_glyphs {
             if glyph.page && glyph.width && glyph.height {
@@ -253,11 +253,11 @@ console_gif_draw_caption :: (gif: *Console_Gif) {
 }
 
 console_draw_blow :: (left: s32, top: s32, right: s32, bottom: s32) {
-    gif := *console_blow;
-    padding := cast(s32)(CONSOLE_BLOW_PADDING * cast(float) console_font_dpi / 96);
+    gif       := *console_blow;
+    padding   := cast(s32)(CONSOLE_BLOW_PADDING * cast(float) console_font_dpi / 96);
     placement := overlay_image_fit_integer(gif.width, gif.height, left, top, right, bottom, padding);
     if !overlay_image_show(gif.opaque_pixels.data, gif.width, gif.height, placement, gif.frame_changed) {
-        console.show_blow = false;
+        console.show_blow    = false;
         console.restart_blow = false;
         console_write(*console, "Unable to create or position the GIF display.", .ERROR);
     }
@@ -285,10 +285,10 @@ console_draw_image :: (texture: *Simp.Texture, left: s32, top: s32, right: s32, 
     if right <= left || bottom <= top return;
     scale := min(wanted_scale, cast(float)(right - left) / texture.width);
     if fit_height scale = min(scale, cast(float)(bottom - top) / texture.height);
-    width := cast(s32)(texture.width * scale);
+    width  := cast(s32)(texture.width * scale);
     height := cast(s32)(texture.height * scale);
-    x := ifx centered then left + (right - left - width) / 2 else left;
-    y := ifx centered then top + (bottom - top - height) / 2 else top;
+    x      := ifx centered then left + (right - left - width) / 2 else left;
+    y      := ifx centered then top + (bottom - top - height) / 2 else top;
     Simp.set_shader_for_images(texture);
     Simp.immediate_quad(cast(float) x, cast(float) y, cast(float)(x + width), cast(float)(y + height), color);
 }
@@ -307,13 +307,9 @@ console_images_deinit :: () {
     console_gif_deinit(*console_blow);
     console_blow_caption_font = null;
     if console_icon_loaded Simp.texture_destroy(*console_icon);
-    console_icon_loaded = false;
+    console_icon_loaded    = false;
     console_icon_attempted = false;
 }
 
 #scope_file
-#import "Basic";
-#import "File";
-#import "Math";
-Simp :: #import "Simp";
 Stb :: #import "stb_image";

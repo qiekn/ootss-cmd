@@ -1,6 +1,6 @@
 fog_session: Fog.Fog_Session;
-fog_game: Win.HWND;
-fog_pid: u32;
+fog_game:    Win.HWND;
+fog_pid:     u32;
 
 command_unfog :: (state: *Console_State, arguments: string) {
     console_queue_fog(state, arguments, false);
@@ -16,7 +16,7 @@ console_queue_fog :: (state: *Console_State, arguments: string, enabled: bool) {
         return;
     }
     if !console_position_command_ready(state) return;
-    state.pending_fog_change = true;
+    state.pending_fog_change  = true;
     state.pending_fog_enabled = enabled;
 }
 
@@ -30,7 +30,7 @@ console_run_pending_fog :: (state: *Console_State) {
         return;
     }
     game := find_game_window();
-    pid := process_window_pid(game);
+    pid  := process_window_pid(game);
     if !game || !console_submission_target_matches(state.submission, game, pid) {
         console_write(state, "Fog command cancelled: the game changed.", .ERROR);
         return;
@@ -43,7 +43,7 @@ console_run_pending_fog :: (state: *Console_State) {
         error := Fog.fog_session_open(*fog_session, game);
         if error.count { console_write(state, error, .ERROR); return; }
         fog_game = game;
-        fog_pid = pid;
+        fog_pid  = pid;
     }
     error: string;
     if state.pending_fog_enabled {
@@ -62,6 +62,4 @@ fog_deinit :: () {
 }
 
 #scope_file
-#import "Basic";
-Win :: #import "Windows";
 Fog :: #import,file "fog_memory.jai";

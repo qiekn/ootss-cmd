@@ -20,12 +20,12 @@ build :: (name: string) -> bool {
     }
 
     // Inherit command-line settings, including optimization and module search paths.
-    options := get_build_options();
+    options   := get_build_options();
     optimized := options.llvm_options.bitcode_optimization_setting > .O0;
     options.output_type = .EXECUTABLE;
     // options.backend = .X64;
-    options.output_executable_name = name;
-    options.output_path = ifx optimized then tprint("%/bin", #filepath) else #filepath;
+    options.output_executable_name                  = name;
+    options.output_path                             = ifx optimized then tprint("%/bin", #filepath) else #filepath;
     options.prevent_compile_time_calls_from_runtime = false;
     if !make_directory_if_it_does_not_exist(options.output_path) {
         compiler_report(tprint("Could not create output directory %.", options.output_path));
@@ -69,11 +69,11 @@ build :: (name: string) -> bool {
 }
 
 copy_data :: (output_path: string) #expand {
-    source := tprint("%/data", #filepath);
+    source      := tprint("%/data", #filepath);
     destination := tprint("%/data", output_path);
     Copy_Data :: struct {
-        source : string;
-        destination : string;
+        source:      string;
+        destination: string;
         success := true;
     }
     copy: Copy_Data = .{source = source, destination = destination};

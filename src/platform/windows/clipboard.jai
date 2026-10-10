@@ -59,10 +59,8 @@ clipboard_write_text :: (owner: Win.HWND, text: string) -> string {
 
 #scope_file
 
-#import "Basic";
-Win :: #import "Windows";
 Utf8 :: #import "Windows_Utf8";
 
-kernel32 :: #library,system "kernel32";
+kernel32   :: #library,system "kernel32";
 GlobalSize :: (memory: Win.HGLOBAL) -> u64 #foreign kernel32;
 GlobalFree :: (memory: Win.HGLOBAL) -> Win.HGLOBAL #foreign kernel32;

@@ -15,54 +15,54 @@
 #assert OS == .WINDOWS;
 
 Package_Entry :: struct {
-    name: string;
-    key: string;
-    size: u64;
+    name:   string;
+    key:    string;
+    size:   u64;
     offset: u64;
-    order: s64;
+    order:  s64;
 }
 
 Package :: struct {
-    data: string;
+    data:    string;
     entries: [..] Package_Entry;
 }
 
 Subtitle_ID :: struct {
-    name: string;
-    key: string;
+    name:     string;
+    key:      string;
     variants: [..] string;
-    used: bool;
+    used:     bool;
 }
 
 Subtitle_Source :: struct {
-    file: string;
+    file:   string;
     sha256: string;
 }
 
 Mapping_Source :: struct {
     package := "levels.package";
     package_sha256: string;
-    subtitles: [..] Subtitle_Source;
+    subtitles:      [..] Subtitle_Source;
 }
 
 Level_Mapping :: struct {
-    level_name: string;
+    level_name:     string;
     subtitle_names: [..] string;
-    key: string; @JsonIgnore
+    key:            string; @JsonIgnore
 }
 
 Mapping :: struct {
-    version: s64 = 1;
-    source: Mapping_Source;
-    levels: [..] Level_Mapping;
+    version:                 s64 = 1;
+    source:                  Mapping_Source;
+    levels:                  [..] Level_Mapping;
     unmapped_subtitle_names: [..] string;
 }
 
 Options :: struct {
     game_data: string;
-    output: string;
-    check: bool;
-    help: bool;
+    output:    string;
+    check:     bool;
+    help:      bool;
 }
 
 parse_package :: (data: string) -> Package, string {
@@ -72,10 +72,10 @@ parse_package :: (data: string) -> Package, string {
         return package, "Unsupported package header (expected Simple_Package v1 with flags = 0).";
     }
     size := cast(u64) data.count;
-    toc := read_le(data, 16, 8);
+    toc  := read_le(data, 16, 8);
     if toc < 64 || toc > size - 64 return package, "Package table of contents is out of bounds.";
     if slice(data, cast(s64) toc, 4) != "toc!" return package, "Missing package toc! signature.";
-    count := read_le(data, toc + 8, 8);
+    count  := read_le(data, toc + 8, 8);
     cursor := toc + 64;
     if count > (size - cursor) / 21 return package, "Invalid package entry count.";
 
@@ -92,7 +92,7 @@ parse_package :: (data: string) -> Package, string {
         if !valid_utf8(name) return package, "Invalid UTF-8 in package entry name.";
         cursor += 1;
         entry: Package_Entry = .{name = name, key = casefold(name), order = it};
-        entry.size = read_le(data, cursor, 8);
+        entry.size   = read_le(data, cursor, 8);
         entry.offset = read_le(data, cursor + 8, 8);
         cursor += 16;
         if entry.offset < 64 || entry.offset > toc || entry.size > toc - entry.offset {
@@ -121,11 +121,11 @@ parse_subtitle_ids :: (source: string, filename: string) -> [..] Subtitle_ID, st
     if !valid_utf8(source) return result, tprint("Invalid UTF-8 in %.", filename);
     text := source;
     if begins_with(text, "\xef\xbb\xbf") text = advance(text, 3);
-    position: s64;
+    position:    s64;
     line_number: s64;
     while position < text.count {
         start := position;
-        end := text.count;
+        end   := text.count;
         while position < text.count {
             code, bytes := character_utf8_to_utf32(text.data + position, text.count - position, true);
             position += bytes;
@@ -160,7 +160,7 @@ parse_subtitle_ids :: (source: string, filename: string) -> [..] Subtitle_ID, st
 generate_mapping :: (game_data: string) -> Mapping, string {
     report: Mapping;
     package_path := tprint("%/levels.package", game_data);
-    data, ok := read_entire_file(package_path, log_errors = false);
+    data, ok     := read_entire_file(package_path, log_errors = false);
     if !ok return report, tprint("Could not read %.", package_path);
     package, error := parse_package(data);
     if error.count return report, error;
@@ -178,7 +178,7 @@ generate_mapping :: (game_data: string) -> Mapping, string {
 
     ids: [..] Subtitle_ID;
     for filename: paths {
-        path := tprint("%/%", directory, filename);
+        path            := tprint("%/%", directory, filename);
         source, read_ok := read_entire_file(path, log_errors = false);
         if !read_ok return report, tprint("Could not read %.", path);
         parsed, parse_error := parse_subtitle_ids(source, path);
@@ -200,7 +200,7 @@ generate_mapping :: (game_data: string) -> Mapping, string {
     }
 
     for entry: package.entries {
-        path := replace(entry.name, "\\", "/");
+        path     := replace(entry.name, "\\", "/");
         filename := path_filename(path);
         if !ends_with_nocase(filename, ".entities") || filename == ".entities" continue;
         name := slice(filename, 0, filename.count - 9);
@@ -244,7 +244,7 @@ serialize_mapping :: (report: Mapping) -> string {
     json := Json.json_write_string(report, indent_char = "  ");
     builder: String_Builder;
     in_string := false;
-    escaped := false;
+    escaped   := false;
     // Json pretty-prints empty arrays on multiple lines; keep the existing [] spelling.
     for i: 0..json.count - 1 {
         if in_string {
@@ -276,13 +276,13 @@ write_mapping :: (path: string, source: string,
     if !directory.count directory = ".";
     if !make_directory_if_it_does_not_exist(directory, recursive = true) return tprint("Could not create output directory %.", directory);
     temporary: string;
-    file: File;
+    file:      File;
     // CREATE_NEW reserves a sibling without truncating a concurrent writer's temporary file.
     for attempt: 0..999 {
         candidate := tprint("%.%.%.tmp", path, Win.GetCurrentProcessId(), attempt);
-        handle := Win.CreateFileW(utf8_to_wide(candidate,, temp), Win.GENERIC_WRITE, 0, null, Win.CREATE_NEW);
+        handle    := Win.CreateFileW(utf8_to_wide(candidate,, temp), Win.GENERIC_WRITE, 0, null, Win.CREATE_NEW);
         if handle != Win.INVALID_HANDLE_VALUE {
-            temporary = candidate;
+            temporary   = candidate;
             file.handle = handle;
             break;
         }
@@ -352,16 +352,16 @@ run :: (arguments: [] string, quiet := false) -> string {
     }
     report, generation_error := generate_mapping(options.game_data);
     if generation_error.count return generation_error;
-    source := serialize_mapping(report);
+    source           := serialize_mapping(report);
     previous, exists := read_entire_file(options.output, log_errors = false);
-    matches := exists && previous == source;
+    matches          := exists && previous == source;
     if options.check {
         if !matches return tprint("% is missing or outdated; rerun without --check.", options.output);
     } else if !matches {
         error = write_mapping(options.output, source);
         if error.count return error;
     }
-    mapped: s64;
+    mapped:    s64;
     relations: s64;
     for level: report.levels {
         if level.subtitle_names.count mapped += 1;
@@ -398,7 +398,7 @@ sha256 :: (source: string) -> string, string {
     }
     digest: [32] u8;
     if BCryptFinishHash(hash, digest.data, 32, 0) < 0 return "", "Could not finish SHA-256.";
-    hex := alloc_string(64);
+    hex    := alloc_string(64);
     digits := "0123456789abcdef";
     for byte, i: digest {
         hex[i * 2] = digits[byte >> 4];
@@ -425,7 +425,7 @@ compare_package_entries :: (a: Package_Entry, b: Package_Entry) -> s64 {
 #import "Compiler";
 
 Json :: #import,dir "../modules/Json";
-Win :: #import "Windows";
+Win  :: #import "Windows";
 
 HELP :: #string END
 Generate data/subtitles.json from Simple_Package v1 and exact subtitle references.
@@ -471,19 +471,19 @@ is_line_break :: (code: u32) -> bool {
 }
 
 has_whitespace :: (source: string, reject_controls := false) -> bool {
-    for :utf8_iter source if is_whitespace(it) || (reject_controls && it < 32) return true;
+    for: utf8_iter source if is_whitespace(it) || (reject_controls && it < 32) return true;
     return false;
 }
 
 trim_unicode :: (source: string) -> string {
     first := source.count;
-    last: s64;
+    last:     s64;
     position: s64;
     while position < source.count {
         code, count := character_utf8_to_utf32(source.data + position, source.count - position, true);
         if !is_whitespace(code) {
             first = min(first, position);
-            last = position + count;
+            last  = position + count;
         }
         position += count;
     }
@@ -498,7 +498,7 @@ casefold :: (source: string) -> string {
     // Windows' built-in ICU preserves full case folding, including expansions such as sharp S.
     wide := utf8_to_wide(source,, temp);
     count: s32;
-    for :utf8_iter source {
+    for:   utf8_iter source {
         if it > 0xffff count += 2;
         else count += 1;
     }
@@ -530,15 +530,15 @@ find_reference :: (data: string, name: string) -> s64 {
     return -1;
 }
 
-bcrypt :: #system_library "bcrypt";
-BCryptOpenAlgorithmProvider :: (handle: **void, algorithm: *u16, implementation: *u16, flags: u32) -> s32 #foreign bcrypt;
+bcrypt                       :: #system_library "bcrypt";
+BCryptOpenAlgorithmProvider  :: (handle: **void, algorithm: *u16, implementation: *u16, flags: u32) -> s32 #foreign bcrypt;
 BCryptCloseAlgorithmProvider :: (handle: *void, flags: u32) -> s32 #foreign bcrypt;
-BCryptCreateHash :: (provider: *void, hash: **void, object: *u8, object_size: u32, secret: *u8, secret_size: u32, flags: u32) -> s32 #foreign bcrypt;
-BCryptHashData :: (hash: *void, data: *u8, count: u32, flags: u32) -> s32 #foreign bcrypt;
-BCryptFinishHash :: (hash: *void, digest: *u8, count: u32, flags: u32) -> s32 #foreign bcrypt;
-BCryptDestroyHash :: (hash: *void) -> s32 #foreign bcrypt;
+BCryptCreateHash             :: (provider: *void, hash: **void, object: *u8, object_size: u32, secret: *u8, secret_size: u32, flags: u32) -> s32 #foreign bcrypt;
+BCryptHashData               :: (hash: *void, data: *u8, count: u32, flags: u32) -> s32 #foreign bcrypt;
+BCryptFinishHash             :: (hash: *void, digest: *u8, count: u32, flags: u32) -> s32 #foreign bcrypt;
+BCryptDestroyHash            :: (hash: *void) -> s32 #foreign bcrypt;
 
-icu :: #system_library "icu";
+icu           :: #system_library "icu";
 u_strFoldCase :: (destination: *u16, capacity: s32, source: *u16, length: s32, options: u32, status: *s32) -> s32 #foreign icu;
-crt :: #system_library "msvcrt";
-memchr :: (data: *u8, value: s32, count: u64) -> *u8 #foreign crt;
+crt           :: #system_library "msvcrt";
+memchr        :: (data: *u8, value: s32, count: u64) -> *u8 #foreign crt;

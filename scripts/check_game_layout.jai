@@ -76,10 +76,10 @@ check_image :: (filename: string) {
     defer free(bytes);
     pe := (cast(*u32)(bytes.data+0x3c)).*;
     check(pe <= bytes.count-0x108 && (cast(*u32)(bytes.data+pe)).* == 0x4550, "Validate PE header.");
-    count := (cast(*u16)(bytes.data+pe+6)).*;
+    count    := (cast(*u16)(bytes.data+pe+6)).*;
     optional := (cast(*u16)(bytes.data+pe+20)).*;
-    size := (cast(*u32)(bytes.data+pe+24+56)).*;
-    headers := (cast(*u32)(bytes.data+pe+24+60)).*;
+    size     := (cast(*u32)(bytes.data+pe+24+56)).*;
+    headers  := (cast(*u32)(bytes.data+pe+24+60)).*;
     check(size > 0 && size < 0x10000000 && headers <= bytes.count && headers <= size, "Bound the mapped image.");
     image := NewArray(size, u8);
     defer free(image.data);
@@ -87,9 +87,9 @@ check_image :: (filename: string) {
     for i: 0..cast(s64) count-1 {
         at := cast(s64) pe+24+optional+i*40;
         check(at <= bytes.count-40, "Bound each section header.");
-        rva := (cast(*u32)(bytes.data+at+12)).*;
+        rva      := (cast(*u32)(bytes.data+at+12)).*;
         raw_size := (cast(*u32)(bytes.data+at+16)).*;
-        raw := (cast(*u32)(bytes.data+at+20)).*;
+        raw      := (cast(*u32)(bytes.data+at+20)).*;
         check(cast(u64) rva+raw_size <= size && cast(u64) raw+raw_size <= cast(u64) bytes.count, "Bound each mapped section.");
         for j: 0..cast(s64) raw_size-1 image[cast(s64) rva+j] = bytes[cast(s64) raw+j];
     }

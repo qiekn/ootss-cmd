@@ -19,8 +19,6 @@ noclip_modifiers_down :: () -> bool {
 }
 
 #scope_file
-#import "Basic";
-Win :: #import "Windows";
 noclip_hook: *void;
 
 Noclip_Keyboard_Event :: struct { vk, scan, flags, time: u32; extra: u64; }
@@ -40,8 +38,8 @@ noclip_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
     }
 }
 
-user32 :: #library,system "user32";
+user32            :: #library,system "user32";
 SetWindowsHookExW :: (kind: s32, callback: (code: s32, message: u64, data: s64) -> s64 #c_call,
                      instance: Win.HINSTANCE, thread: u32) -> *void #foreign user32;
 UnhookWindowsHookEx :: (hook: *void) -> s32 #foreign user32;
-CallNextHookEx :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
+CallNextHookEx      :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;

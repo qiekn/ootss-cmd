@@ -1,16 +1,16 @@
 GAME_CAMERA_FROZEN_MODE :: 2;
 
 Game_Camera_Session :: struct {
-    memory: Process_Memory;
-    layout: Game_Camera_Layout;
-    original: Game_Camera_Snapshot;
-    position: Game_Position;
-    orientation: [4] float;
+    memory:             Process_Memory;
+    layout:             Game_Camera_Layout;
+    original:           Game_Camera_Snapshot;
+    position:           Game_Position;
+    orientation:        [4] float;
     owns_mode, settled: bool;
 }
 
 game_camera_read_session :: (session: *Game_Camera_Session) -> (pose: Game_Camera_Snapshot, error: string) {
-    pose := session.original;
+    pose   := session.original;
     memory := session.memory;
     layout := session.layout;
     if !session.owns_mode || !game_camera_identity_current(memory, layout, session.original) {
@@ -53,12 +53,12 @@ game_camera_begin :: (session: *Game_Camera_Session, memory: Process_Memory) -> 
 game_camera_settle :: (session: *Game_Camera_Session) -> string {
     pose, error := game_camera_read_session(session);
     if error.count return error;
-    session.original.position = pose.position;
+    session.original.position    = pose.position;
     session.original.orientation = pose.orientation;
-    session.original.projection = pose.projection;
-    session.position = pose.position;
-    session.orientation = pose.orientation;
-    session.settled = true;
+    session.original.projection  = pose.projection;
+    session.position             = pose.position;
+    session.orientation          = pose.orientation;
+    session.settled              = true;
     return "";
 }
 
@@ -84,7 +84,7 @@ game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position, orient
     if error.count return error, false;
     if !game_camera_pose_unchanged(session, pose) return "Freecam stopped: the game changed the frozen camera.", false;
     destination: Game_Position;
-    move, turn: bool;
+    move, turn:  bool;
     for i: 0..2 {
         coordinate := ifx absolute then cast(float64) delta[i] else cast(float64) session.position[i] + cast(float64) delta[i];
         if !is_finite(coordinate) || abs(coordinate) > GAME_POSITION_LIMIT {
@@ -108,7 +108,7 @@ game_camera_move :: (session: *Game_Camera_Session, delta: Game_Position, orient
         session.position = destination;
     }
     if turn {
-        turned := orientation;
+        turned           := orientation;
         success, written := process_write_memory(session.memory.handle, pose.scene.manager + session.layout.orientation, *turned, 16);
         if written > 0 changed = true;
         if !success return tprint("Could not finish camera rotation (% of 16 bytes; Windows error %).", written, Win.GetLastError()), changed;
@@ -129,19 +129,19 @@ game_camera_end :: (session: *Game_Camera_Session) -> string {
     if !process_read_memory(memory.handle, layout.mode, *mode, 8) return "Could not read the native camera mode while stopping freecam.";
     if mode != GAME_CAMERA_FROZEN_MODE {
         session.owns_mode = false; // Another native mode now owns this field; never overwrite it.
-        session.settled = false;
+        session.settled   = false;
         return "";
     }
     restore_error: string;
     // Restore only our current scene. On a level transition release the global
     // mode without ever writing the old scene's pose into the new manager.
     if game_camera_identity_current(memory, layout, session.original) {
-        manager := session.original.scene.manager;
+        manager          := session.original.scene.manager;
         success, written := process_write_memory(memory.handle, manager + layout.position, *session.original.position, 12);
         if success success, written = process_write_memory(memory.handle, manager + layout.orientation, *session.original.orientation, 16);
         if !success restore_error = "The original view could not be restored; normal camera following was resumed.";
         else {
-            position: Game_Position;
+            position:    Game_Position;
             orientation: [4] float;
             verified := process_read_memory(memory.handle, manager + layout.position, *position, 12) &&
                         process_read_memory(memory.handle, manager + layout.orientation, *orientation, 16);
@@ -154,13 +154,13 @@ game_camera_end :: (session: *Game_Camera_Session) -> string {
        !process_read_memory(memory.handle, layout.mode, *mode, 8) || mode != GAME_CAMERA_FROZEN_MODE {
         return "The native camera state changed during freecam cleanup.";
     }
-    normal := session.original.mode;
+    normal           := session.original.mode;
     success, written := process_write_memory(memory.handle, layout.mode, *normal, 8);
     if !success || !process_read_memory(memory.handle, layout.mode, *mode, 8) || mode != normal {
         return "Could not restore camera following; freecam cleanup will be retried.";
     }
     session.owns_mode = false;
-    session.settled = false;
+    session.settled   = false;
     return restore_error;
 }
 
@@ -216,12 +216,12 @@ game_camera_pan :: (x: float, y: float, z: float, distance: float) -> Game_Posit
 // +Y (left) axis; the observed level camera decomposes exactly this way, so
 // rebuilding from the angles keeps the horizon level.
 game_camera_angles :: (orientation: [4] float) -> (yaw: float64, pitch: float64) {
-    x := cast(float64) orientation[0];
-    y := cast(float64) orientation[1];
-    z := cast(float64) orientation[2];
-    w := cast(float64) orientation[3];
-    left_x := 2 * (x*y - z*w);
-    left_y := 1 - 2 * (x*x + z*z);
+    x         := cast(float64) orientation[0];
+    y         := cast(float64) orientation[1];
+    z         := cast(float64) orientation[2];
+    w         := cast(float64) orientation[3];
+    left_x    := 2 * (x*y - z*w);
+    left_y    := 1 - 2 * (x*x + z*z);
     forward_z := 2 * (x*z - y*w);
     return atan2(-left_x, left_y), asin(clamp(forward_z, -1.0, 1.0));
 }
@@ -247,8 +247,3 @@ game_camera_orientation_valid :: (orientation: [4] float) -> bool {
     }
     return abs(norm - 1) <= 0.002;
 }
-
-#scope_file
-#import "Basic";
-#import "Math";
-Win :: #import "Windows";

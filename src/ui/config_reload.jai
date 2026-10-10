@@ -2,13 +2,13 @@ Config_Apply :: #type (state: *Console_State, next: *Console_Config) -> string;
 
 // Owns the watcher and file snapshots. Keep at a stable address while active.
 Config_Reload :: struct {
-    loader: Hotloader;
-    state: *Console_State;
-    apply: Config_Apply;
+    loader:                                Hotloader;
+    state:                                 *Console_State;
+    apply:                                 Config_Apply;
     pending, has_candidate, has_last_good: bool;
-    candidate, last_good: string;
-    attempts: s32;
-    next_attempt: float64;
+    candidate, last_good:                  string;
+    attempts:                              s32;
+    next_attempt:                          float64;
 }
 
 config_reload: Config_Reload;
@@ -39,7 +39,7 @@ config_reload_update :: (reload: *Config_Reload, now: float64) -> (changed: bool
     // Two matching reads also cover saves that briefly truncate a file before writing it.
     if !reload.has_candidate || reload.candidate != source {
         free(reload.candidate);
-        reload.candidate = copy_string(source);
+        reload.candidate     = copy_string(source);
         reload.has_candidate = true;
         return false, "";
     }
@@ -53,7 +53,7 @@ config_reload_update :: (reload: *Config_Reload, now: float64) -> (changed: bool
     if !error.count error = reload.apply(reload.state, *next);
     if error.count return false, config_reload_failed(reload, error);
     free(reload.last_good);
-    reload.last_good = copy_string(source);
+    reload.last_good     = copy_string(source);
     reload.has_last_good = true;
     config_reload_finish(reload);
     return true, "";
@@ -85,32 +85,31 @@ console_config_apply :: (state: *Console_State, next: *Console_Config) -> string
 
 console_config_message :: (state: *Console_State, message: string, kind: Console_Line_Kind = .OUTPUT) {
     subtitles := state.show_subtitles;
-    reveal := state.reveal_output;
-    scroll := state.scroll;
+    reveal    := state.reveal_output;
+    scroll    := state.scroll;
     scroll_to := state.scroll_to_line;
     console_write(state, message, kind);
     state.show_subtitles = subtitles;
-    state.reveal_output = reveal;
-    state.scroll = scroll;
+    state.reveal_output  = reveal;
+    state.scroll         = scroll;
     state.scroll_to_line = scroll_to;
 }
 
 #scope_file
-#import "Basic";
 
 config_reload_changed :: (user_data: *void) {
     reload := cast(*Config_Reload) user_data;
     config_reload_finish(reload);
-    reload.pending = true;
+    reload.pending      = true;
     reload.next_attempt = 0;
 }
 
 config_reload_finish :: (reload: *Config_Reload) {
     free(reload.candidate);
-    reload.candidate = "";
+    reload.candidate     = "";
     reload.has_candidate = false;
-    reload.pending = false;
-    reload.attempts = 0;
+    reload.pending       = false;
+    reload.attempts      = 0;
 }
 
 config_reload_failed :: (reload: *Config_Reload, error: string) -> string {

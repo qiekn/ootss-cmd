@@ -1,11 +1,11 @@
-ZORK_DIRECTORY :: "data/zork";
+ZORK_DIRECTORY    :: "data/zork";
 ZORK_DEFAULT_SAVE :: "zork1.sav";
 
 Zork_Process :: struct {
     process, job, input, output: Win.HANDLE;
-    incoming: [..] u8;
-    input_kind: Zork_Input_Kind;
-    filename: string;
+    incoming:                    [..] u8;
+    input_kind:                  Zork_Input_Kind;
+    filename:                    string;
 }
 
 zork: Zork_Process;
@@ -13,7 +13,7 @@ zork: Zork_Process;
 zork_start :: (console: *Console_State, directory := ZORK_DIRECTORY) {
     zork_update(console);
     if zork.process {
-        console.zork_mode = true;
+        console.zork_mode       = true;
         console.zork_input_kind = zork.input_kind;
         zork_prepare_console(console);
         console_write(console, "Zork resumed. /back returns to the console; /help shows the controls.", .INFO);
@@ -31,13 +31,13 @@ zork_start :: (console: *Console_State, directory := ZORK_DIRECTORY) {
         console_write(console, "Could not resolve the data/zork/ directory.", .ERROR);
         return;
     }
-    absolute := wide_to_utf8(path_buffer.data, cast(s32) path_length,, temp);
+    absolute   := wide_to_utf8(path_buffer.data, cast(s32) path_length,, temp);
     executable := tprint("%/dfrotz.exe", absolute);
 
     initialized := false;
     defer if !initialized zork_deinit();
     attributes: Win.SECURITY_ATTRIBUTES;
-    attributes.nLength = size_of(Win.SECURITY_ATTRIBUTES);
+    attributes.nLength        = size_of(Win.SECURITY_ATTRIBUTES);
     attributes.bInheritHandle = 1;
     child_input, child_output: Win.HANDLE;
     defer {
@@ -61,11 +61,11 @@ zork_start :: (console: *Console_State, directory := ZORK_DIRECTORY) {
     }
 
     startup: Win.STARTUPINFOW;
-    startup.cb = size_of(Win.STARTUPINFOW);
-    startup.dwFlags = Win.STARTF_USESTDHANDLES;
-    startup.hStdInput = child_input;
+    startup.cb         = size_of(Win.STARTUPINFOW);
+    startup.dwFlags    = Win.STARTF_USESTDHANDLES;
+    startup.hStdInput  = child_input;
     startup.hStdOutput = child_output;
-    startup.hStdError = child_output;
+    startup.hStdError  = child_output;
     process: Win.PROCESS_INFORMATION;
     // The overlay owns scrolling and the prompt. Hide the repeated status row and disable MORE pauses.
     command := tprint("\"%\" -p -w 240 -h 999 -R ch1 -R mp0 zork1.z3", executable);
@@ -82,9 +82,9 @@ zork_start :: (console: *Console_State, directory := ZORK_DIRECTORY) {
         Win.TerminateProcess(zork.process, 1);
         return;
     }
-    initialized = true;
-    zork.filename = copy_string(ZORK_DEFAULT_SAVE);
-    console.zork_mode = true;
+    initialized             = true;
+    zork.filename           = copy_string(ZORK_DEFAULT_SAVE);
+    console.zork_mode       = true;
     console.zork_input_kind = .BUSY;
     zork_prepare_console(console);
     console_write(console, "ZORK: /back returns to the console; /help shows controls.", .INFO);
@@ -104,7 +104,7 @@ zork_back :: (console: *Console_State) {
 zork_send_input :: (console: *Console_State) {
     if !zork.process || !console.zork_mode || zork.input_kind == .BUSY return;
     original := console.pending_zork_input;
-    line := original;
+    line     := original;
     if zork.input_kind == .FILENAME {
         error: string;
         line, error = zork_save_filename(line, zork.filename);
@@ -140,7 +140,7 @@ zork_send_input :: (console: *Console_State) {
     written: u32;
     if !Win.WriteFile(zork.input, payload.data, cast(u32) payload.count, *written, null) || written != payload.count {
         console_write(console, tprint("Could not send input to Zork (Windows error %).", Win.GetLastError()), .ERROR);
-        console.zork_mode = false;
+        console.zork_mode       = false;
         console.zork_input_kind = .BUSY;
         zork_deinit();
         return;
@@ -150,7 +150,7 @@ zork_send_input :: (console: *Console_State) {
         free(zork.filename);
         zork.filename = filename;
     }
-    zork.input_kind = .BUSY;
+    zork.input_kind         = .BUSY;
     console.zork_input_kind = .BUSY;
 }
 
@@ -171,7 +171,7 @@ zork_update :: (console: *Console_State) {
             error := Win.GetLastError();
             if error != 109 { // ERROR_BROKEN_PIPE is normal at interpreter exit.
                 console_write(console, tprint("Could not read Zork output (Windows error %).", error), .ERROR);
-                console.zork_mode = false;
+                console.zork_mode       = false;
                 console.zork_input_kind = .BUSY;
                 zork_deinit();
                 return;
@@ -179,7 +179,7 @@ zork_update :: (console: *Console_State) {
             break;
         }
         if !available break;
-        buffer: [4096] u8;
+        buffer:   [4096] u8;
         received: u32;
         if !Win.ReadFile(zork.output, buffer.data, min(available, min(budget, cast(u32) buffer.count)), *received) || !received break;
         budget -= received;
@@ -187,7 +187,7 @@ zork_update :: (console: *Console_State) {
         zork_parse_output(console);
         if zork.incoming.count > 65536 {
             console_write(console, "Zork produced an oversized incomplete output line. The session was closed.", .ERROR);
-            console.zork_mode = false;
+            console.zork_mode       = false;
             console.zork_input_kind = .BUSY;
             zork_deinit();
             return;
@@ -199,7 +199,7 @@ zork_update :: (console: *Console_State) {
         if zork.incoming.count zork_write_output(console, .{zork.incoming.count, zork.incoming.data});
         code: u32;
         Win.GetExitCodeProcess(zork.process, *code);
-        console.zork_mode = false;
+        console.zork_mode       = false;
         console.zork_input_kind = .BUSY;
         if code console_write(console, tprint("Zork exited with code %. Type zork to start again.", code), .ERROR);
         else console_write(console, "Zork ended. Back at the console; type zork to play again.", .INFO);
@@ -216,14 +216,14 @@ zork_parse_output :: (console: *Console_State) {
             end := zork_find_text(text, "]: ");
             if end < 0 return;
             zork_consume_output(end + 3);
-            zork.input_kind = .FILENAME;
+            zork.input_kind         = .FILENAME;
             console.zork_input_kind = .FILENAME;
             zork_show_file_prompt(console);
             continue;
         }
         if begins_with(text, "Overwrite existing file? ") {
             zork_consume_output("Overwrite existing file? ".count);
-            zork.input_kind = .OVERWRITE;
+            zork.input_kind         = .OVERWRITE;
             console.zork_input_kind = .OVERWRITE;
             zork_show_file_prompt(console);
             continue;
@@ -236,8 +236,8 @@ zork_parse_output :: (console: *Console_State) {
         }
         if text[text.count - 1] == #char ">" {
             if text.count > 1 zork_write_output(console, slice(text, 0, text.count - 1));
-            zork.incoming.count = 0;
-            zork.input_kind = .LINE;
+            zork.incoming.count     = 0;
+            zork.input_kind         = .LINE;
             console.zork_input_kind = .LINE;
         }
         return;
@@ -313,11 +313,3 @@ zork_deinit :: () {
     free(zork.filename);
     zork = .{};
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-#import "Math";
-#import "File_Utilities";
-#import "Windows_Utf8";
-Win :: #import "Windows";

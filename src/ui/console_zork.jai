@@ -10,7 +10,7 @@ console_submit_zork :: (console: *Console_State, line: string) {
     }
     if line.count && line[0] == #char "/" {
         position: s64;
-        command := console_next_argument(line, *position);
+        command   := console_next_argument(line, *position);
         arguments := trim(slice(line, position, line.count - position));
 
         if      equal_nocase(command, "/back")  && !arguments.count { console.pending_action = .ZORK_BACK; }
@@ -29,8 +29,8 @@ console_submit_zork :: (console: *Console_State, line: string) {
     if console.zork_input_kind == .BUSY || console.pending_action != .NONE return;
     free(console.pending_zork_input);
     console.pending_zork_input = copy_string(line);
-    console.pending_action = .ZORK_INPUT;
-    console.zork_input_kind = .BUSY;
+    console.pending_action     = .ZORK_INPUT;
+    console.zork_input_kind    = .BUSY;
     console_write(console, tprint("$ %", line), .COMMAND);
     console_remember_input(console, line);
     console_finish_input(console);
@@ -76,7 +76,3 @@ zork_save_filename :: (input: string, default_name: string) -> (name: string, er
     if name.count < 4 || !equal_nocase(slice(name, name.count - 4, 4), ".sav") name = tprint("%.sav", name);
     return name, "";
 }
-
-#scope_file
-#import "Basic";
-#import "String";

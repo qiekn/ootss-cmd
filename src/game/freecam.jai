@@ -1,4 +1,4 @@
-Freecam_Mode :: enum { MOUSE; PAN; TOPDOWN; }
+Freecam_Mode  :: enum { MOUSE; PAN; TOPDOWN; }
 Freecam_Speed :: enum { NORMAL; FAST; SLOW; }
 
 FREECAM_MOUSE_HINT   :: "Okay, now you can fly. [Fly Guide] W/S/A/D/Q/E, Hold Shift to speed up, Ctrl to slow down. other options: -pan -topdown";
@@ -19,13 +19,13 @@ freecam_hint :: (mode: Freecam_Mode) -> string {
 
 Freecam_State :: struct {
     enabled, stopping, reported_cleanup_error, looking: bool;
-    mode: Freecam_Mode;
-    game: Win.HWND;
-    pid: u32;
-    session: Game_Camera_Session;
-    down, consumed, moving, tapped: [6] bool;
-    yaw, pitch: float64; // Mouse-look angles in radians; every turn rebuilds the orientation from them.
-    ready_at, last_frame, retry_at: float64;
+    mode:                                               Freecam_Mode;
+    game:                                               Win.HWND;
+    pid:                                                u32;
+    session:                                            Game_Camera_Session;
+    down, consumed, moving, tapped:                     [6] bool;
+    yaw, pitch:                                         float64; // Mouse-look angles in radians; every turn rebuilds the orientation from them.
+    ready_at, last_frame, retry_at:                     float64;
 }
 
 freecam: Freecam_State;
@@ -39,7 +39,7 @@ freecam_clear_motion :: () {
     for *key: freecam.moving key.* = false;
     for *key: freecam.tapped key.* = false;
     freecam.last_frame = 0;
-    freecam.looking = false;
+    freecam.looking    = false;
     freecam_unlock_cursor();
     // Retain down/consumed until release, even after disabling the mode.
 }
@@ -90,7 +90,7 @@ freecam_frame_delta :: (now: float64, speed: float64) -> Game_Position {
 freecam_frame_turn :: (dx: s64, dy: s64, degrees_per_count: float64) -> [4] float {
     if !dx && !dy return freecam.session.orientation;
     step := degrees_per_count * PI64 / 180;
-    freecam.yaw = fmod_cycling(freecam.yaw - (cast(float64) dx) * step + PI64, 2 * PI64) - PI64;
+    freecam.yaw   = fmod_cycling(freecam.yaw - (cast(float64) dx) * step + PI64, 2 * PI64) - PI64;
     freecam.pitch = clamp(freecam.pitch - (cast(float64) dy) * step, -GAME_CAMERA_PITCH_LIMIT, GAME_CAMERA_PITCH_LIMIT);
     return game_camera_orientation(freecam.yaw, freecam.pitch);
 }
@@ -104,9 +104,9 @@ freecam_speed :: (state: *Console_State) -> float64 {
 
 command_freecam :: (state: *Console_State, arguments: string) {
     if capture_active() { console_write(state, "Pause or cancel capture before changing the camera.", .ERROR); return; }
-    requested: s32 = -1;
+    requested:              s32 = -1;
     pan, topdown, explicit: bool;
-    cursor: s64;
+    cursor:                 s64;
     while true {
         argument := console_next_argument(arguments, *cursor);
         if !argument.count break;
@@ -129,11 +129,11 @@ command_freecam :: (state: *Console_State, arguments: string) {
         console_write(state, "Finish or cancel the save confirmation before changing camera mode.", .ERROR);
         return;
     }
-    state.pending_freecam = requested;
-    state.pending_freecam_pan = pan;
+    state.pending_freecam         = requested;
+    state.pending_freecam_pan     = pan;
     state.pending_freecam_topdown = topdown;
-    state.pending_camera_write = false;
-    state.pending_action = .FREECAM;
+    state.pending_camera_write    = false;
+    state.pending_action          = .FREECAM;
 }
 
 freecam_finish_stop :: (state: *Console_State) {
@@ -146,15 +146,15 @@ freecam_finish_stop :: (state: *Console_State) {
     }
     if freecam.session.owns_mode return;
     process_close_memory(*freecam.session.memory);
-    freecam.session = .{};
+    freecam.session  = .{};
     freecam.stopping = false;
-    freecam.game = null;
-    freecam.pid = 0;
+    freecam.game     = null;
+    freecam.pid      = 0;
     hud_notify("Freecam disabled");
 }
 
 freecam_stop :: (state: *Console_State) {
-    freecam.enabled = false;
+    freecam.enabled  = false;
     freecam.stopping = true;
     freecam_clear_motion();
     freecam_remove_mouse();
@@ -170,7 +170,7 @@ freecam_switch_mode :: (state: *Console_State, mode: Freecam_Mode) {
         error := freecam_install_mouse(overlay.window);
         if error.count { console_write(state, error, .ERROR); return; }
     } else freecam_remove_mouse();
-    freecam.mode = mode;
+    freecam.mode               = mode;
     freecam.yaw, freecam.pitch = game_camera_angles(freecam.session.orientation);
     freecam_clear_motion(); // Releases the parked cursor; movement resumes with a fresh press.
     console_write(state, tprint("Freecam mode changed. %", freecam_hint(mode)));
@@ -217,7 +217,7 @@ console_run_pending_freecam :: (state: *Console_State) {
         return;
     }
     game := find_game_window();
-    pid := process_window_pid(game);
+    pid  := process_window_pid(game);
     if !game || !pid || !console_submission_target_matches(state.submission, game, pid) {
         console_write(state, "Freecam cancelled: the target game changed or is unavailable.", .ERROR);
         return;
@@ -239,9 +239,9 @@ freecam_start :: (game: Win.HWND, mode: Freecam_Mode) -> string {
         process_close_memory(*memory);
         return "Freecam cancelled: the game process changed.";
     }
-    freecam.session = .{};
+    freecam.session                = .{};
     freecam.reported_cleanup_error = false;
-    error = game_camera_begin(*freecam.session, memory);
+    error                          = game_camera_begin(*freecam.session, memory);
     if error.count {
         // begin can fail after the mode was written. Always release it.
         freecam.session.memory = memory;
@@ -255,10 +255,10 @@ freecam_start :: (game: Win.HWND, mode: Freecam_Mode) -> string {
             return mouse_error;
         }
     }
-    freecam.mode = mode;
-    freecam.game = game;
-    freecam.pid = pid;
-    freecam.enabled = true;
+    freecam.mode     = mode;
+    freecam.game     = game;
+    freecam.pid      = pid;
+    freecam.enabled  = true;
     freecam.ready_at = seconds_since_init() + 0.08;
     freecam_clear_motion();
     for vk: "WSADQE" freecam.down[it_index] = Win.GetAsyncKeyState(cast(s32) vk) < 0;
@@ -317,13 +317,13 @@ freecam_update :: (state: *Console_State, now: float64) {
         dy = Input.mouse_delta_y;
         if !freecam.looking {
             freecam.looking = true;
-            dx = 0; // Motion collected before the cursor was parked was ordinary pointing.
-            dy = 0;
+            dx              = 0; // Motion collected before the cursor was parked was ordinary pointing.
+            dy              = 0;
         }
         freecam_lock_cursor(freecam.game);
     }
-    orientation := freecam_frame_turn(dx, dy, state.config.freecam_sensitivity);
-    delta := freecam_frame_delta(now, freecam_speed(state));
+    orientation    := freecam_frame_turn(dx, dy, state.config.freecam_sensitivity);
+    delta          := freecam_frame_delta(now, freecam_speed(state));
     error, changed := game_camera_move(*freecam.session, delta, orientation);
     if error.count { console_write(state, error, .ERROR); freecam_stop(state); }
 }
@@ -344,11 +344,3 @@ console_show_camera :: (state: *Console_State) {
         ifx freecam.enabled then freecam_mode_name(freecam.mode) else "Game",
         yaw*180/PI64, pitch*180/PI64, snapshot.projection[0]*180/PI64));
 }
-
-#scope_file
-#import "Basic";
-#import "Math";
-#import "String";
-#import "System";
-Input :: #import "Input";
-Win :: #import "Windows";

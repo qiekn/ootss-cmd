@@ -1,26 +1,26 @@
 OVERLAY_HEIGHT_PERCENT :: 70;
 OVERLAY_OPACITY: u8 : 220;
 OVERLAY_FULL_GUARD_PIXELS :: 1;
-QUICK_COMMAND_WIDTH :: 560;
-QUICK_COMMAND_HEIGHT :: 56;
-QUICK_COMMAND_MARGIN :: 16;
+QUICK_COMMAND_WIDTH       :: 560;
+QUICK_COMMAND_HEIGHT      :: 56;
+QUICK_COMMAND_MARGIN      :: 16;
 
 Overlay_State :: struct {
-    window: Win.HWND;
-    game: Win.HWND;
+    window:         Win.HWND;
+    game:           Win.HWND;
     previous_focus: Win.HWND;
-    bounds: Win.RECT;
-    native_bounds: Win.RECT;
-    clipped: bool;
-    mode: Console_Mode;
-    full_mode: Console_Mode;
-    visible := false;
-    toggle_requested := false;
-    show_requested := false;
-    quick_requested := false;
-    quit_requested := false;
-    game_hotkey_registered := false;
-    colon_hotkey_registered := false;
+    bounds:         Win.RECT;
+    native_bounds:  Win.RECT;
+    clipped:        bool;
+    mode:           Console_Mode;
+    full_mode:      Console_Mode;
+    visible                     := false;
+    toggle_requested            := false;
+    show_requested              := false;
+    quick_requested             := false;
+    quit_requested              := false;
+    game_hotkey_registered      := false;
+    colon_hotkey_registered     := false;
     semicolon_hotkey_registered := false;
     opening_punctuation: bool;
 }
@@ -28,26 +28,26 @@ Overlay_State :: struct {
 overlay: Overlay_State;
 
 overlay_create :: () -> bool {
-    instance := Win.GetModuleHandleW(null);
+    instance   := Win.GetModuleHandleW(null);
     class_name := utf8_to_wide("OOTSS Helper Console",, temp);
     wc: Win.WNDCLASSEXW;
     wc.cbSize = size_of(Win.WNDCLASSEXW);
     // Layered windows cannot use CS_OWNDC, unlike Window_Creation's default class.
-    wc.style = Win.CS_HREDRAW | Win.CS_VREDRAW;
-    wc.hInstance = instance;
-    wc.hIcon = Win.LoadIconW(instance, cast(*u16) APP_ICON_RESOURCE_ID);
-    wc.hIconSm = wc.hIcon;
-    wc.lpfnWndProc = overlay_window_proc;
-    wc.hCursor = Win.LoadCursorW(null, Win.IDC_ARROW);
+    wc.style         = Win.CS_HREDRAW | Win.CS_VREDRAW;
+    wc.hInstance     = instance;
+    wc.hIcon         = Win.LoadIconW(instance, cast(*u16) APP_ICON_RESOURCE_ID);
+    wc.hIconSm       = wc.hIcon;
+    wc.lpfnWndProc   = overlay_window_proc;
+    wc.hCursor       = Win.LoadCursorW(null, Win.IDC_ARROW);
     wc.lpszClassName = class_name;
     if !Win.RegisterClassExW(*wc) return false;
 
     overlay.previous_focus = Win.GetForegroundWindow();
-    overlay.game = find_game_window();
-    overlay.bounds = overlay_desired_bounds();
+    overlay.game           = find_game_window();
+    overlay.bounds         = overlay_desired_bounds();
     r := overlay.bounds;
     overlay.native_bounds = r;
-    overlay.window = Win.CreateWindowExW(
+    overlay.window        = Win.CreateWindowExW(
         Win.WS_EX_LAYERED | Win.WS_EX_TOOLWINDOW | Win.WS_EX_TOPMOST,
         class_name, utf8_to_wide("OOTSS Console",, temp),
         Win.WS_POPUP | Win.WS_CLIPCHILDREN | Win.WS_CLIPSIBLINGS,
@@ -70,7 +70,7 @@ overlay_desired_bounds :: () -> Win.RECT {
         if Win.GetClientRect(overlay.game, *bounds) && Win.ClientToScreen(overlay.game, *origin) {
             if bounds.right > 0 && bounds.bottom > 0 {
                 bounds.left = origin.x;
-                bounds.top = origin.y;
+                bounds.top  = origin.y;
                 bounds.right += origin.x;
                 bounds.bottom += origin.y;
                 dpi := cast(s32) GetDpiForWindow(overlay.game);
@@ -80,13 +80,13 @@ overlay_desired_bounds :: () -> Win.RECT {
     }
 
     reference := ifx overlay.game then overlay.game else overlay.previous_focus;
-    monitor := Win.MonitorFromWindow(reference, Win.MONITOR_DEFAULTTONEAREST);
+    monitor   := Win.MonitorFromWindow(reference, Win.MONITOR_DEFAULTTONEAREST);
     info: Win.MONITORINFO;
     info.cbSize = size_of(Win.MONITORINFO);
     if Win.GetMonitorInfoW(monitor, *info) {
         bounds = info.rcMonitor;
     } else {
-        bounds.right = 1280;
+        bounds.right  = 1280;
         bounds.bottom = 720;
     }
     return overlay_bounds_for_mode(bounds, overlay.mode, overlay_dpi());
@@ -95,12 +95,12 @@ overlay_desired_bounds :: () -> Win.RECT {
 overlay_bounds_for_mode :: (viewport: Win.RECT, mode: Console_Mode, dpi: s32) -> Win.RECT {
     bounds := viewport;
     if mode == .MINI {
-        available_width := max(cast(s32) 1, bounds.right - bounds.left);
+        available_width  := max(cast(s32) 1, bounds.right - bounds.left);
         available_height := max(cast(s32) 1, bounds.bottom - bounds.top);
-        margin_x := min(QUICK_COMMAND_MARGIN * dpi / 96, (available_width - 1) / 2);
-        margin_y := min(QUICK_COMMAND_MARGIN * dpi / 96, (available_height - 1) / 2);
-        width := min(QUICK_COMMAND_WIDTH * dpi / 96, available_width - 2 * margin_x);
-        height := min(QUICK_COMMAND_HEIGHT * dpi / 96, available_height - 2 * margin_y);
+        margin_x         := min(QUICK_COMMAND_MARGIN * dpi / 96, (available_width - 1) / 2);
+        margin_y         := min(QUICK_COMMAND_MARGIN * dpi / 96, (available_height - 1) / 2);
+        width            := min(QUICK_COMMAND_WIDTH * dpi / 96, available_width - 2 * margin_x);
+        height           := min(QUICK_COMMAND_HEIGHT * dpi / 96, available_height - 2 * margin_y);
         bounds.left += margin_x;
         bounds.right = bounds.left + width;
         bounds.bottom -= margin_y;
@@ -125,11 +125,11 @@ overlay_content_dimensions :: () -> (width: s32, height: s32) {
 }
 
 overlay_apply_bounds :: (bounds: Win.RECT) -> bool {
-    native := overlay_native_bounds(bounds, overlay.mode);
-    full := overlay.mode == .FULL;
-    width := bounds.right - bounds.left;
-    height := bounds.bottom - bounds.top;
-    old := overlay.bounds;
+    native     := overlay_native_bounds(bounds, overlay.mode);
+    full       := overlay.mode == .FULL;
+    width      := bounds.right - bounds.left;
+    height     := bounds.bottom - bounds.top;
+    old        := overlay.bounds;
     old_native := overlay.native_bounds;
     if bounds.left == old.left && bounds.top == old.top && bounds.right == old.right && bounds.bottom == old.bottom &&
        native.right == old_native.right && overlay.clipped == full return true;
@@ -150,7 +150,7 @@ overlay_apply_bounds :: (bounds: Win.RECT) -> bool {
         if !SetWindowRgn(overlay.window, null, 0) return false;
         overlay.clipped = false;
     }
-    overlay.bounds = bounds;
+    overlay.bounds        = bounds;
     overlay.native_bounds = native;
     return true;
 }
@@ -306,11 +306,6 @@ overlay_enable_dpi_awareness :: () {
 
 #scope_file
 
-#import "Basic";
-#import "String";
-#import "Windows_Utf8";
-Win :: #import "Windows";
-Input :: #import "Input";
 
 overlay_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64) -> s64 #c_call {
     push_context {
@@ -347,22 +342,22 @@ overlay_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64
     }
 }
 
-WM_HOTKEY :: 0x0312;
-MOD_SHIFT :: 0x0004;
+WM_HOTKEY    :: 0x0312;
+MOD_SHIFT    :: 0x0004;
 MOD_NOREPEAT :: 0x4000;
-LWA_ALPHA :: 0x0002;
+LWA_ALPHA    :: 0x0002;
 
 user32 :: #library,system "user32";
-gdi32 :: #library,system "gdi32";
+gdi32  :: #library,system "gdi32";
 
-IsWindow :: (window: Win.HWND) -> s32 #foreign user32;
-IsIconic :: (window: Win.HWND) -> s32 #foreign user32;
-SetForegroundWindow :: (window: Win.HWND) -> s32 #foreign user32;
-SetFocus :: (window: Win.HWND) -> Win.HWND #foreign user32;
-SetLayeredWindowAttributes :: (window: Win.HWND, color: u32, alpha: u8, flags: u32) -> s32 #foreign user32;
-SetWindowRgn :: (window: Win.HWND, region: Win.HGDIOBJ, redraw: s32) -> s32 #foreign user32;
-CreateRectRgn :: (left: s32, top: s32, right: s32, bottom: s32) -> Win.HGDIOBJ #foreign gdi32;
-RegisterHotKey :: (window: Win.HWND, id: s32, modifiers: u32, key: u32) -> s32 #foreign user32;
-UnregisterHotKey :: (window: Win.HWND, id: s32) -> s32 #foreign user32;
-GetDpiForWindow :: (window: Win.HWND) -> u32 #foreign user32;
+IsWindow                      :: (window: Win.HWND) -> s32 #foreign user32;
+IsIconic                      :: (window: Win.HWND) -> s32 #foreign user32;
+SetForegroundWindow           :: (window: Win.HWND) -> s32 #foreign user32;
+SetFocus                      :: (window: Win.HWND) -> Win.HWND #foreign user32;
+SetLayeredWindowAttributes    :: (window: Win.HWND, color: u32, alpha: u8, flags: u32) -> s32 #foreign user32;
+SetWindowRgn                  :: (window: Win.HWND, region: Win.HGDIOBJ, redraw: s32) -> s32 #foreign user32;
+CreateRectRgn                 :: (left: s32, top: s32, right: s32, bottom: s32) -> Win.HGDIOBJ #foreign gdi32;
+RegisterHotKey                :: (window: Win.HWND, id: s32, modifiers: u32, key: u32) -> s32 #foreign user32;
+UnregisterHotKey              :: (window: Win.HWND, id: s32) -> s32 #foreign user32;
+GetDpiForWindow               :: (window: Win.HWND) -> u32 #foreign user32;
 SetProcessDpiAwarenessContext :: (awareness: *void) -> s32 #foreign user32;

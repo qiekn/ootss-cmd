@@ -68,11 +68,9 @@ freecam_unlock_cursor :: () {
 }
 
 #scope_file
-#import "Basic";
-Win :: #import "Windows";
-freecam_hook: *void;
+freecam_hook:             *void;
 freecam_mouse_registered: bool;
-freecam_cursor: struct { locked: bool; center: Win.POINT; };
+freecam_cursor:           struct { locked: bool; center: Win.POINT; };
 
 RIDEV_INPUTSINK :: 0x00000100;
 
@@ -81,9 +79,9 @@ Freecam_Keyboard_Event :: struct { vk, scan, flags, time: u32; extra: u64; }
 freecam_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
     push_context {
         if code >= 0 && (message == 0x100 || message == 0x104 || message == 0x101 || message == 0x105) {
-            key := cast(*Freecam_Keyboard_Event) data;
-            down := message == 0x100 || message == 0x104;
-            injected := (key.flags & 0x12) != 0;
+            key        := cast(*Freecam_Keyboard_Event) data;
+            down       := message == 0x100 || message == 0x104;
+            injected   := (key.flags & 0x12) != 0;
             foreground := Win.GetForegroundWindow();
             if capture.owns_camera && !injected && down && foreground==freecam.game capture.pause_requested=true;
             if shortcuts_handle_key(key.vk, down, injected, foreground) return 1;
@@ -93,9 +91,9 @@ freecam_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
     }
 }
 
-user32 :: #library,system "user32";
+user32            :: #library,system "user32";
 SetWindowsHookExW :: (kind: s32, callback: (code: s32, message: u64, data: s64) -> s64 #c_call,
                      instance: Win.HINSTANCE, thread: u32) -> *void #foreign user32;
 UnhookWindowsHookEx :: (hook: *void) -> s32 #foreign user32;
-CallNextHookEx :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
-SetCursorPos :: (x: s32, y: s32) -> s32 #foreign user32;
+CallNextHookEx      :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
+SetCursorPos        :: (x: s32, y: s32) -> s32 #foreign user32;

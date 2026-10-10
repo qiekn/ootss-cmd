@@ -1,19 +1,19 @@
-Editor_After_Save :: enum { NONE; CLOSE; OPEN; EXIT_PROGRAM; }
+Editor_After_Save        :: enum { NONE; CLOSE; OPEN; EXIT_PROGRAM; }
 EDITOR_CUSTOM_NAME_LIMIT :: 128;
-Editor_Save_Prompt :: struct {
-    active: bool;
-    after: Editor_After_Save;
-    name: Console_State;
-    select_all: bool;
-    high_surrogate: u32;
-    message: string;
-    error: bool;
-    overwrite: bool;
+Editor_Save_Prompt       :: struct {
+    active:                             bool;
+    after:                              Editor_After_Save;
+    name:                               Console_State;
+    select_all:                         bool;
+    high_surrogate:                     u32;
+    message:                            string;
+    error:                              bool;
+    overwrite:                          bool;
     overwrite_name, overwrite_solution: string;
-    next_level: string;
-    next_custom: bool;
-    was_minimized, had_text_focus: bool;
-    button_down: s64 = -1;
+    next_level:                         string;
+    next_custom:                        bool;
+    was_minimized, had_text_focus:      bool;
+    button_down:                        s64 = -1;
 }
 editor_save_prompt: Editor_Save_Prompt;
 
@@ -29,7 +29,7 @@ editor_clear_save_prompt :: () {
 editor_save_prompt_message :: (message: string, error := false) {
     free(editor_save_prompt.message);
     editor_save_prompt.message = copy_string(message);
-    editor_save_prompt.error = error;
+    editor_save_prompt.error   = error;
 }
 
 editor_begin_save_prompt :: (after: Editor_After_Save = .NONE, next_level: string = "", next_custom := false) {
@@ -38,9 +38,9 @@ editor_begin_save_prompt :: (after: Editor_After_Save = .NONE, next_level: strin
         if after != .NONE {
             next := copy_string(next_level);
             free(editor_save_prompt.next_level);
-            editor_save_prompt.next_level = next;
+            editor_save_prompt.next_level  = next;
             editor_save_prompt.next_custom = next_custom;
-            editor_save_prompt.after = after;
+            editor_save_prompt.after       = after;
         }
         editor_window_update();
         editor_focus_text();
@@ -49,12 +49,12 @@ editor_begin_save_prompt :: (after: Editor_After_Save = .NONE, next_level: strin
     editor_pause();
     if editor.transport.held.scan || editor.transport.time_held return;
     editor_view_cancel_drag();
-    editor_save_prompt.active = true;
-    editor_save_prompt.after = after;
-    editor_save_prompt.was_minimized = editor_view.minimized;
+    editor_save_prompt.active         = true;
+    editor_save_prompt.after          = after;
+    editor_save_prompt.was_minimized  = editor_view.minimized;
     editor_save_prompt.had_text_focus = Win.GetForegroundWindow() == editor_window_handle();
-    editor_save_prompt.next_level = copy_string(next_level);
-    editor_save_prompt.next_custom = next_custom;
+    editor_save_prompt.next_level     = copy_string(next_level);
+    editor_save_prompt.next_custom    = next_custom;
     console_set_input(*editor_save_prompt.name, editor.record.name);
     editor_save_prompt.select_all = editor.custom && editor.record.name.count > 0;
     if editor.custom editor_save_prompt_message("Choose a name, then confirm Save. This input is stored separately from level solutions.");
@@ -65,11 +65,11 @@ editor_begin_save_prompt :: (after: Editor_After_Save = .NONE, next_level: strin
 }
 
 editor_finish_save_prompt :: (cancel := false) {
-    after := editor_save_prompt.after;
+    after      := editor_save_prompt.after;
     next_level := copy_string(editor_save_prompt.next_level);
     defer free(next_level);
-    next_custom := editor_save_prompt.next_custom;
-    was_minimized := editor_save_prompt.was_minimized;
+    next_custom    := editor_save_prompt.next_custom;
+    was_minimized  := editor_save_prompt.was_minimized;
     had_text_focus := editor_save_prompt.had_text_focus;
     editor_clear_save_prompt();
     if cancel || after == .NONE {
@@ -98,16 +98,16 @@ editor_confirm_save :: () -> bool {
     if error.count { editor_save_prompt_message(error, true); return false; }
     index := solution_find_name(*database, name, ignore_case = true);
     if index >= 0 {
-        saved := database.entries[index];
-        different_name := editor.custom && !equal_nocase(editor.record.name, saved.name);
+        saved           := database.entries[index];
+        different_name  := editor.custom && !equal_nocase(editor.record.name, saved.name);
         changed_on_disk := saved.solution != editor.record.solution;
-        confirmed := editor_save_prompt.overwrite && equal_nocase(editor_save_prompt.overwrite_name, name) &&
+        confirmed       := editor_save_prompt.overwrite && equal_nocase(editor_save_prompt.overwrite_name, name) &&
                      editor_save_prompt.overwrite_solution == saved.solution;
         if (different_name || changed_on_disk) && !confirmed {
             free(editor_save_prompt.overwrite_name);
             free(editor_save_prompt.overwrite_solution);
-            editor_save_prompt.overwrite = true;
-            editor_save_prompt.overwrite_name = copy_string(name);
+            editor_save_prompt.overwrite          = true;
+            editor_save_prompt.overwrite_name     = copy_string(name);
             editor_save_prompt.overwrite_solution = copy_string(saved.solution);
             editor_save_prompt_message(ifx different_name then tprint("'%': this name already exists. Confirm Overwrite to replace it.", name)
                                        else "The saved solution changed on disk. Confirm Overwrite to replace it.", true);
@@ -129,11 +129,11 @@ editor_confirm_save :: () -> bool {
     // Reload and update just this record, preserving other inputs and their latest notes.
     free(entry.solution);
     entry.solution = timeline_serialize(*editor.timeline);
-    error = solutions_write(*database, filename);
+    error          = solutions_write(*database, filename);
     if error.count { editor_save_prompt_message(error, true); return false; }
     updated := solution_record_copy(entry.*);
     solution_record_free(*editor.record);
-    editor.record = updated;
+    editor.record         = updated;
     editor.timeline.dirty = false;
     editor_set_status(tprint("Saved % steps as '%' in %.", editor.timeline.keys.count, editor.record.name, filename));
     editor_finish_save_prompt();
@@ -168,8 +168,8 @@ editor_save_prompt_changed :: () {
     if editor_save_prompt.overwrite || editor_save_prompt.error {
         editor_save_prompt_message("Choose a name, then confirm Save. This input is stored separately from level solutions.");
     }
-    editor_save_prompt.overwrite = false;
-    editor_save_prompt.error = false;
+    editor_save_prompt.overwrite      = false;
+    editor_save_prompt.error          = false;
     editor_save_prompt.high_surrogate = 0;
 }
 
@@ -229,8 +229,3 @@ editor_save_prompt_text :: (character: u32) {
     console_insert_character(*editor_save_prompt.name, character);
     editor_save_prompt_changed();
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-Win :: #import "Windows";

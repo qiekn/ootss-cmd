@@ -12,7 +12,3 @@ game_data_directory :: (relative: string) -> string {
     if !console.config.game_path.count executable = process_image_path(find_game_window());
     return game_data_directory(relative, console.config.game_path, executable);
 }
-
-#scope_file
-#import "Basic";
-#import "String";

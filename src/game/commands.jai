@@ -1,9 +1,9 @@
 Console_Submission :: struct {
-    quick: bool;
-    shortcut: bool;
-    game: Win.HWND;
-    pid: u32;
-    trigger_key: u32;
+    quick:          bool;
+    shortcut:       bool;
+    game:           Win.HWND;
+    pid:            u32;
+    trigger_key:    u32;
     focus_deadline: float64;
 }
 
@@ -39,8 +39,8 @@ console_submission_origin_matches :: (submission: Console_Submission, visible: b
 console_submission_ready :: (state: *Console_State, sends_input := true) -> (ready: bool, waiting: bool) {
     if overlay.quit_requested || overlay.show_requested || overlay.quick_requested || overlay.toggle_requested ||
        process_console_should_exit() || tray_has_request() return false, false;
-    game := find_game_window();
-    pid := process_window_pid(game);
+    game       := find_game_window();
+    pid        := process_window_pid(game);
     foreground := Win.GetForegroundWindow();
     if state.submission.quick && !overlay.visible &&
        console_submission_target_matches(state.submission, game, pid) &&
@@ -107,16 +107,16 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
     can_start, waiting := console_submission_ready(console);
     if waiting return 0;
 
-    commands := console.pending_send;
-    hold_ms := console.pending_send_hold_ms;
-    interval_ms := console.pending_send_interval_ms;
-    time_mode := console.pending_send_time_mode;
+    commands      := console.pending_send;
+    hold_ms       := console.pending_send_hold_ms;
+    interval_ms   := console.pending_send_interval_ms;
+    time_mode     := console.pending_send_time_mode;
     interruptible := console.pending_send_interruptible;
-    console.pending_send = "";
-    console.pending_reset = false;
-    console.pending_send_hold_ms = DEFAULT_HOLD;
-    console.pending_send_interval_ms = DEFUALT_INTERVAL;
-    console.pending_send_time_mode = .NORMAL;
+    console.pending_send               = "";
+    console.pending_reset              = false;
+    console.pending_send_hold_ms       = DEFAULT_HOLD;
+    console.pending_send_interval_ms   = DEFUALT_INTERVAL;
+    console.pending_send_time_mode     = .NORMAL;
     console.pending_send_interruptible = false;
     defer free(commands);
     if !can_start {
@@ -137,7 +137,7 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
     modifier: Game_Key;
     if time_mode != .NORMAL {
         keymap: Game_Keymap;
-        action := ifx time_mode == .FAST then "HoldForFastTime" else "HoldForSlowTime";
+        action         := ifx time_mode == .FAST then "HoldForFastTime" else "HoldForSlowTime";
         message, ready := game_keymap_load(*keymap, only_action = action);
         if message.count console_write(console, message, ifx ready then .INFO else .ERROR);
         if !ready return 0;
@@ -190,10 +190,3 @@ console_poll_send :: () -> bool {
     return !overlay.toggle_requested && !overlay.show_requested && !overlay.quick_requested && !overlay.quit_requested &&
            !tray_has_request() && !send_input_interrupted();
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-#import "File_Utilities";
-Win :: #import "Windows";
-Input :: #import "Input";

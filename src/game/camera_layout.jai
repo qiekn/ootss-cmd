@@ -3,32 +3,32 @@
 // keep the complete matched bytes so an active session can detect code changes.
 Game_Camera_Code :: struct {
     address: u64;
-    bytes: [96] u8;
-    count: s64;
+    bytes:   [96] u8;
+    count:   s64;
 }
 
 Game_Camera_Layout :: struct {
-    profile: string;
-    manager: Game_Manager_Locator;
-    mode: u64;
+    profile:                                    string;
+    manager:                                    Game_Manager_Locator;
+    mode:                                       u64;
     position, orientation, projection, cameras: u64;
-    code: [6] Game_Camera_Code;
+    code:                                       [6] Game_Camera_Code;
 }
 
 Game_Camera_Entity :: struct {
     address, type: u64;
-    id, size: u32;
+    id, size:      u32;
 }
 
 Game_Camera_Snapshot :: struct {
-    scene: Game_Scene_Location;
-    name: [128] u8;
-    list: Game_Entity_List;
-    entities: [64] Game_Camera_Entity;
-    position: Game_Position;
+    scene:       Game_Scene_Location;
+    name:        [128] u8;
+    list:        Game_Entity_List;
+    entities:    [64] Game_Camera_Entity;
+    position:    Game_Position;
     orientation: [4] float;
-    projection: [3] float; // Vertical FOV in radians, near plane, far plane.
-    mode: s64;
+    projection:  [3] float; // Vertical FOV in radians, near plane, far plane.
+    mode:        s64;
 }
 
 game_camera_code_matches :: (code: [] u8, offset: s64, pattern: [] s16) -> bool {
@@ -45,7 +45,7 @@ game_camera_find_code :: (code: [] u8, pattern: [] s16) -> s64 {
     while cursor <= code.count-pattern.count {
         i := ifx pattern[0]>=0 then find_index_from_left(source,cast(u8)pattern[0],cursor) else cursor;
         if i<0 || i>code.count-pattern.count break;
-        cursor=i+1;
+        cursor = i+1;
         if !game_camera_code_matches(code, i, pattern) continue;
         if found >= 0 return -2; // Keep ambiguity distinct from an absent profile.
         found = i;
@@ -56,7 +56,7 @@ game_camera_find_code :: (code: [] u8, pattern: [] s16) -> s64 {
 game_camera_save_code :: (check: *Game_Camera_Code, code: [] u8, base: u64, offset: s64, count: s64) -> bool {
     if offset < 0 || count <= 0 || count > check.bytes.count || offset > code.count - count return false;
     check.address = base + cast(u64) offset;
-    check.count = count;
+    check.count   = count;
     for i: 0..count-1 check.bytes[i] = code[offset + i];
     return true;
 }
@@ -115,10 +115,10 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
            0x48,0x8b,0x0d,-1,-1,-1,-1,0xf2,0x0f,0x10,0x41,0x38,0x0f,0x5b,0xc0,
            0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1]) return layout, unsupported;
 
-    layout.position = (cast(*u32)(code.data + gate + 3)).*;
+    layout.position    = (cast(*u32)(code.data + gate + 3)).*;
     layout.orientation = (cast(*u32)(code.data + render + 3)).*;
-    layout.projection = (cast(*u32)(code.data + render + 12)).*;
-    layout.cameras = (cast(*u32)(code.data + normal + 3)).*;
+    layout.projection  = (cast(*u32)(code.data + render + 12)).*;
+    layout.cameras     = (cast(*u32)(code.data + normal + 3)).*;
     mode := cast(s64) base + gate + 14 + (cast(*s32)(code.data + gate + 10)).*;
     if mode <= 0 return layout, unsupported;
     layout.mode = cast(u64) mode;
@@ -178,10 +178,10 @@ game_camera_retail_layout :: (memory: Process_Memory, code: [] u8, base: u64, ma
         0x4d,0x8d,0x85,-1,-1,-1,-1,0x31,0xc9,0xe8,-1,-1,-1,-1]);
     if render < 47 return layout,"Camera layout: render signature missing or ambiguous.";
     if link < 0 return layout,"Camera layout: active-scene link signature missing or ambiguous.";
-    normal := gate + 23 + cast(s64)(cast(*s32)(code.data + gate + 19)).*;
-    frozen := gate + 33 + cast(s64)(cast(*s32)(code.data + gate + 29)).*;
-    list_at := normal + ifx r15 then 75 else 73;
-    write_at := frozen - ifx r15 then 17 else 15;
+    normal         := gate + 23 + cast(s64)(cast(*s32)(code.data + gate + 19)).*;
+    frozen         := gate + 33 + cast(s64)(cast(*s32)(code.data + gate + 29)).*;
+    list_at        := normal + ifx r15 then 75 else 73;
+    write_at       := frozen - ifx r15 then 17 else 15;
     normal_pattern := ifx r15 then s16.[
            0x4c,0x89,0x74,0x24,-1,0x49,0x83,0xbf,-1,-1,-1,-1,0,0x0f,0x8e,-1,-1,-1,-1] else s16.[
            0x4c,0x89,0x74,0x24,-1,0x48,0x83,0xbb,-1,-1,-1,-1,0,0x0f,0x8e,-1,-1,-1,-1];
@@ -201,10 +201,10 @@ game_camera_retail_layout :: (memory: Process_Memory, code: [] u8, base: u64, ma
            0x4c,0x8b,0x05,-1,-1,-1,-1,0xf2,0x41,0x0f,0x10,0x40,0x38,0x0f,0x5b,0xc0,
            0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1]) return layout,"Camera layout: render argument evidence differs.";
 
-    layout.position = (cast(*u32)(code.data + gate + 3)).*;
+    layout.position    = (cast(*u32)(code.data + gate + 3)).*;
     layout.orientation = (cast(*u32)(code.data + render + 3)).*;
-    layout.projection = (cast(*u32)(code.data + render + 11)).*;
-    layout.cameras = (cast(*u32)(code.data + normal + 8)).*;
+    layout.projection  = (cast(*u32)(code.data + render + 11)).*;
+    layout.cameras     = (cast(*u32)(code.data + normal + 8)).*;
     mode := cast(s64) base + gate + 14 + (cast(*s32)(code.data + gate + 10)).*;
     if mode <= 0 return layout, unsupported;
     layout.mode = cast(u64) mode;
@@ -237,7 +237,7 @@ game_camera_type_valid :: (memory: Process_Memory, type: u64, layout: Game_Camer
     owner, owner_error := game_position_member(memory, entity.type, "entity_manager", "", kind = 4, size = 8);
     if owner_error.count || owner.offset != 0xf0 return false;
     manager_type: u64;
-    info: Game_Entity_Type;
+    info:         Game_Entity_Type;
     if !process_read_memory(memory.handle, owner.type + 16, *manager_type, 8) ||
        !process_module_contains(memory.module, manager_type, size_of(Game_Entity_Type)) ||
        !process_read_memory(memory.handle, manager_type, *info, size_of(Game_Entity_Type)) || info.kind != 7 ||
@@ -277,7 +277,7 @@ game_camera_identity_current :: (memory: Process_Memory, layout: Game_Camera_Lay
     name: string = .{data = snapshot.name.data, count = cast(s64) snapshot.scene.name.count};
     if !game_camera_code_current(memory, layout) || !game_scene_location_current(memory, snapshot.scene, name) ||
        snapshot.list.count == 0 || snapshot.list.count > snapshot.entities.count return false;
-    list: Game_Entity_List;
+    list:     Game_Entity_List;
     pointers: [64] u64;
     if !process_read_memory(memory.handle, snapshot.scene.manager + layout.cameras, *list, 16) ||
        list.count != snapshot.list.count || list.data != snapshot.list.data ||
@@ -285,8 +285,8 @@ game_camera_identity_current :: (memory: Process_Memory, layout: Game_Camera_Lay
     for i: 0..cast(s64) list.count-1 {
         entity := snapshot.entities[i];
         owner, type: u64;
-        id: u32;
-        info: Game_Entity_Type;
+        id:          u32;
+        info:        Game_Entity_Type;
         if pointers[i] != entity.address ||
            !process_read_memory(memory.handle, entity.address + 0xf0, *owner, 8) || owner != snapshot.scene.manager ||
            !process_read_memory(memory.handle, entity.address + 0x100, *id, 4) || id != entity.id ||
@@ -320,7 +320,7 @@ game_camera_snapshot :: (memory: Process_Memory, layout: Game_Camera_Layout)
         entity := *snapshot.entities[i];
         entity.address = pointers[i];
         owner: u64;
-        info: Game_Entity_Type;
+        info:  Game_Entity_Type;
         if !process_memory_range_valid(entity.address, 0x110) ||
            !process_read_memory(memory.handle, entity.address + 0xf0, *owner, 8) || owner != snapshot.scene.manager ||
            !process_read_memory(memory.handle, entity.address + 0x100, *entity.id, 4) || !entity.id ||
@@ -344,8 +344,3 @@ game_camera_snapshot :: (memory: Process_Memory, layout: Game_Camera_Layout)
        !game_camera_identity_current(memory, layout, snapshot) return snapshot, invalid;
     return snapshot, "";
 }
-
-#scope_file
-#import "Basic";
-#import "Math";
-#import "String";

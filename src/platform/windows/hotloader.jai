@@ -2,11 +2,11 @@
 
 // Keep this state at a stable address until hotloader_deinit; do not copy it.
 Hotloader :: struct {
-    watcher: Watch.File_Watcher;
+    watcher:             Watch.File_Watcher;
     filename, directory: string;
-    callback: (user_data: *void);
-    user_data: *void;
-    initialized, dirty: bool;
+    callback:            (user_data: *void);
+    user_data:           *void;
+    initialized, dirty:  bool;
 }
 
 hotloader_init :: (loader: *Hotloader, filename: string, callback: (user_data: *void), user_data: *void = null) -> string {
@@ -20,11 +20,11 @@ hotloader_init :: (loader: *Hotloader, filename: string, callback: (user_data: *
     // File_Watcher inserts its own separator before each changed filename.
     while directory.count > 3 && directory[directory.count - 1] == #char "/" directory.count -= 1;
     loader.directory = copy_string(directory);
-    loader.callback = callback;
+    loader.callback  = callback;
     loader.user_data = user_data;
     if !Watch.init(*loader.watcher, hotloader_file_changed, loader,
                   merge_window_seconds = 0.15, watch_recursively = false,
-                  events_to_watch = .MODIFIED | .ADDED | .MOVED | .REMOVED) {
+                  events_to_watch      = .MODIFIED | .ADDED | .MOVED | .REMOVED) {
         hotloader_deinit(loader);
         return "Could not initialize the file watcher.";
     }
@@ -52,9 +52,6 @@ hotloader_deinit :: (loader: *Hotloader) {
 }
 
 #scope_file
-#import "Basic";
-#import "File";
-#import "String";
 Watch :: #import "File_Watcher";
 
 hotloader_file_changed :: (watcher: *Watch.File_Watcher(void), change: *Watch.File_Change, user_data: *void) {

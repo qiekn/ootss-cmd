@@ -37,13 +37,11 @@ send_input_filter_mouse :: (message: u64, flags: u32, foreground: Win.HWND) {
 }
 
 #scope_file
-#import "Basic";
-Win :: #import "Windows";
 
 send_input_monitor: struct {
-    target: Win.HWND;
+    target:                    Win.HWND;
     keyboard_hook, mouse_hook: *void;
-    interrupted: bool;
+    interrupted:               bool;
 };
 
 send_keyboard_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
@@ -68,10 +66,10 @@ send_mouse_hook :: (code: s32, message: u64, data: s64) -> s64 #c_call {
 }
 
 Send_Keyboard_Hook_Event :: struct { vk, scan, flags, time: u32; extra: u64; }
-Send_Mouse_Hook_Event :: struct { point: Win.POINT; mouse_data, flags, time: u32; extra: u64; }
+Send_Mouse_Hook_Event    :: struct { point: Win.POINT; mouse_data, flags, time: u32; extra: u64; }
 
-user32 :: #library,system "user32";
+user32            :: #library,system "user32";
 SetWindowsHookExW :: (kind: s32, callback: (code: s32, message: u64, data: s64) -> s64 #c_call,
                      instance: Win.HINSTANCE, thread: u32) -> *void #foreign user32;
 UnhookWindowsHookEx :: (hook: *void) -> s32 #foreign user32;
-CallNextHookEx :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;
+CallNextHookEx      :: (hook: *void, code: s32, message: u64, data: s64) -> s64 #foreign user32;

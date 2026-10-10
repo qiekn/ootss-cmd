@@ -32,3 +32,5 @@ jai -quiet first.jai -optimized -import_dir modules
 `speed 1.25` 设置游戏基础时间倍率，`speed 0` 暂停、`speed 1` 恢复正常。游戏前台且编辑器关闭时，`[` / `]` 按 `0.25、0.5、1、1.25、1.5、1.75、2、3、4` 切换；命令支持范围内任意倍率，例如 `speed 3.5`。原生快慢键仍会叠乘，细节见 [时间倍率](docs/map-capture.md#游戏时间倍率)。
 
 大地图拍摄默认先在游戏按 Q，再手动运行 `./scripts/capture_map.jai`：从 `(80,69,80)` 向外拍摄，每张只保存中心 9 × 9 个世界格子，相机间隔 9 格，外围画面丢弃；`crop_world_size` 在脚本顶部配置。当前全图为 550 张，需要更新并重启助手后重新拍摄。拍摄中暂停模拟时间，结束或暂停后恢复之前的倍率。最终输出 `map/map.jpg`，默认质量 92、最大边长 32768；分块仍是无损 PNG。只想将已有截图按原计划重新导出为大图，可运行 `jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92`。
+
+代码风格检查使用 `jai -quiet scripts/format_style.jai`，添加 `- --write` 可应用成组声明/赋值对齐和 main 公共依赖的去重。范围为 `first.jai`、`src/`、`scripts/`；独立模块保留自己的依赖，第三方模块不参与。
