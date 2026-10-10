@@ -8,7 +8,7 @@ capture_client_bounds :: (game: Win.HWND) -> (bounds: Win.RECT, error: string) {
     bounds.right += origin.x;
     bounds.bottom += origin.y;
     bounds.left = origin.x;
-    bounds.top = origin.y;
+    bounds.top  = origin.y;
     x := Win.GetSystemMetrics(76); y := Win.GetSystemMetrics(77);
     if bounds.left<x || bounds.top<y || bounds.right>x+Win.GetSystemMetrics(78) ||
        bounds.bottom>y+Win.GetSystemMetrics(79) return bounds, "Keep the entire game client on screen.";
@@ -21,7 +21,9 @@ capture_unobscured :: (game: Win.HWND, bounds: Win.RECT) -> bool {
     return search.found && !search.blocked;
 }
 
-capture_save_client :: (game: Win.HWND, width: s32, height: s32, filename: string) -> string {
+capture_save_client :: (game: Win.HWND, manifest: Capture_Manifest, filename: string) -> string {
+    width         := manifest.width;
+    height        := manifest.height;
     bounds, error := capture_client_bounds(game);
     if error.count return error;
     if bounds.right-bounds.left!=width || bounds.bottom-bounds.top!=height return "Game resolution changed; capture paused.";
@@ -43,9 +45,20 @@ capture_save_client :: (game: Win.HWND, width: s32, height: s32, filename: strin
         red := pixel[2]; pixel[2]=pixel[0]; pixel[0]=red; pixel[3]=255;
     }
     if !visible return "The captured frame is black. Use a visible windowed or borderless game.";
+    cropped: []u8;
+    defer if cropped.data free(cropped.data);
+    pixels := surface.pixels;
+    if manifest.plan.crop_world_size>0 {
+        cropped = NewArray(cast(s64)manifest.crop_width*manifest.crop_height*4,u8);
+        error   = capture_crop_pixels(manifest,.{data=surface.pixels,count=cast(s64)width*height*4},cropped);
+        if error.count return error;
+        pixels = cropped.data;
+        width  = manifest.crop_width;
+        height = manifest.crop_height;
+    }
     encoded: String_Builder;
     defer free_buffers(*encoded);
-    if !PNG.stbi_write_png_to_func(capture_png_callback,*encoded,width,height,4,surface.pixels,width*4) return "PNG encoding failed.";
+    if !PNG.stbi_write_png_to_func(capture_png_callback,*encoded,width,height,4,pixels,width*4) return "PNG encoding failed.";
     temporary := tprint("%.tmp",filename);
     if !write_entire_file(temporary,*encoded) || !atomic_file_replace_or_just_rename_if_destination_file_does_not_exist(temporary,filename) {
         return "Could not save screenshot atomically.";
@@ -57,7 +70,7 @@ Capture_Copy_Data :: struct { id: u64; count: u32; data: *u8; }
 
 capture_receive_request :: (lparam: s64) -> s64 {
     request := cast(*Capture_Copy_Data)lparam;
-    if !request || (request.id!=CAPTURE_COPYDATA_ID && request.id!=CAPTURE_RUN_COPYDATA_ID) || !request.count || request.count>32768 ||
+    if !request || (request.id!=CAPTURE_COPYDATA_ID && request.id!=CAPTURE_RUN_COPYDATA_ID && request.id!=CAPTURE_V2_COPYDATA_ID && request.id!=CAPTURE_V3_COPYDATA_ID) || !request.count || request.count>32768 ||
        !request.data || capture.pending.count return 0;
     text: string = .{data=request.data,count=request.count};
     if contains(text,cast(u8)0) return 0;
@@ -66,19 +79,14 @@ capture_receive_request :: (lparam: s64) -> s64 {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
-#import "File";
-#import "File_Utilities";
-PNG :: #import "stb_image_write";
-Win :: #import "Windows";
-user32 :: #library,system "user32";
-dwmapi :: #library,system "dwmapi";
-CaptureEnumWindows :: (callback: #type (Win.HWND,s64)->s32 #c_call, parameter: s64) -> s32 #foreign user32 "EnumWindows";
-CaptureIsWindowVisible :: (window: Win.HWND) -> s32 #foreign user32 "IsWindowVisible";
+PNG                          :: #import "stb_image_write";
+user32                       :: #library,system "user32";
+dwmapi                       :: #library,system "dwmapi";
+CaptureEnumWindows           :: (callback: #type (Win.HWND,s64)->s32 #c_call, parameter: s64) -> s32 #foreign user32 "EnumWindows";
+CaptureIsWindowVisible       :: (window: Win.HWND) -> s32 #foreign user32 "IsWindowVisible";
 CaptureDwmGetWindowAttribute :: (window: Win.HWND, attribute: u32, value: *void, size: u32) -> s32 #foreign dwmapi "DwmGetWindowAttribute";
-Capture_Occlusion :: struct { game: Win.HWND; bounds: Win.RECT; found, blocked: bool; }
-capture_occlusion_proc :: (window: Win.HWND, parameter: s64) -> s32 #c_call {
+Capture_Occlusion            :: struct { game: Win.HWND; bounds: Win.RECT; found, blocked: bool; }
+capture_occlusion_proc       :: (window: Win.HWND, parameter: s64) -> s32 #c_call {
     push_context {
         search := cast(*Capture_Occlusion)parameter;
         if window==search.game { search.found=true; return 0; }
@@ -88,7 +96,7 @@ capture_occlusion_proc :: (window: Win.HWND, parameter: s64) -> s32 #c_call {
         r: Win.RECT;
         if Win.GetWindowRect(window,*r) && r.right>search.bounds.left && r.left<search.bounds.right &&
            r.bottom>search.bounds.top && r.top<search.bounds.bottom {
-            search.blocked=true;
+            search.blocked = true;
             return 0;
         }
         return 1;

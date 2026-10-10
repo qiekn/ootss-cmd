@@ -4,91 +4,98 @@
 #run {
     set_build_options_dc(.{do_output=false});
     set_working_directory(tprint("%/..",#filepath));
-    args:=get_build_options().compile_time_command_line;
-    if (args.count==3 || args.count==5) && args[1]=="--png" {
-        error:=export_png(args);
+    args := get_build_options().compile_time_command_line;
+    if args.count>=3 && args.count%2==1 && (args[1]=="--png" || args[1]=="--jpg") {
+        error := export_image(args);
         if error.count compiler_report(error);
     }
-    else if args.count!=2 compiler_report("Usage: stitch_map <capture-directory> <new-output-directory> | <capture-directory> --png <output.png> [--max-side 8192]");
+    else if args.count!=2 compiler_report("Usage: stitch_map <capture-directory> <new-output-directory> | <capture-directory> --jpg|--png <output> [--max-side 32768] [--quality 92]");
     else {
-        error:=stitch(args[0],args[1]);
+        error := stitch(args[0],args[1]);
         if error.count compiler_report(error);
     }
 }
 
-export_png :: (args:[]string) -> string {
-    max_side:s64;
-    if args.count==5 {
-        if args[3]!="--max-side" return "Expected --max-side <64-16384>.";
-        value,ok,rest:=string_to_float64(args[4]);
-        if !ok || rest.count || !is_finite(value) || value<64 || value>16384 || floor(value)!=value
-            return "PNG maximum side must be an integer from 64 to 16384.";
-        max_side=cast(s64)value;
+export_image :: (args:[]string) -> string {
+    max_side: s64;
+    quality:  s32=92;
+    extension,found := path_extension(args[2]);
+    jpeg            := found && (equal_nocase(extension,"jpg") || equal_nocase(extension,"jpeg"));
+    if (args[1]=="--jpg")!=jpeg || (!jpeg && !equal_nocase(extension,"png")) return "The output extension must match --jpg or --png.";
+    i: s64=3;
+    while i<args.count {
+        defer i+=2;
+        value,ok,rest := string_to_float64(args[i+1]);
+        if !ok || rest.count || !is_finite(value) || value<0 || value>32768 || floor(value)!=value return "Expected a nonnegative integer option value.";
+        if args[i]=="--max-side" max_side=cast(s64)value;
+        else if args[i]=="--quality" && jpeg quality=cast(s32)value;
+        else return "Expected --max-side <pixels> or --quality <1-100> for JPEG.";
     }
-    return map_export_png(args[0],args[2],max_side=max_side);
+    return map_export_image(args[0],args[2],max_side=max_side,jpeg_quality=quality);
 }
 
 Map_Metadata :: struct {
-    version:s32=1;
-    scene:string;
-    projection:string="perspective-center-crops";
-    width,height,max_zoom,tile_size:s64;
-    xmin,ymin,xmax,ymax,pixels_per_unit,ground,camera_z:float64;
-    tile_url:string="tiles/{z}/{y}/{x}.webp";
+    version:                                             s32=1;
+    scene:                                               string;
+    projection:                                          string="perspective-center-crops";
+    width,height,max_zoom,tile_size:                     s64;
+    xmin,ymin,xmax,ymax,pixels_per_unit,ground,camera_z: float64;
+    tile_url:                                            string="tiles/{z}/{y}/{x}.webp";
 }
 
 stitch :: (directory:string,output:string) -> string {
-    ok,manifest:=Json.json_parse_file(tprint("%/manifest.json",directory),Capture_Manifest);
+    ok,manifest := Json.json_parse_file(tprint("%/manifest.json",directory),Capture_Manifest);
     defer free(manifest.plan.scene); defer array_free(manifest.frames);
     if !ok return "Could not parse capture manifest.";
-    error:=capture_validate_manifest(manifest,complete=true);
+    error := capture_validate_manifest(manifest,complete=true);
     if error.count return error;
     if file_exists(output) return "Output directory already exists. Choose a new directory; source frames are retained.";
-    result,stdout,stderr:=Process.run_command("cwebp","-version",capture_and_return_output=true);
+    result,stdout,stderr := Process.run_command("cwebp","-version",capture_and_return_output=true);
     defer free(stdout); defer free(stderr);
     if result.type!=.EXITED || result.exit_code!=0 return "Install libwebp tools (cwebp) on PATH before stitching.";
     if !make_directory_if_it_does_not_exist(output,true) return "Could not create output directory.";
-    width:=manifest.columns*manifest.crop_width;
-    height:=manifest.rows*manifest.crop_height;
-    zoom:=map_max_zoom(width,height);
-    pixels:=NewArray(512*512*4,u8);
+    width  := manifest.columns*manifest.crop_width;
+    height := manifest.rows*manifest.crop_height;
+    zoom   := map_max_zoom(width,height);
+    pixels := NewArray(512*512*4,u8);
     defer free(pixels.data);
-    z:=zoom;
+    z := zoom;
     while z>=0 {
         defer z-=1;
-        scale:=cast(s64)1 << (zoom-z);
-        nx:=(width+512*scale-1)/(512*scale);
-        ny:=(height+512*scale-1)/(512*scale);
+        scale := cast(s64)1 << (zoom-z);
+        nx    := (width+512*scale-1)/(512*scale);
+        ny    := (height+512*scale-1)/(512*scale);
         print("Zoom %: % x % tiles\n",z,nx,ny);
         for y:0..ny-1 for x:0..nx-1 {
             reset_temporary_storage();
             if z==zoom {
-                error=map_assemble_tile(manifest,directory,x,y,pixels);
+                error = map_assemble_tile(manifest,directory,x,y,pixels);
                 if error.count return error;
             } else {
                 memset(pixels.data,0,pixels.count);
-                child_scale:=scale/2;
-                cx:=(width+512*child_scale-1)/(512*child_scale);
-                cy:=(height+512*child_scale-1)/(512*child_scale);
+                child_scale := scale/2;
+                cx          := (width+512*child_scale-1)/(512*child_scale);
+                cy          := (height+512*child_scale-1)/(512*child_scale);
                 for dy:0..1 for dx:0..1 {
                     if x*2+dx>=cx || y*2+dy>=cy continue;
-                    child,child_error:=map_read_png(map_tile_file(tprint("%/pyramid",output),z+1,x*2+dx,y*2+dy,"png"),512,512);
+                    child,child_error := map_read_png(map_tile_file(tprint("%/pyramid",output),z+1,x*2+dx,y*2+dy,"png"),512,512);
                     if child_error.count return child_error;
                     defer map_image_free(*child);
                     map_reduce_child(child.pixels,pixels.data,dx,dy);
                 }
             }
-            error=map_export_tile(output,z,x,y,pixels);
+            error = map_export_tile(output,z,x,y,pixels);
             if error.count return error;
         }
     }
-    metadata:Map_Metadata=.{scene=manifest.plan.scene,width=width,height=height,max_zoom=zoom,tile_size=512,
-        xmin=manifest.plan.xmin,ymax=manifest.plan.ymax,xmax=manifest.plan.xmin+manifest.columns*manifest.step_x,
-        ymin=manifest.plan.ymax-manifest.rows*manifest.step_y,pixels_per_unit=manifest.pixels_per_unit,
-        ground=manifest.plan.ground,camera_z=cast(float64)cast(float)manifest.plan.z};
-    error=capture_atomic_json(tprint("%/map.json",output),metadata);
+    origin_x,origin_y := capture_grid_origin(manifest);
+    metadata: Map_Metadata=.{scene=manifest.plan.scene,width=width,height=height,max_zoom=zoom,tile_size=512,
+        xmin   = origin_x,ymax=origin_y,xmax=origin_x+manifest.columns*manifest.step_x,
+        ymin   = origin_y-manifest.rows*manifest.step_y,pixels_per_unit=manifest.pixels_per_unit,
+        ground = manifest.plan.ground,camera_z=cast(float64)cast(float)manifest.plan.z};
+    error = capture_atomic_json(tprint("%/map.json",output),metadata);
     if error.count return error;
-    viewer,read_ok:=read_entire_file(tprint("%/map_viewer.html",#filepath));
+    viewer,read_ok := read_entire_file(tprint("%/map_viewer.html",#filepath));
     defer free(viewer);
     if !read_ok || !write_entire_file(tprint("%/index.html",output),viewer) return "Could not write the map viewer.";
     print("Map ready: %/map.json\nServe this directory over HTTP to open index.html. Lossless PNG pyramid and WebP tiles retained.\n",output);
@@ -101,5 +108,5 @@ stitch :: (directory:string,output:string) -> string {
 #import "Compiler";
 #import "File";
 #import "System";
-Json :: #import,dir "../modules/Json";
+Json    :: #import,dir "../modules/Json";
 Process :: #import "Process";

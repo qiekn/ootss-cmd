@@ -1,6 +1,7 @@
 .refs/
 .build/
 bin/
+/map/
 
 tests/
 

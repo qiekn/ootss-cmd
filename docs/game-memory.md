@@ -354,6 +354,24 @@ jai -quiet first.jai -optimized -import_dir modules
 
 ## 俯视相机与拍摄接口
 
+### 时间倍率与 Q 视图（2026-10-10）
+
+当前正式版 SHA-256 为 `E9D70E5D8E3A66126770F530450978A192C32F598A2CC482E797878499E88744`。只读验证 `scripts/inspect_speed.jai` 发现基础倍率 RVA `0x7f20e0`，原生按住快慢键倍率 `0x7f20d8`，模拟 dt `0x7f4010`，累计时钟 `0x7f4018`。这些是本次观测值，不是代码里的固定地址。
+
+`speed_memory.jai` 从连续的两次 `mulsd`、转换 float32、写 dt、累加并写回时钟的完整指令链解码地址，再核对另一处将两个 double 初始化为 `[1, 1]` 的指令。匹配必须唯一，地址必须位于可写且不可执行的模块数据段。后续读写核对保存的完整代码证据，只写基础倍率的 8 字节；原生快慢键逻辑保持有效。原生倍率每帧切换为 0.25 / 1 / 4，基础倍率在已检查的路径没有额外 clamp；助手主动限制输入为 0–4。
+
+查询只申请读权限。修改会话保存原值和自己最后写入的值；正常清理恢复原值，外部已改变倍率时不覆盖对方的值。代码变动或读写失败时保留恢复状态并报错。拍摄另持有独立会话，暂停、取消、完成、正常退出时释放，既有 `speed 1.25` 等设置可精确恢复。未在本次开发中写入真实游戏时间或执行截图；隔离内存的恢复路径已测试，游戏内效果由用户手动验收。
+
+用户手动按 Q 后只读采样：位置约 `[79.968,68.990,80]`、四元数 `[-0.5,0.5,0.5,0.5]`、FOV/near/far `[0.478175,8,200]`、native mode `0`。`Camera_Control.orthoness` 位于 `0x378`，当前实体均为 0；`fov_expansion` 位于 `0x37c`，均为 1。原生非零 orthoness 路径会平移相机并缩窄 FOV（当前函数 RVA `0x2c1d20`），不适合在固定高度 80 直接替代为正交投影。默认拍摄复用用户预先打开的 Q 视图，校验原始朝向与高度，保留 FOV，首张精确设置为 `(80,69,80)`，继续使用透视中心裁切。
+
+```powershell
+jai -quiet scripts/inspect_speed.jai -import_dir ../modules
+jai -quiet scripts/check_speed.jai -import_dir ../modules
+jai -quiet scripts/check_centered_capture.jai -import_dir ../modules
+```
+
+第一个命令只读真实进程；后两个只操作隔离内存和生成的 PNG，验证时间控制、快捷键、自定义倍率、恢复失败、中心环序和两种拼图路径。`scripts/inspect_render_controls.jai` 是只读调查工具，可输出 Q 视图及反射字段。
+
 `show camera` 使用已验证的 camera layout 只读查询。`set camera` 在既有 freecam 会话内直接写入绝对 float32 XYZ，保留小数；没有通过 delta 相减再相加来换算绝对位置。
 
 `-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型；拍摄比例使用已验证的垂直 FOV。

@@ -55,6 +55,26 @@ hud_show_notifications = true;
 
 ## 自动拍摄
 
+### 游戏时间倍率
+
+`speed` 查询当前基础倍率及原生按住快捷键后的合成倍率。`speed 1.25`、`speed 1.5`、`speed 3.5` 等接受 **0–4** 内的任意有限数值；`speed 0` 暂停，`speed 1` 恢复正常基础速度，`speed reset` 释放本助手的控制并恢复首次修改前的值。正常退出助手也会恢复自己的修改。
+
+游戏前台、编辑器关闭时，`[` 减速、`]` 加速，按以下档位切换：
+
+```text
+0.25 → 0.5 → 1 → 1.25 → 1.5 → 1.75 → 2 → 3 → 4
+```
+
+每次物理按键只切一次，长按不连跳；例如 `speed 3.5` 后，`[` 到 3，`]` 到 4。下限 0.25，上限 4；暂停通过 `speed 0` 设置，暂停时 `]` 回到 0.25。编辑器打开时保留原来的 `[` 撤销、`]` 单步；`config.rc` 中显式定义的同键映射优先。输入框打字、注入按键和其他窗口不触发这些快捷键。
+
+游戏原生临时慢速 / 正常 / 快速是 **0.25 / 1 / 4**，通常由 Control / 松开 / Space 控制。助手修改独立的基础倍率，两者相乘：基础 1.5 时按原生快速键会达到 6 倍。0–4 是助手接受的基础倍率范围，不是已经证明的游戏引擎硬限制。该功能写入已验证的 8 字节浮点数据，不修改 EXE 或反复覆盖每帧 dt。强制结束助手无法执行恢复，可重新启动助手后用 `speed 1`，或重启游戏。
+
+### 原生 Q 视图
+
+本机 `User.keymap` 的 Q 对应 `ToggleLocalAreaMap`。只读实测位置约 `(79.968, 68.990, 80)`，朝向为垂直北朝上，垂直 FOV 约 27.4°，所有相机控制实体的 `orthoness` 为 0。这是可直接复用的原生俯视视图，目前仍按透视投影处理，不声称已获得无视差的正交渲染。`orthoness` 的原生路径会拉远相机并缩小 FOV，因此没有用它替代固定高度 80。
+
+默认计划要求先在大世界按 Q。助手检查原始朝向和高度，保留该视图的 FOV，再将首张相机位置精确设为 `(80, 69, 80)`。网格也以这一张的中心对齐，按方形环向外拍摄；所有拼接路径按实际行列归位，实际边界向外扩展以覆盖请求范围。无需先手动开启 freecam。
+
 ### 探索迷雾
 
 控制台命令 `unfog` 临时隐藏探索迷雾，`fog` 恢复显示；命令不区分大小写，无需参数，也支持 Tab 补全。正式版现场测试已确认未探索区域的地形会显示。它们只修改当前游戏进程的渲染开关，不移动玩家，也不修改存档的探索进度。助手正常退出时恢复自己关闭的迷雾；游戏重启后自然恢复。
@@ -65,7 +85,7 @@ hud_show_notifications = true;
 
 ### 一次执行，更新一张贴图
 
-先启动新编译的 `ootss-cmd.exe` 和游戏，退出手动 freecam、关闭编辑器。在 MSYS2 中执行：
+先启动新编译的 `ootss-cmd.exe` 和游戏，退出手动 freecam、关闭编辑器，在大世界按 Q 切到高度 80 的俯视视图。在 MSYS2 中执行：
 
 ```sh
 ./scripts/capture_map.jai
@@ -76,30 +96,43 @@ PowerShell 中可用 `jai -quiet scripts/capture_map.jai`。不需要 `capture.s
 ```jai
 Capture_Settings :: struct {
     directory: string = "map/capture-world";
-    output: string = "map/map.png";
+    output: string = "map/map.jpg";
     disable_fog: bool = true;
-    png_max_side: s64 = 16384;
+    max_side: s64 = 32768;
+    jpeg_quality: s32 = 92;
     plan: Capture_Plan = .{
-        xmin=-40, ymin=-20,
-        xmax=180, ymax=170,
-        z=40,
-        ground=0,
-        overlap=0.3,
-        settle_ms=200,
-        scene="overworld",
+        version          = 3,
+        xmin             = -40, ymin = -20,
+        xmax             = 180, ymax = 170,
+        z                = 80,
+        center_first     = true,
+        center_x         = 80,
+        center_y         = 69,
+        freeze_time      = true,
+        require_map_view = true,
+        ground           = 0,
+        crop_world_size  = 9,
+        settle_ms        = 200,
+        scene            = "overworld",
     };
 }
 ```
 
-每次执行都覆盖计划，清理该拍摄目录内旧的进度和 `frame_000000.png` 等生成文件，从头拍摄。脚本等待本次任务完成后，将中心裁切拼成一张北朝上的 PNG，原子替换 `map/map.png`；不依赖 cwebp。`png_max_side` 只限制最终 PNG，超出时按相同整数倍率缩小各裁切单元，并使用重叠区的像素进行过滤；原始截图保持完整分辨率。设为 `0` 请求原始大小，仍受 PNG 内存预算限制。目录中的其他文件保留。任务编号防止上次的完成状态被误用，同时运行两个脚本会被目录锁拒绝。
+每次执行都覆盖计划，清理该拍摄目录内旧的进度和 `frame_000000.png` 等生成文件，从头拍摄。脚本等待本次任务完成后，将中心小块拼成一张北朝上的 JPEG，原子替换 `map/map.jpg`；不依赖 cwebp。`crop_world_size = 9` 表示只保留参考地面上中心 **9 × 9 个世界格子**，相邻相机中心间隔精确 9 格。拍摄时直接裁切并保存小块 PNG，外围画面不写盘；拼接不会再次裁切。`overlap` 在此模式不决定裁切尺寸，`crop_world_size = 0` 则恢复按 `overlap` 百分比裁切完整截图的旧模式。
 
-当前全世界预设来自本机正式版 `levels.package` 中 `overworld.entities` 的 920 个 `Level_Entry`，入口范围为 X `-24…164`、Y `-2…153`、Z `-25…63`；不是 Demo 的 105 个入口目录。向外留至少 10 单位并取整后采用上面的 XY 范围。入口范围不等于所有装饰地形的边界。当前脚本保留用户调整后的绝对高度 40 和 PNG 最大边长 16384；高度不是距地高度，高处地形需要手动检查取景。200ms 是当前截图流程的有效等待下限，PNG 编码和写盘另耗时间。按实测 3840×2160、FOV 约 35°，预计 8×10 共 80 张截图，原始拼图为 21504×15120，受 64M 像素预算限制缩小为 7168×5040。旧的 `map/capture-pilot` 试拍目录保留。
+`jpeg_quality` 范围为 1–100，默认 92。`max_side` 只限制最终图片，超出时按相同整数倍率缩小各裁切单元；不放大原图、不提高相机高度。设为 `0` 请求原始大小，超出预算则报错；设为正数允许按需缩小。中心小块以无损 PNG 保存，最终 JPEG 才进行有损压缩。输出后缀改为 `.png` 仍可导出无损图片，同时应把 `max_side` 改为不超过 16384。目录中的其他文件保留。任务编号防止上次的完成状态被误用，同时运行两个脚本会被目录锁拒绝。
+
+当前全世界预设来自本机正式版 `levels.package` 中 `overworld.entities` 的 920 个 `Level_Entry`，入口范围为 X `-24…164`、Y `-2…153`、Z `-25…63`；不是 Demo 的 105 个入口目录。向外留至少 10 单位并取整后采用上面的 XY 范围。入口范围不等于所有装饰地形的边界。相机绝对高度为 80，JPEG 最大边长为 32768；高度不是距地高度，高处地形需要手动检查取景。200ms 是当前截图流程的有效等待下限，编码和写盘另耗时间。9 × 9 格的中心对齐网格为 **25 × 22，共 550 张**，实际边界为 X `-41.5…183.5`、Y `-25.5…172.5`。以 3840×2160、Q 视图 FOV 约 27.4° 计算，每张保存 498×498 像素，最终 JPEG 为 **12450×10956**。像素尺寸随分辨率和 FOV 变化，但世界步长始终为 9。旧的 `map/capture-pilot` 试拍目录保留。
+
+较小的中心块能减轻透视偏移，但不等于正交投影；9 格按 `ground` 指定的参考平面计算，高低地形、树木和建筑仍可能出现接缝。此前 40 张完整截图的拍摄中心间距更大，不能直接重拼成连续的 9 格小块，需要按新计划重新拍摄。
+
+`freeze_time = true` 在相机接管并稳定后、第一张拍摄前将基础时间倍率设为 0；暂停、取消、完成或正常关闭助手时恢复拍摄前的精确倍率，例如 1.25。续拍重新保存当前倍率并暂停时间。恢复失败会保留恢复状态并报告错误，不把本次任务标成完成；可重试取消。这里只暂停游戏的模拟时间及对应累计时钟，渲染与助手的拍摄等待使用原来的时钟；所有独立动画是否停住仍需游戏内手动验收。设为 `false` 可关闭此行为。
 
 无参数运行时，`disable_fog = true` 会在拍摄前临时关闭探索迷雾，完成、取消或失败后恢复拍摄前的开关状态；若此前已经 `unfog`，拍完仍保持关闭。设为 `false` 则不操作迷雾。分步 `plan` / `start` / `run` 模式保持手动控制，可自行执行 `unfog` 和 `fog`。
 
-提交后切回无遮挡的游戏并松开按键。拍摄暂停时脚本显示原因并继续等待，此时迷雾继续关闭；处理后在助手控制台执行 `capture resume`，再返回游戏。执行 `capture cancel`、助手退出或拼接失败时，上一张 `map/map.png` 保留。终端 Ctrl+C 会请求取消助手中的拍摄并恢复迷雾。仍在进行的拍摄不会被另一个请求强行覆盖。
+提交后切回无遮挡的游戏并松开按键。拍摄暂停时脚本显示原因并继续等待，此时迷雾继续关闭、时间倍率恢复；处理后在助手控制台执行 `capture resume`，再返回游戏。执行 `capture cancel`、助手退出或拼接失败时，上一张 `map/map.jpg` 保留。终端 Ctrl+C 会请求取消助手中的拍摄并恢复迷雾。仍在进行的拍摄不会被另一个请求强行覆盖。
 
-首次使用此流程需要重新编译并重启助手，旧版本会拒绝新的重新拍摄请求。PNG 每边最大 16384 像素，总量不超过 64M 像素；超大地图使用下文的瓦片输出。实际覆盖范围仍按完整裁切单元向外取整。
+首次使用中心 9 格裁切需要重新编译并重启助手，新的版本 3 请求会被旧助手拒绝，避免按旧规则拍摄。版本 1 / 2 的蛇形、中心环形计划和完整截图仍可续拍、拼接；版本 3 清单记录原始窗口尺寸、精确裁切范围和已裁切 PNG 的尺寸，不混用两种帧格式。JPEG 每边最多 32768 像素、总量最多 256M 像素（RGBA 拼接缓冲最多约 1 GiB，另有单帧和编码缓冲）；PNG 仍限制为每边 16384、总量 64M 像素。超大地图使用下文的瓦片输出。实际覆盖范围仍按完整裁切单元向外取整。
 
 ### 分步拍摄与续拍
 
@@ -110,7 +143,7 @@ jai -quiet scripts/capture_map.jai - plan .build/capture-pilot 76 77 84 85 18 --
 jai -quiet scripts/capture_map.jai - start .build/capture-pilot
 ```
 
-参数顺序是 `目录 xmin ymin xmax ymax 相机绝对Z`。`--ground` 是用于换算截图比例的参考地面绝对 Z；它不修改地形。`--overlap` 默认 0.3，范围 0.1–0.8；`--settle-ms` 默认 500，范围 100–10000，实际至少等待 200 ms，以预留隐藏 HUD 的时间。范围与高度仅为例子，不代表已经验证的正式版全图边界。
+参数顺序是 `目录 xmin ymin xmax ymax 相机绝对Z`。`--ground` 是用于换算截图比例的参考地面绝对 Z；它不修改地形。`--crop-world 9` 使用版本 3 的中心 9 格裁切。未指定时，`--overlap` 默认 0.3，范围 0.1–0.8；`--settle-ms` 默认 500，范围 100–10000，实际至少等待 200 ms，以预留隐藏 HUD 的时间。范围与高度仅为例子，不代表已经验证的正式版全图边界。
 
 提交后返回游戏，待 Enter、修饰键和移动键释放才开始。无需持续按键。程序按蛇形路径逐点移动，等待画面稳定，再保存完整无损 PNG。
 
@@ -145,16 +178,19 @@ jai -quiet scripts/stitch_map.jai - .build/capture-pilot .build/map-pilot
 
 输出目录必须不存在，避免覆盖原图或已有地图。工具拒绝未拍完或坐标不一致的任务；读取每张 PNG 时检查尺寸和解码结果。内存中只保留当前瓦片和单张源图，不创建一张占用巨大内存的全图。
 
-只重新拼接已完成的拍摄、生成单张 PNG 时使用下面的命令。此模式允许替换已有 PNG，无需 cwebp；先完整解码、拼接和编码，再替换输出文件：
+只重新拼接已完成的拍摄时使用下面的命令，无需重新拍摄。此模式允许替换已有图片，无需 cwebp；先完整解码、拼接和编码，再替换输出文件：
 
 ```sh
+jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
 jai -quiet scripts/stitch_map.jai - map/capture-world --png map/map.png --max-side 8192
 ```
+
+如果已经显示 `DONE: Capture complete`，但随后拼接或编码失败，使用上面的 `stitch_map.jai` 命令即可重试；不要无参数重跑 `capture_map.jai`，那会清理旧帧并重新拍摄。拼接按行显示进度，随后显示编码阶段。JPEG 使用编码库的原生缓冲文件写出，避免逐字节回调进入 Jai 的编译期执行器造成内存暴涨；写出后检查文件头、尺寸和结束标记，再替换旧图。
 
 | 文件 | 用途 |
 | --- | --- |
 | 拍摄目录 `plan.json` | 世界坐标范围、高度、重叠率、等待时间 |
-| 拍摄目录 `frame_000000.png` 等 | 完整原始截图，保留重叠边缘 |
+| 拍摄目录 `frame_000000.png` 等 | 9 格模式保存中心小块；旧 overlap 模式保存完整截图 |
 | 拍摄目录 `manifest.json` | 分辨率、FOV、比例、行列及每帧实际设定 XYZ |
 | 拍摄目录 `status.json` | 当前阶段、完成数量和状态消息 |
 | 输出目录 `tiles/{z}/{y}/{x}.webp` | 512×512 无损 WebP 地图瓦片 |
@@ -167,12 +203,14 @@ jai -quiet scripts/stitch_map.jai - map/capture-world --png map/map.png --max-si
 拼接采用固定高度下的参考地面比例：
 
 ```text
-pixels_per_unit = image_height / (2 × (camera_z − ground_z) × tan(vertical_fov / 2))
-step_x = crop_width / pixels_per_unit
-step_y = crop_height / pixels_per_unit
+source_pixels_per_unit = image_height / (2 × (camera_z − ground_z) × tan(vertical_fov / 2))
+source_crop_size = crop_world_size × source_pixels_per_unit
+crop_width = crop_height = floor(source_crop_size)
+step_x = step_y = crop_world_size
+pixels_per_unit = crop_width / crop_world_size
 ```
 
-中心裁切的边界对齐整数像素，蛇形拍摄顺序还原为从北向南的行；X 向右增加，Y 向下减少。末行 / 末列向外覆盖到完整裁切单元，因此实际范围可能稍大于计划。浮点元数据使用能往返保存的精度，避免续拍网格漂移。
+中心方形的边界可以落在小数像素上，拍摄时按这个精确范围重采样成整数像素的小块，避免每格取整后导致世界步长漂移。旧 overlap 模式继续使用整数中心裁切和 `step = crop_pixels / source_pixels_per_unit`。拍摄顺序还原为从北向南的行；X 向右增加，Y 向下减少。末行 / 末列向外覆盖到完整裁切单元，因此实际范围可能稍大于计划。浮点元数据使用能往返保存的精度，避免续拍网格漂移。
 
 ## 接入 joric-ootss
 
@@ -205,6 +243,8 @@ map.fitBounds(bounds);
 
 ```powershell
 jai -quiet scripts/check_camera_capture.jai -import_dir ../modules
+jai -quiet scripts/check_map_jpeg.jai
+jai -quiet scripts/check_world_crop.jai
 jai -quiet scripts/stitch_map.jai - .build/map-fixture .build/map-test-output
 ```
 

@@ -18,23 +18,23 @@ Console_Action :: enum {
     ZORK_START; ZORK_INPUT; ZORK_BACK;                                                                                           // Zork
 }
 
-Console_Mode :: enum { NORMAL; FULL; SMALL; MINI; }
+Console_Mode    :: enum { NORMAL; FULL; SMALL; MINI; }
 Console_Picture :: enum { NONE; CAPTAIN; PIRATE; CAPTAIN_PIRATE; }
 
-CONSOLE_INPUT_LIMIT    :: 1024;
-CONSOLE_OUTPUT_LIMIT   :: 2048;
-CONSOLE_BLOW_NAMES     :: string.["alien", "mirror", "wave"]; // jblow memes
+CONSOLE_INPUT_LIMIT  :: 1024;
+CONSOLE_OUTPUT_LIMIT :: 2048;
+CONSOLE_BLOW_NAMES   :: string.["alien", "mirror", "wave"]; // jblow memes
 
 UNDO_DEFAULT_\  DELAY  :: 10;
 UNDO_FAST_\     DELAY  :: 1; // @TODO maybe 1ms doesn't work QwQ.
 RESET_DEFAULT_\ DELAY  :: 75;
 
-Send_Time_Mode :: enum { NORMAL; FAST; SLOW; }
+Send_Time_Mode            :: enum { NORMAL; FAST; SLOW; }
 Console_Subtitle_Language :: enum { BOTH; ENGLISH; CHINESE; }
 
 Console_Send_Arguments :: struct {
-    source: string;
-    delay_ms: s32;
+    source:    string;
+    delay_ms:  s32;
     alternate: bool;
     time_mode: Send_Time_Mode;
 }
@@ -46,64 +46,67 @@ Console_Line :: struct {
 }
 
 Console_State :: struct {
-    config: Console_Config;
-    temporary_aliases: [..] Console_Alias;
-    lines: [..] Console_Line;
-    input: [..] u8;
-    cursor: s64;
-    history: [..] string;
-    history_cursor: s64;
-    draft: string;
-    scroll: s64;
-    scroll_to_line: s64 = -1;
-    reveal_output: bool;
-    show_subtitles: bool;
-    completion: Console_Completion;
-    show_blow: bool;
-    picture: Console_Picture;
-    restart_blow: bool;
-    blow_index: s64;
-    next_blow_index: s64;
-    pending_send: string;
-    submission: Console_Submission;
-    pending_send_hold_ms: s32 = DEFAULT_HOLD;
-    pending_send_interval_ms: s32 = DEFUALT_INTERVAL;
-    pending_send_time_mode: Send_Time_Mode;
-    pending_send_interruptible: bool;
-    pending_reset: bool;
-    pending_action: Console_Action;
-    pending_mode: Console_Mode;
-    pending_play: Console_Send_Arguments;
-    pending_subtitle_level: string;
-    pending_subtitle_comments: bool;
-    pending_subtitle_hide_speakers: bool;
-    pending_subtitle_language: Console_Subtitle_Language;
-    pending_edit_level: string;
-    pending_edit_custom: bool;
-    pending_jump_step: s64;
-    pending_position: Game_Position;
-    pending_position_relative: bool;
-    pending_position_take: bool;
-    pending_position_change: bool;
-    pending_switch_level: string;
-    pending_marker_name: string;
-    pending_marker_new_name: string;
-    pending_marker_current: bool;
-    pending_noclip: s32 = -1;
-    pending_fog_change, pending_fog_enabled: bool;
-    pending_freecam: s32 = -1;
-    pending_freecam_change: bool;
-    pending_freecam_pan: bool;
+    config:                                        Console_Config;
+    temporary_aliases:                             [..] Console_Alias;
+    lines:                                         [..] Console_Line;
+    input:                                         [..] u8;
+    cursor:                                        s64;
+    history:                                       [..] string;
+    history_cursor:                                s64;
+    draft:                                         string;
+    scroll:                                        s64;
+    scroll_to_line:                                s64 = -1;
+    reveal_output:                                 bool;
+    show_subtitles:                                bool;
+    completion:                                    Console_Completion;
+    show_blow:                                     bool;
+    picture:                                       Console_Picture;
+    restart_blow:                                  bool;
+    blow_index:                                    s64;
+    next_blow_index:                               s64;
+    pending_send:                                  string;
+    submission:                                    Console_Submission;
+    pending_send_hold_ms:                          s32 = DEFAULT_HOLD;
+    pending_send_interval_ms:                      s32 = DEFUALT_INTERVAL;
+    pending_send_time_mode:                        Send_Time_Mode;
+    pending_send_interruptible:                    bool;
+    pending_reset:                                 bool;
+    pending_action:                                Console_Action;
+    pending_mode:                                  Console_Mode;
+    pending_play:                                  Console_Send_Arguments;
+    pending_subtitle_level:                        string;
+    pending_subtitle_comments:                     bool;
+    pending_subtitle_hide_speakers:                bool;
+    pending_subtitle_language:                     Console_Subtitle_Language;
+    pending_edit_level:                            string;
+    pending_edit_custom:                           bool;
+    pending_jump_step:                             s64;
+    pending_position:                              Game_Position;
+    pending_position_relative:                     bool;
+    pending_position_take:                         bool;
+    pending_position_change:                       bool;
+    pending_switch_level:                          string;
+    pending_marker_name:                           string;
+    pending_marker_new_name:                       string;
+    pending_marker_current:                        bool;
+    pending_noclip:                                s32 = -1;
+    pending_fog_change, pending_fog_enabled:       bool;
+    pending_speed_change:                          bool;
+    pending_speed_request:                         Speed_Request;
+    pending_speed_value:                           float64;
+    pending_freecam:                               s32 = -1;
+    pending_freecam_change:                        bool;
+    pending_freecam_pan:                           bool;
     pending_freecam_topdown, pending_camera_write: bool;
-    pending_camera_position: Game_Position;
-    zork_mode: bool;
-    zork_input_kind: Zork_Input_Kind;
-    pending_zork_input: string;
+    pending_camera_position:                       Game_Position;
+    zork_mode:                                     bool;
+    zork_input_kind:                               Zork_Input_Kind;
+    pending_zork_input:                            string;
 }
 
 Console_Command :: struct {
     name: string;
-    run: (console: *Console_State, arguments: string);
+    run:  (console: *Console_State, arguments: string);
     hidden := false;
 }
 
@@ -142,6 +145,7 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "switch",        run = command_switch           },
     .{name = "noclip",        run = command_noclip           },
     .{name = "unfog",         run = command_unfog            },
+    .{name = "speed",         run = command_speed            },
     .{name = "fog",           run = command_fog              },
     .{name = "freecam",       run = command_freecam          },
     .{name = "hud",           run = command_hud              },
@@ -210,15 +214,15 @@ command_play :: (console: *Console_State, arguments: string) {
         console_write(console, "Usage: play|do [name] [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change ||
        console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL || console.pending_action == .PLAY_SOLUTION {
         console_write(console, "A playback command is already waiting to run.", .ERROR);
         return;
     }
     free(console.pending_play.source);
-    console.pending_play = request;
-    request.source = "";
+    console.pending_play   = request;
+    request.source         = "";
     console.pending_action = .PLAY_SOLUTION;
 }
 
@@ -233,7 +237,7 @@ command_toggle :: (console: *Console_State, arguments: string) {
         console_write(console, "Usage: toggle full|small|normal|mini", .ERROR);
         return;
     }
-    console.pending_mode = mode;
+    console.pending_mode   = mode;
     console.pending_action = .CONSOLE_MODE;
 }
 
@@ -251,7 +255,7 @@ command_reset :: (console: *Console_State, arguments: string) {
 command_show :: (console: *Console_State, arguments: string) {
     position: s64;
     subject := console_next_argument(arguments, *position);
-    rest := trim(slice(arguments, position, arguments.count - position));
+    rest    := trim(slice(arguments, position, arguments.count - position));
     if equal_nocase(subject, "position") && !rest.count console.pending_action = .SHOW_POSITION;
     else if equal_nocase(subject, "level") && !rest.count console.pending_action = .SHOW_LEVEL;
     else if equal_nocase(subject, "camera") && !rest.count console.pending_action = .SHOW_CAMERA;
@@ -270,8 +274,8 @@ command_set :: (console: *Console_State, arguments: string) {
         if !console_position_command_ready(console) return;
         if editor_save_prompt.active { console_write(console, "Finish the save confirmation first.", .ERROR); return; }
         console.pending_camera_position = position;
-        console.pending_camera_write = true;
-        console.pending_action = .SET_CAMERA;
+        console.pending_camera_write    = true;
+        console.pending_action          = .SET_CAMERA;
         return;
     }
     if !equal_nocase(subject, "position") {
@@ -293,10 +297,10 @@ console_subtitle_hide_speakers_option :: (argument: string) -> bool {
 }
 
 command_show_subtitles :: (console: *Console_State, arguments: string) {
-    position: s64;
-    level: string;
+    position:                s64;
+    level:                   string;
     comments, hide_speakers: bool;
-    language: Console_Subtitle_Language;
+    language:                Console_Subtitle_Language;
     while position < arguments.count {
         argument := console_next_argument(arguments, *position);
         if !argument.count break;
@@ -319,11 +323,11 @@ command_show_subtitles :: (console: *Console_State, arguments: string) {
         } else level = argument;
     }
     free(console.pending_subtitle_level);
-    console.pending_subtitle_level = copy_string(level);
-    console.pending_subtitle_comments = comments;
+    console.pending_subtitle_level         = copy_string(level);
+    console.pending_subtitle_comments      = comments;
     console.pending_subtitle_hide_speakers = hide_speakers;
-    console.pending_subtitle_language = language;
-    console.pending_action = .SHOW_SUBTITLES;
+    console.pending_subtitle_language      = language;
+    console.pending_action                 = .SHOW_SUBTITLES;
 }
 
 command_open :: (console: *Console_State, arguments: string) {
@@ -332,9 +336,9 @@ command_open :: (console: *Console_State, arguments: string) {
         return;
     }
     free(console.pending_edit_level);
-    console.pending_edit_level = copy_string("temp");
+    console.pending_edit_level  = copy_string("temp");
     console.pending_edit_custom = false;
-    console.pending_action = .EDIT_SOLUTION;
+    console.pending_action      = .EDIT_SOLUTION;
 }
 
 command_close :: (console: *Console_State, arguments: string) {
@@ -347,8 +351,8 @@ command_close :: (console: *Console_State, arguments: string) {
 
 command_edit :: (console: *Console_State, arguments: string) {
     position: s64;
-    level := console_next_argument(arguments, *position);
-    extra := console_next_argument(arguments, *position);
+    level  := console_next_argument(arguments, *position);
+    extra  := console_next_argument(arguments, *position);
     custom := equal_nocase(level, "custom") && extra.count > 0;
     if equal_nocase(level, "custom") && !extra.count {
         console_write(console, "Usage: edit custom <name>, or open editor for a new input.", .ERROR);
@@ -367,9 +371,9 @@ command_edit :: (console: *Console_State, arguments: string) {
         return;
     }
     free(console.pending_edit_level);
-    console.pending_edit_level = ifx !custom && equal_nocase(level, "solution") then "" else copy_string(level);
+    console.pending_edit_level  = ifx !custom && equal_nocase(level, "solution") then "" else copy_string(level);
     console.pending_edit_custom = custom;
-    console.pending_action = .EDIT_SOLUTION;
+    console.pending_action      = .EDIT_SOLUTION;
 }
 
 command_jump :: (console: *Console_State, arguments: string) {
@@ -397,13 +401,13 @@ command_jump :: (console: *Console_State, arguments: string) {
         }
     }
     console.pending_jump_step = target;
-    console.pending_action = .JUMP;
+    console.pending_action    = .JUMP;
 }
 
 command_undo :: (console: *Console_State, arguments: string) {
-    count := "1";
+    count     := "1";
     has_count := false;
-    fast := false;
+    fast      := false;
     delay_ms: s32 = -1;
     position: s64;
     while position < arguments.count {
@@ -437,7 +441,7 @@ command_undo :: (console: *Console_State, arguments: string) {
                 return;
             }
         }
-        count = argument;
+        count     = argument;
         has_count = true;
     }
 
@@ -476,11 +480,11 @@ console_parse_send_arguments :: (commands: string, alternate: bool, default_dela
             if equal_nocase(argument, "-slow") default_delay_ms = SEND_SLOW_DELAY;
             if equal_nocase(argument, "-superfast") {
                 default_delay_ms = SEND_SUPERFAST_DELAY;
-                time_mode = .FAST;
+                time_mode        = .FAST;
             }
             if equal_nocase(argument, "-superslow") {
                 default_delay_ms = SEND_SUPERSLOW_DELAY;
-                time_mode = .SLOW;
+                time_mode        = .SLOW;
             }
             continue;
         }
@@ -534,7 +538,7 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         console_write(console, usage, .ERROR);
         return;
     }
-    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change ||
+    if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change ||
        console.pending_action == .FREECAM || console.pending_action == .SET_CAMERA || console.pending_action == .SET_POSITION ||
        console.pending_action == .BACK_POSITION || console.pending_action == .SWITCH_LEVEL {
         console_write(console, "A send command is already waiting to run.", .ERROR);
@@ -542,11 +546,11 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
     }
 
     // The input buffer is cleared after dispatch. The main loop owns this queued copy.
-    console.pending_send = copy_string(expanded);
-    console.pending_reset = false;
-    console.pending_send_hold_ms = send_hold_for_delay(request.delay_ms);
-    console.pending_send_interval_ms = request.delay_ms - console.pending_send_hold_ms;
-    console.pending_send_time_mode = request.time_mode;
+    console.pending_send               = copy_string(expanded);
+    console.pending_reset              = false;
+    console.pending_send_hold_ms       = send_hold_for_delay(request.delay_ms);
+    console.pending_send_interval_ms   = request.delay_ms - console.pending_send_hold_ms;
+    console.pending_send_time_mode     = request.time_mode;
     console.pending_send_interruptible = interrupt_on_input;
 }
 
@@ -618,15 +622,16 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "reset marker registers   Clear a-z and start at a; keep custom marker names.",
        "noclip [enable|disable]  Toggle W/S/A/D position movement; hold Shift for 2x speed.",
        "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
-       "unfog                   Temporarily hide exploration fog (does not explore the save).",
-       "fog                     Restore exploration fog; also restored when the helper exits.",
+       "unfog                    Temporarily hide exploration fog (does not explore the save).",
+       "speed [0..4|up|down|reset] Set/query time multiplier; 0 pauses, 1 is normal; [ / ] step down/up.",
+       "fog                      Restore exploration fog; also restored when the helper exits.",
        "freecam [enable|disable] Toggle the free camera; disable restores the view.",
        "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",
        "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q down, E up.",
        "freecam -topdown         Lock a vertical north-up view; W/S/A/D pan; Q down, E up.",
        "                         Hold Shift to move faster or Ctrl to move slower in any mode.",
        "show camera              Show world XYZ, view angles and vertical FOV.",
-       "hud [enable|disable]    Toggle the HUD; hidden automatically while the console is open.",
+       "hud [enable|disable]     Toggle the HUD; hidden automatically while the console is open.",
        "set camera <x> <y> <z>   Set absolute world coordinates while freecam is enabled.",
        "capture start <plan.json> Photograph a planned grid; return focus to the game to start.",
        "capture pause|resume     Pause and restore the view, or continue a capture job.",
@@ -699,19 +704,19 @@ tprint("    -superslow, -turtle      Use % ms and hold the game's slow-time key.
 }
 
 command_clear :: (console: *Console_State, arguments: string) {
-    console.reveal_output = false;
-    console.picture = .NONE;
+    console.reveal_output  = false;
+    console.picture        = .NONE;
     console.show_subtitles = false;
-    console.show_blow = false;
-    console.restart_blow = false;
+    console.show_blow      = false;
+    console.restart_blow   = false;
     for line: console.lines free(line.text);
-    console.lines.count = 0;
-    console.scroll = 0;
+    console.lines.count    = 0;
+    console.scroll         = 0;
     console.scroll_to_line = -1;
 }
 
 command_blow :: (console: *Console_State, arguments: string) {
-    name := trim(arguments);
+    name  := trim(arguments);
     index := console.next_blow_index;
     if name.count {
         index = -1;
@@ -727,8 +732,8 @@ command_blow :: (console: *Console_State, arguments: string) {
     console.blow_index = index;
     // Explicit choices (including the startup wave) do not consume the next automatic choice.
     if !name.count console.next_blow_index = (index + 1) % CONSOLE_BLOW_NAMES.count;
-    console.show_blow = true;
-    console.restart_blow = true;
+    console.show_blow     = true;
+    console.restart_blow  = true;
     console.reveal_output = true;
 }
 
@@ -794,7 +799,7 @@ command_captain_pirate :: (console: *Console_State, arguments: string) {
 console_show_picture :: (console: *Console_State, arguments: string, picture: Console_Picture, name: string) {
     if arguments.count { console_write(console, tprint("Usage: %", name), .ERROR); return; }
     command_clear(console, "");
-    console.picture = picture;
+    console.picture       = picture;
     console.reveal_output = true;
 }
 
@@ -816,7 +821,7 @@ console_write :: (console: *Console_State, text: string, kind: Console_Line_Kind
         array_ordered_remove_by_index(*console.lines, 0);
     }
     array_add(*console.lines, .{copy_string(text), kind, wrap || console.zork_mode});
-    console.scroll = 0;
+    console.scroll         = 0;
     console.scroll_to_line = -1;
 }
 
@@ -843,16 +848,16 @@ console_submit :: (console: *Console_State) {
 console_execute_command :: (console: *Console_State, source: string, remember := false) {
     line := trim(source);
     if !line.count return;
-    previous_blow := console.show_blow;
-    previous_restart := console.restart_blow;
-    previous_picture := console.picture;
-    previous_subtitles := console.show_subtitles;
-    previous_scroll := console.scroll;
+    previous_blow           := console.show_blow;
+    previous_restart        := console.restart_blow;
+    previous_picture        := console.picture;
+    previous_subtitles      := console.show_subtitles;
+    previous_scroll         := console.scroll;
     previous_scroll_to_line := console.scroll_to_line;
-    console.show_blow = false;
-    console.restart_blow = false;
+    console.show_blow     = false;
+    console.restart_blow  = false;
     console.reveal_output = false;
-    console.picture = .NONE;
+    console.picture       = .NONE;
     console_write(console, tprint("$ %", line), .COMMAND);
     if remember console_remember_input(console, line);
 
@@ -881,11 +886,11 @@ console_execute_command :: (console: *Console_State, source: string, remember :=
         command.run(console, arguments);
         if command.name == "toggle" && console.pending_action == .CONSOLE_MODE {
             // Resizing preserves the current presentation, including images and subtitle scroll.
-            console.show_blow = previous_blow;
-            console.restart_blow = previous_restart;
-            console.picture = previous_picture;
+            console.show_blow      = previous_blow;
+            console.restart_blow   = previous_restart;
+            console.picture        = previous_picture;
             console.show_subtitles = previous_subtitles;
-            console.scroll = previous_scroll;
+            console.scroll         = previous_scroll;
             console.scroll_to_line = previous_scroll_to_line;
         }
         found = true;
@@ -910,7 +915,7 @@ console_remember_input :: (console: *Console_State, line: string) {
 console_finish_input :: (console: *Console_State) {
     console_set_input(console, "");
     free(console.draft);
-    console.draft = "";
+    console.draft          = "";
     console.history_cursor = console.history.count;
 }
 
@@ -927,7 +932,7 @@ console_insert_character :: (console: *Console_State, character: u32) {
     if character < 32 || character == 127 || character > 0x10ffff return;
     if character >= 0xd800 && character <= 0xdfff return;
 
-    bytes: [4] u8;
+    bytes:   [4] u8;
     encoded: string = .{data = bytes.data, count = 4};
     Unicode.character_utf32_to_utf8(character, *encoded);
     if console.input.count + encoded.count > CONSOLE_INPUT_LIMIT return;
@@ -936,7 +941,7 @@ console_insert_character :: (console: *Console_State, character: u32) {
         console.cursor += 1;
     }
     console.history_cursor = console.history.count;
-    console.scroll = 0;
+    console.scroll         = 0;
 }
 
 console_paste_text :: (console: *Console_State, text: string) {
@@ -965,7 +970,7 @@ console_paste_text :: (console: *Console_State, text: string) {
         console.cursor += 1;
     }
     console.history_cursor = console.history.count;
-    console.scroll = 0;
+    console.scroll         = 0;
 }
 
 console_previous_character :: (console: *Console_State) -> s64 {
@@ -1077,7 +1082,7 @@ console_erase_range :: (console: *Console_State, start: s64, end: s64) {
     count := end - start;
     for i: end..console.input.count-1 console.input[i - count] = console.input[i];
     console.input.count -= count;
-    console.cursor = start;
+    console.cursor         = start;
     console.history_cursor = console.history.count;
 }
 
@@ -1087,8 +1092,4 @@ console_word_separator :: (c: u8) -> bool {
 }
 
 #scope_file
-#import "Basic";
-#import "File";
-#import "String";
-#import "Math";
 Unicode :: #import "Unicode";

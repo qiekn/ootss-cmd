@@ -1,27 +1,27 @@
 Shortcut_Modifiers :: enum_flags u32 { CTRL; ALT; SHIFT; WIN; }
 
 Command_Shortcut :: struct {
-    name: string;
-    vk: u32;
+    name:      string;
+    vk:        u32;
     modifiers: Shortcut_Modifiers;
-    command: string;
-    consume: bool;
+    command:   string;
+    consume:   bool;
 }
 
 Shortcut_Request :: struct {
-    index: s64;
-    game: Win.HWND;
+    index:    s64;
+    game:     Win.HWND;
     pid, key: u32;
 }
 
 Shortcut_State :: struct {
-    enabled: bool;
-    game: Win.HWND;
-    pid: u32;
-    down, consumed: [256] bool;
-    queue: [64] Shortcut_Request;
+    enabled:                  bool;
+    game:                     Win.HWND;
+    pid:                      u32;
+    down, consumed:           [256] bool;
+    queue:                    [64] Shortcut_Request;
     queue_start, queue_count: s64;
-    overflow: bool;
+    overflow:                 bool;
 }
 
 shortcuts: Shortcut_State;
@@ -59,7 +59,7 @@ shortcut_base_key :: (name: string) -> u32 {
 
 shortcut_key_parse :: (source: string) -> (vk: u32, modifiers: Shortcut_Modifiers, error: string) {
     modifiers: Shortcut_Modifiers;
-    start: s64;
+    start:     s64;
     for i: 0..source.count {
         if i != source.count && source[i] != #char "+" continue;
         part := trim(slice(source, start, i - start));
@@ -127,7 +127,7 @@ shortcuts_input_released :: (state: *Shortcut_State, key: u32) -> bool {
 shortcuts_clear_queue :: (state: *Shortcut_State) {
     state.queue_start = 0;
     state.queue_count = 0;
-    state.overflow = false;
+    state.overflow    = false;
     // Retain physical/consumed state until release, including across focus loss.
 }
 
@@ -136,12 +136,12 @@ shortcuts_set_target :: (state: *Shortcut_State, game: Win.HWND, pid: u32, foreg
         shortcuts_clear_queue(state);
     }
     state.game = game;
-    state.pid = pid;
+    state.pid  = pid;
 }
 
 // Called by every input hook before its own game/editor behavior. No I/O, allocation or command execution here.
 shortcut_filter_key :: (state: *Shortcut_State, bindings: [] Command_Shortcut, vk: u32, down: bool,
-                        injected: bool, foreground: Win.HWND, blocked := false) -> (consume: bool, triggered: bool) {
+                        injected: bool, foreground: Win.HWND, blocked := false, speed_keys := false) -> (consume: bool, triggered: bool) {
     if injected || !state.enabled || vk >= state.down.count return false, false;
     vk = shortcut_physical_key(vk);
     was_down := state.down[vk];
@@ -164,6 +164,16 @@ shortcut_filter_key :: (state: *Shortcut_State, bindings: [] Command_Shortcut, v
             state.queue_count += 1;
         } else state.overflow = true;
         return binding.consume, true;
+    }
+    // Configured mappings take precedence. The editor retains its own [ / ].
+    if speed_keys && !modifiers && (vk==0xdb || vk==0xdd) {
+        state.consumed[vk]=true;
+        if state.queue_count<state.queue.count {
+            offset := (state.queue_start+state.queue_count)%state.queue.count;
+            state.queue[offset]=.{index=ifx vk==0xdb then -1 else -2,game=state.game,pid=state.pid,key=vk};
+            state.queue_count+=1;
+        } else state.overflow=true;
+        return true,true;
     }
     return false, false;
 }
@@ -188,13 +198,16 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
         return false;
     }
     if !state.queue_count || console.pending_action != .NONE || console.pending_send.count ||
-       console.pending_position_change || console.pending_freecam_change || console.pending_fog_change return false;
+       console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change return false;
     request := state.queue[state.queue_start];
-    if request.game != game || request.pid != pid || request.index < 0 || request.index >= console.config.shortcuts.count {
+    if request.game != game || request.pid != pid || request.index < -2 || request.index >= console.config.shortcuts.count ||
+       (request.index<0 && editor.open) {
         shortcuts_clear_queue(state);
         return false;
     }
-    binding := console.config.shortcuts[request.index];
+    binding: Command_Shortcut;
+    if request.index<0 binding.command=ifx request.index==-1 then "speed down" else "speed up";
+    else binding=console.config.shortcuts[request.index];
     // Teleports respond on keydown. Other commands wait for the physical chord to finish before they can send input
     // or focus a text field. Injected playback modifiers never delay or retrigger a shortcut.
     if !shortcuts_input_released(state, request.key) && !shortcut_is_position_command(console, binding.command) return false;
@@ -207,8 +220,3 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
     if console.pending_action == .SHOW_SUBTITLES overlay.show_requested = true;
     return true;
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-Win :: #import "Windows";

@@ -1,5 +1,5 @@
 console_position_command_ready :: (state: *Console_State) -> bool {
-    if state.pending_action != .NONE || state.pending_send.count || state.pending_position_change || state.pending_freecam_change || state.pending_fog_change {
+    if state.pending_action != .NONE || state.pending_send.count || state.pending_position_change || state.pending_freecam_change || state.pending_fog_change || state.pending_speed_change {
         console_write(state, "A command is already waiting to run.", .ERROR);
         return false;
     }
@@ -8,7 +8,7 @@ console_position_command_ready :: (state: *Console_State) -> bool {
 
 console_parse_coordinates :: (arguments: string, axes: string, required: s64) -> (position: Game_Position, error: string) {
     position: Game_Position;
-    cursor: s64;
+    cursor:   s64;
     for axis: axes {
         argument := console_next_argument(arguments, *cursor);
         if !argument.count {
@@ -34,10 +34,10 @@ console_queue_position_request :: (state: *Console_State, arguments: string, axe
         delta := position[axes[0] - #char "x"];
         if delta == 0 { console_write(state, "No movement: the offset is zero."); return; }
     }
-    state.pending_position = position;
+    state.pending_position          = position;
     state.pending_position_relative = relative;
-    state.pending_position_take = false;
-    state.pending_action = .SET_POSITION;
+    state.pending_position_take     = false;
+    state.pending_action            = .SET_POSITION;
 }
 
 command_move :: (state: *Console_State, arguments: string) {
@@ -69,7 +69,7 @@ command_switch :: (state: *Console_State, arguments: string) {
     if !console_position_command_ready(state) return;
     free(state.pending_switch_level);
     state.pending_switch_level = copy_string(name);
-    state.pending_action = .SWITCH_LEVEL;
+    state.pending_action       = .SWITCH_LEVEL;
 }
 
 console_prepare_switch :: (state: *Console_State, filename := "data/marker.json") {
@@ -79,10 +79,10 @@ console_prepare_switch :: (state: *Console_State, filename := "data/marker.json"
     if error.count { console_write(state, error, .ERROR); return; }
     index := solution_find_name(*catalog, state.pending_switch_level, ignore_case = true);
     if index < 0 { console_write(state, tprint("Unknown level entrance: %.", state.pending_switch_level), .ERROR); return; }
-    state.pending_position = catalog.entries[index].position;
+    state.pending_position          = catalog.entries[index].position;
     state.pending_position_relative = false;
-    state.pending_position_take = true;
-    state.pending_position_change = true;
+    state.pending_position_take     = true;
+    state.pending_position_change   = true;
 }
 
 console_queue_marker_action :: (state: *Console_State, action: Console_Action, name := "", new_name := "") -> bool {
@@ -95,14 +95,14 @@ console_queue_marker_action :: (state: *Console_State, action: Console_Action, n
     if !console_position_command_ready(state) return false;
     free(state.pending_marker_name);
     free(state.pending_marker_new_name);
-    state.pending_marker_name = copy_string(name);
+    state.pending_marker_name     = copy_string(name);
     state.pending_marker_new_name = copy_string(new_name);
-    state.pending_action = action;
+    state.pending_action          = action;
     return true;
 }
 
 command_mark :: (state: *Console_State, arguments: string) {
-    tokens: [4] string;
+    tokens:        [4] string;
     count, cursor: s64;
     while true {
         argument := console_next_argument(arguments, *cursor);
@@ -121,20 +121,20 @@ command_mark :: (state: *Console_State, arguments: string) {
         if error.count { console_write(state, error, .ERROR); return; }
     }
     if !console_queue_marker_action(state, .MARK_POSITION, name) return;
-    state.pending_position = position;
+    state.pending_position       = position;
     state.pending_marker_current = count < 3;
 }
 
 command_add_markers :: (state: *Console_State, arguments: string) {
     cursor: s64;
-    subject := console_next_argument(arguments, *cursor);
+    subject         := console_next_argument(arguments, *cursor);
     position, error := console_parse_coordinates(slice(arguments, cursor, arguments.count - cursor), "xyz", 3);
     if !equal_nocase(subject, "markers") || error.count {
         console_write(state, "Usage: add markers <x> <y> <z>", .ERROR);
         return;
     }
     if !console_queue_marker_action(state, .MARK_POSITION) return;
-    state.pending_position = position;
+    state.pending_position       = position;
     state.pending_marker_current = false;
 }
 
@@ -146,7 +146,7 @@ command_list_markers :: (state: *Console_State, arguments: string) {
 command_remove_markers :: (state: *Console_State, arguments: string) {
     cursor: s64;
     subject := console_next_argument(arguments, *cursor);
-    name := console_next_argument(arguments, *cursor);
+    name    := console_next_argument(arguments, *cursor);
     if !equal_nocase(subject, "markers") || !name.count || console_next_argument(arguments, *cursor).count {
         console_write(state, "Usage: remove markers <name>", .ERROR);
         return;
@@ -156,7 +156,7 @@ command_remove_markers :: (state: *Console_State, arguments: string) {
 
 command_rename_marker :: (state: *Console_State, arguments: string) {
     cursor: s64;
-    name := console_next_argument(arguments, *cursor);
+    name     := console_next_argument(arguments, *cursor);
     new_name := console_next_argument(arguments, *cursor);
     if !name.count || !new_name.count || console_next_argument(arguments, *cursor).count {
         console_write(state, "Usage: rename <name> <new_name>", .ERROR);
@@ -175,7 +175,7 @@ command_back :: (state: *Console_State, arguments: string) {
 command_reset_or_markers :: (state: *Console_State, arguments: string) {
     if !arguments.count { command_reset(state, arguments); return; }
     cursor: s64;
-    subject := console_next_argument(arguments, *cursor);
+    subject   := console_next_argument(arguments, *cursor);
     registers := console_next_argument(arguments, *cursor);
     if !equal_nocase(subject, "marker") || !equal_nocase(registers, "registers") ||
        console_next_argument(arguments, *cursor).count {
@@ -203,10 +203,10 @@ console_run_marker_action :: (state: *Console_State, filename := POSITION_MARKER
     if action == .BACK_POSITION {
         index := position_marker_find(*markers, state.pending_marker_name);
         if index < 0 { console_write(state, tprint("Unknown position marker: %.", state.pending_marker_name), .ERROR); return; }
-        state.pending_position = markers.entries[index].position;
+        state.pending_position          = markers.entries[index].position;
         state.pending_position_relative = false;
-        state.pending_position_take = false;
-        state.pending_position_change = true;
+        state.pending_position_take     = false;
+        state.pending_position_change   = true;
         return;
     }
     message: string;
@@ -219,10 +219,10 @@ console_run_marker_action :: (state: *Console_State, filename := POSITION_MARKER
         name := position_marker_put(*markers, position, state.pending_marker_name);
         message = tprint("Marked % at %.", name, game_position_text(position));
     } else if action == .REMOVE_MARKER {
-        error = position_marker_remove(*markers, state.pending_marker_name);
+        error   = position_marker_remove(*markers, state.pending_marker_name);
         message = tprint("Removed marker %.", state.pending_marker_name);
     } else if action == .RENAME_MARKER {
-        error = position_marker_rename(*markers, state.pending_marker_name, state.pending_marker_new_name);
+        error   = position_marker_rename(*markers, state.pending_marker_name, state.pending_marker_new_name);
         message = tprint("Renamed % to %.", state.pending_marker_name, state.pending_marker_new_name);
     } else {
         position_marker_registers_reset(*markers);
@@ -300,13 +300,13 @@ console_change_game_position :: (state: *Console_State, requested: Game_Position
     }
     defer if take_after send_input_end();
     destination: Game_Position;
-    player: Game_Player_Location;
-    changed: bool;
-    locator: *Game_Manager_Locator;
+    player:      Game_Player_Location;
+    changed:     bool;
+    locator:     *Game_Manager_Locator;
     if from_game locator = *noclip.locator;
     error, changed = game_write_position_to(memory, requested, relative, instant = true,
                                              written_position = *destination, written_player = *player,
-                                             required_scene = ifx take_after then "overworld" else "", locator = locator);
+                                             required_scene   = ifx take_after then "overworld" else "", locator = locator);
     if changed editor_on_game_position_changed();
     if error.count { console_write(state, error, .ERROR); return false; }
     if !already_in_game {
@@ -333,9 +333,3 @@ console_change_game_position :: (state: *Console_State, requested: Game_Position
                                                   ifx take_after then " Sent TakeOrDrop." else ""));
     return true;
 }
-
-#scope_file
-#import "Basic";
-#import "String";
-#import "Math";
-Win :: #import "Windows";

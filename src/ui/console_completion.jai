@@ -1,13 +1,13 @@
 Console_Completion_Kind :: enum {
     NONE; COMMAND; SHOW; SET; EDITOR; EDIT; CUSTOM; PLAY; PLAY_OPTION; SUBTITLES; SUBTITLE_OPTION; BLOW; TOGGLE;
-    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS; FREECAM; FREECAM_PAN; FREECAM_ENABLE; CAPTURE;
+    MARKERS; MARKER_NAME; RESET; REGISTERS; NOCLIP; MOVE_AXIS; SWITCH; TEMP_ALIAS; FREECAM; FREECAM_PAN; FREECAM_ENABLE; CAPTURE; SPEED;
 }
 
 Console_Completion :: struct {
-    matches: [..] string;
+    matches:                 [..] string;
     before, after, expected: string;
-    cursor: s64;
-    index: s64 = -1;
+    cursor:                  s64;
+    index:                   s64 = -1;
 }
 
 console_completion_context :: (console: *Console_State) -> (kind: Console_Completion_Kind, start: s64, end: s64) {
@@ -19,7 +19,7 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
     while start > 0        && !console_word_separator(text[start - 1]) start -= 1;
     while end < text.count && !console_word_separator(text[end])       end   += 1;
 
-    before := slice(text, 0, start);
+    before                := slice(text, 0, start);
     expanded, alias_error := console_expand_aliases(console, before);
     defer free(expanded);
     if alias_error.count return .NONE, start, end;
@@ -63,6 +63,7 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
     if equal_nocase(command, "noclip") && !subject.count return .NOCLIP, start, end;
     if equal_nocase(command, "hud") && !subject.count return .NOCLIP, start, end;
     if equal_nocase(command, "capture") && !subject.count return .CAPTURE, start, end;
+    if equal_nocase(command, "speed") && !subject.count return .SPEED, start, end;
     if equal_nocase(command, "freecam") {
         if !subject.count return .FREECAM, start, end;
         if console_next_argument(before, *position).count return .NONE, start, end;
@@ -114,7 +115,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
     console_completion_reset(state);
     kind, start, end := console_completion_context(console);
     if kind == .NONE return;
-    input := console_input(console);
+    input  := console_input(console);
     prefix := slice(input, start, console.cursor - start);
     if kind == {
         case .COMMAND;
@@ -146,6 +147,8 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             for name: string.["enable", "disable"] console_completion_add(state, prefix, name);
         case .CAPTURE;
             for name: string.["start", "pause", "resume", "cancel", "status"] console_completion_add(state, prefix, name);
+        case .SPEED;
+            for name: string.["0", "0.25", "0.5", "1", "2", "4", "up", "down", "reset"] console_completion_add(state, prefix, name);
         case .FREECAM;
             for name: string.["enable", "disable", "-pan", "-topdown"] console_completion_add(state, prefix, name);
         case .FREECAM_PAN;
@@ -170,7 +173,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             rest, alias_error := console_expand_aliases(console, tprint("% %", slice(input, 0, start), slice(input, end, input.count - end)));
             defer free(rest);
             if alias_error.count return;
-            position: s64;
+            position:                     s64;
             speed_present, delay_present: bool;
             while position < rest.count {
                 argument := console_next_argument(rest, *position);
@@ -190,7 +193,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             rest, alias_error := console_expand_aliases(console, tprint("% %", slice(input, 0, start), slice(input, end, input.count - end)));
             defer free(rest);
             if alias_error.count return;
-            position: s64;
+            position:                                                s64;
             comment_present, language_present, no_character_present: bool;
             while position < rest.count {
                 argument := console_next_argument(rest, *position);
@@ -212,7 +215,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
     }
     if !state.matches.count return;
     state.before = copy_string(slice(input, 0, start));
-    state.after = copy_string(slice(input, end, input.count - end));
+    state.after  = copy_string(slice(input, end, input.count - end));
     if state.matches.count == 1 {
         console_completion_apply(console, state.matches[0], true);
         console_completion_reset(state);
@@ -244,8 +247,6 @@ console_completion_reset :: (state: *Console_Completion) {
 }
 
 #scope_file
-#import "Basic";
-#import "String";
 
 console_completion_add :: (state: *Console_Completion, prefix: string, name: string) {
     if name.count < prefix.count || !equal_nocase(slice(name, 0, prefix.count), prefix) return;
@@ -256,16 +257,16 @@ console_completion_add :: (state: *Console_Completion, prefix: string, name: str
 console_completion_apply :: (console: *Console_State, match: string, add_space: bool) {
     state := *console.completion;
     space := ifx add_space && !state.after.count then " " else "";
-    text := tprint("%%%%", state.before, match, space, state.after);
+    text  := tprint("%%%%", state.before, match, space, state.after);
     if text.count > CONSOLE_INPUT_LIMIT {
         console_write(console, "Completion would exceed the input limit.", .ERROR);
         console_completion_reset(state);
         return;
     }
     console_set_input(console, text);
-    console.cursor = state.before.count + match.count + space.count;
+    console.cursor         = state.before.count + match.count + space.count;
     console.history_cursor = console.history.count;
     free(state.expected);
     state.expected = copy_string(console_input(console));
-    state.cursor = console.cursor;
+    state.cursor   = console.cursor;
 }

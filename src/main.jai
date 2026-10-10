@@ -3,10 +3,13 @@
 #import "System";
 #import "Math";
 #import "Windows_Utf8";
+#import "File";
+#import "File_Utilities";
 
 Simp  :: #import "Simp";
 Input :: #import "Input";
 Win   :: #import "Windows";
+Json  :: #import "Json";
 
 #load "platform/windows/clipboard.jai";
 #load "platform/windows/input.jai";
@@ -34,6 +37,7 @@ Win   :: #import "Windows";
 #load "game/camera.jai";
 #load "game/freecam.jai";
 #load "game/capture_plan.jai";
+#load "game/capture_image.jai";
 #load "game/capture.jai";
 #load "game/level.jai";
 #load "game/position_reader.jai";
@@ -43,6 +47,8 @@ Win   :: #import "Windows";
 #load "game/position_commands.jai";
 #load "game/noclip.jai";
 #load "game/fog.jai";
+#load "game/speed_memory.jai";
+#load "game/speed.jai";
 #load "game/shortcuts.jai";
 #load "game/state.jai";
 #load "game/subtitle_mapping.jai";
@@ -62,7 +68,7 @@ Win   :: #import "Windows";
 #load "ui/console_view.jai";
 #load "ui/subtitles_view.jai";
 
-console: Console_State;
+console:                Console_State;
 pending_high_surrogate: u32;
 
 main :: () {
@@ -83,6 +89,7 @@ main :: () {
     defer shortcuts_deinit();
     defer noclip_deinit();
     defer fog_deinit();
+    defer speed_deinit();
     defer hud_deinit();
     defer freecam_deinit();
     defer capture_deinit();
@@ -139,9 +146,9 @@ main :: () {
             overlay.opening_punctuation = (overlay.show_requested || overlay.quick_requested) &&
                                           Win.GetAsyncKeyState(Win.VK_OEM_1) < 0;
             overlay.toggle_requested = false;
-            overlay.show_requested = false;
-            overlay.quick_requested = false;
-            pending_high_surrogate = 0;
+            overlay.show_requested   = false;
+            overlay.quick_requested  = false;
+            pending_high_surrogate   = 0;
             if show overlay_show(mode);
             else overlay_hide();
         }
@@ -211,18 +218,18 @@ main :: () {
         free(console.pending_play.source);
         console.pending_play = .{};
         free(console.pending_edit_level);
-        console.pending_edit_level = "";
+        console.pending_edit_level  = "";
         console.pending_edit_custom = false;
         free(console.pending_subtitle_level);
-        console.pending_subtitle_level = "";
-        console.pending_subtitle_comments = false;
+        console.pending_subtitle_level         = "";
+        console.pending_subtitle_comments      = false;
         console.pending_subtitle_hide_speakers = false;
-        console.pending_subtitle_language = .BOTH;
+        console.pending_subtitle_language      = .BOTH;
         free(console.pending_marker_name);
         free(console.pending_marker_new_name);
-        console.pending_marker_name = "";
+        console.pending_marker_name     = "";
         console.pending_marker_new_name = "";
-        console.pending_marker_current = false;
+        console.pending_marker_current  = false;
         free(console.pending_switch_level);
         console.pending_switch_level = "";
         noclip_update(*console, now);
@@ -231,21 +238,22 @@ main :: () {
         if editor.open && console.pending_send.count && !console.pending_reset {
             console_write(*console, "Use the editor controls, or close it with Exit before send/play/do/undo.", .ERROR);
             free(console.pending_send);
-            console.pending_send = "";
-            console.pending_send_hold_ms = DEFAULT_HOLD;
-            console.pending_send_interval_ms = DEFUALT_INTERVAL;
-            console.pending_send_time_mode = .NORMAL;
+            console.pending_send               = "";
+            console.pending_send_hold_ms       = DEFAULT_HOLD;
+            console.pending_send_interval_ms   = DEFUALT_INTERVAL;
+            console.pending_send_time_mode     = .NORMAL;
             console.pending_send_interruptible = false;
         }
         reset_requested := console.pending_reset;
-        sent_keys := console_run_pending_send(*console);
+        sent_keys       := console_run_pending_send(*console);
         if reset_requested && sent_keys > 0 editor_on_game_reset();
         console_run_pending_position(*console);
         console_run_pending_freecam(*console);
         console_run_pending_fog(*console);
+        console_run_pending_speed(*console);
         capture_update(seconds_since_init());
         freecam_update(*console, seconds_since_init());
-        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change console.submission = .{};
+        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change && !console.pending_speed_change console.submission = .{};
         zork_update(*console);
         overlay_present_output(*console);
 
