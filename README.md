@@ -2,6 +2,8 @@
 
 ![teaser](./screenshots/teaser.jpg)
 
+NOTE: OotSS is frequently updated, so some features of this tool may stop working from time to time. I’m currently spending most of my time playing through the game, so I may fix these issues later.
+
 ## Build
 
 ```bash
