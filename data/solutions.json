@@ -1263,5 +1263,93 @@
     "name": "beam_rooms",
     "note": "",
     "solution": "RRDUXUXUXULLURXRDDRUXUUXUXURUURLDDLLLURXRXRURDDDLDXURULLDDXUUXRRUUULDDDRRDLXLXULLUXDXDDXDXRRDDDLXUULDRRDLXLUUUUUUURRUULXLDLDDDDDDDDLXLXLULL"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "wizard_with_a_capital_w_2_v2",
+    "note": "",
+    "solution": "UUULDDDRRRRRRRRRRDRUCUUCLDDCDDCRDCR________CU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "bard_range4",
+    "note": "",
+    "solution": "LDDDDRRRRRULUULLDDDLLUUUURRRRDDDDD___RLLUUU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "bard_range5",
+    "note": "",
+    "solution": "LLLLDDDDRRRUDDDDRUULLLDDRRRRL__UUUUUUULLLLDDDDDRRRRRDDLLLLLLLUURRDLLDRUURRDLLLURRRRRRUUULRDLDDLLLDDLLUL__D__R__LRRRRUUUU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "bard_range6",
+    "note": "",
+    "solution": "RURRRDLDRDDDDLURDLULDLLURDLLRUD__RRRR"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "slot_machine_v2",
+    "note": "",
+    "solution": "DRRRRULRDRLLURDURRDDDDDLLUULLUULLUULUU"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "push_against",
+    "note": "",
+    "solution": "LLLLLUUUDRRRRRRRRRRULDLLLLLLLLLURDRRRRRRUDLLLLLLURUDDDDRRRRRRRRRRRRRRRDDD"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "come_closer",
+    "note": "",
+    "solution": "RRDRD_U_UUUULRRDDDDLLLLLLLLLLLLLLLUU___________DRRRRRRRRRRRRRRRRRDDDDDLL"
+  },
+  {
+    "position": [
+      0,
+      0,
+      0
+    ],
+    "area": "none",
+    "name": "useful_stone",
+    "note": "",
+    "solution": "CRUUUUUUUURRRCRRURDLCLDCLLLDDDCURDDDDDDDLD"
   }
 ]

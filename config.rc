@@ -17,15 +17,15 @@ hud_hide_on_focus_loss = false;
 # Top-left HUD items (item order as blow)
 hud_show_level_name    = true;
 hud_show_position      = false;
-hud_text               = "\nLet's complete this game firstly\nand then play it twice!";
-hud_text               = "";                          # Blank line
-hud_text               = "Current player: @qiekn\n";  # Custom notes, You can modify it!
+# hud_text               = "\nLet's complete this game firstly\nand then play it twice!";
+# hud_text               = "";                        # Blank line
+hud_text               = "\nCurrent player: @qiekn";  # Custom notes, You can modify it!
 hud_text               = "Cowabunga!\n";              # Multi-line
 
 # Free camera (freecam): movement speed in world units per second, mouse look
 # sensitivity in degrees per mouse count, and the speed multipliers applied
 # while holding Shift or Ctrl. All values must be positive.
-freecam_speed = 12;
+freecam_speed = 8;
 freecam_sensitivity = 0.1;
 freecam_shift_multiplier = 4;
 freecam_ctrl_multiplier = 0.25;
@@ -41,7 +41,8 @@ tp = back;
 fastplay   = "play -superfast";
 fastdo     = "play -superfast";
 subtitles  = "show subtitles"
-level_name = "show level"
+level_name = "show level";
+go         = "switch"; # swtich level, e.g. swtich mirror_1
 
 # Use alias name=command in the console for a temporary override.
 # unalias name removes that override and restores this file's definition.
@@ -51,5 +52,6 @@ level_name = "show level"
 map m = "move -z 1";
 map , = noclip;
 map o = "show subtitles";
+# map e = 'noclip';
 
 # vim: ft=sh
