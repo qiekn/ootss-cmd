@@ -45,6 +45,7 @@ fastplay   = "play -superfast";
 fastdo     = "play -superfast";
 subtitles  = "show subtitles"
 level_name = "show level";
+topdown    = "freecam -topdown";
 go         = "switch"; # swtich level, e.g. swtich mirror_1
 
 # Use alias name=command in the console for a temporary override.
