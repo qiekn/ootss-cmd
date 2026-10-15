@@ -4,6 +4,12 @@
 
 NOTE: OotSS is frequently updated, so some features of this tool may stop working from time to time. I’m currently spending most of my time playing through the game, so I may fix these issues later.
 
+Recommand use [AutoHotKey](https://www.autohotkey.com/) to remap you CapsLock to Ctrl
+
+```
+CapsLock::Ctrl
+```
+
 ## Build
 
 ```bash
