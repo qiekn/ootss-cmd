@@ -1,5 +1,5 @@
 Editor_Event :: struct {
-    kind:                     enum { KEY; TEXT; DOWN; UP; MOVE; WHEEL; CANCEL; PLAY; STEP; UNDO; TOGGLE_SIZE; SPEED_UP; SPEED_DOWN; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; CLOSE; };
+    kind:                     enum { KEY; TEXT; DOWN; DOUBLE; UP; MOVE; WHEEL; CANCEL; FOCUS_LOST; PLAY; STEP; UNDO; TOGGLE_SIZE; TOGGLE_RECORD; SPEED_UP; SPEED_DOWN; SPEED_FAST; SPEED_TURTLE; COPY; GAME_KEY; RECORD_WAIT; TIMER; CLOSE; };
     x, y:                     s32;
     key:                      u32;
     shift, ctrl, alt, repeat: bool;
@@ -29,7 +29,7 @@ editor_window_create :: () -> bool {
     name     := utf8_to_wide("OOTSS Solution Editor",, temp);
     wc: Win.WNDCLASSEXW;
     wc.cbSize        = size_of(Win.WNDCLASSEXW);
-    wc.style         = Win.CS_HREDRAW | Win.CS_VREDRAW;
+    wc.style         = Win.CS_HREDRAW | Win.CS_VREDRAW | 0x0008; // CS_DBLCLKS
     wc.lpfnWndProc   = editor_window_proc;
     wc.hInstance     = instance;
     wc.hIcon         = Win.LoadIconW(instance, cast(*u16) APP_ICON_RESOURCE_ID);
@@ -186,16 +186,21 @@ editor_process_window_events :: () {
     for i: 0..count-1 {
         event := events[i];
         if !editor.open continue;
+        if event.kind == .FOCUS_LOST { editor_finish_wait_edit(); continue; }
+        if editor_wait_edit.active && event.kind != .CLOSE { editor_wait_edit_event(event); continue; }
         if event.kind == .PLAY editor_toggle_play();
         else if event.kind == .STEP editor_step(1);
         else if event.kind == .UNDO editor_step(-1);
         else if event.kind == .TOGGLE_SIZE editor_toggle_minimized();
+        else if event.kind == .TOGGLE_RECORD editor_toggle_record();
         else if event.kind == .SPEED_UP editor_adjust_playback_speed(true);
         else if event.kind == .SPEED_DOWN editor_adjust_playback_speed(false);
-        else if event.kind == .SPEED_FAST editor_set_playback_speed(.FAST);
+        else if event.kind == .SPEED_FAST editor_set_playback_speed(.RABBIT);
         else if event.kind == .SPEED_TURTLE editor_set_playback_speed(.TURTLE);
         else if event.kind == .COPY editor_export_solution();
-        else if event.kind == .GAME_KEY editor_on_game_key(event.key);
+        else if event.kind == .GAME_KEY editor_on_game_key(event.key, event.shift);
+        else if event.kind == .RECORD_WAIT editor_record_symbol(#char "_");
+        else if event.kind == .TIMER editor_timer_toggle();
         else if event.kind == .CLOSE editor_close();
         else editor_handle_event(event);
     }
@@ -224,7 +229,7 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
     if noclip_filter_key(vk, down, injected, foreground, noclip_modifiers_down()) return true;
     was_down := editor_window.physical_down[vk];
     editor_window.physical_down[vk] = down;
-    active := editor.open && !editor_save_prompt.active && (foreground == editor.game || foreground == editor_window.handle);
+    active := editor.open && !editor_save_prompt.active && !editor_wait_edit.active && (foreground == editor.game || foreground == editor_window.handle);
     if editor_window.speed_key_consumed[vk] {
         editor_window.speed_key_consumed[vk] = down;
         return true;
@@ -239,9 +244,22 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
         editor_window.transport_key_consumed[vk] = true;
         return true;
     }
-    // Editor shortcuts take priority over the game's time-modifier bindings.
+    // A measured recording uses the real game clock, including physical time modifiers.
+    if active && foreground == editor.game && editor.recording && editor_timer.phase != .OFF &&
+       (editor_time_key_matches(editor.keymap.fast, vk) || editor_time_key_matches(editor.keymap.slow, vk)) return false;
+    // Editor shortcuts take priority over time modifiers outside a measured recording.
+    if active && foreground == editor.game && editor.recording && vk == #char "B" && !editor_modifiers_down() {
+        if down && !was_down editor_queue_event(.{kind = .RECORD_WAIT});
+        editor_window.transport_key_consumed[vk] = down;
+        return true;
+    }
+    if active && foreground == editor.game && editor.recording && vk == #char "T" && !editor_modifiers_down() {
+        if down && !was_down editor_queue_event(.{kind = .TIMER});
+        editor_window.transport_key_consumed[vk] = down;
+        return true;
+    }
     step     := editor_step_key_direction(vk);
-    shortcut := vk == 0x20 || ((step != 0 || vk == #char "N" || vk == #char "J" ||
+    shortcut := vk == 0x20 || ((step != 0 || vk == 0x74 || vk == #char "N" || vk == #char "J" ||
                               vk == #char "K" || vk == #char "L") && !editor_modifiers_down());
     if shortcut && active {
         if down && !was_down {
@@ -249,8 +267,9 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
             event.key = vk;
             if vk == 0x20 || vk == #char "K" event.kind = .PLAY;
             else if vk == #char "N" event.kind = .TOGGLE_SIZE;
-            else if vk == #char "J" event.kind = .SPEED_UP;
-            else if vk == #char "L" event.kind = .SPEED_DOWN;
+            else if vk == 0x74 event.kind = .TOGGLE_RECORD;
+            else if vk == #char "J" event.kind = .SPEED_DOWN;
+            else if vk == #char "L" event.kind = .SPEED_UP;
             else if step > 0 event.kind = .STEP;
             else event.kind = .UNDO;
             editor_queue_event(event);
@@ -268,7 +287,8 @@ editor_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND)
         }
     }
     if editor.open && foreground == editor.game && down && !was_down {
-        editor_queue_event(.{kind = .GAME_KEY, key = vk});
+        editor_queue_event(.{kind = .GAME_KEY, key = vk,
+                            shift = editor_physical_key_down(0x10) || editor_physical_key_down(0xa0) || editor_physical_key_down(0xa1)});
     }
     return false;
 }
@@ -309,15 +329,16 @@ editor_window_proc :: (window: Win.HWND, message: u32, wparam: u64, lparam: s64)
         event.ctrl  = Win.GetKeyState(Win.VK_CONTROL) < 0;
         event.shift = Win.GetKeyState(Win.VK_SHIFT) < 0;
         event.alt   = Win.GetKeyState(Win.VK_MENU) < 0;
-        if message == Win.WM_LBUTTONDOWN {
-            event.kind = .DOWN;
+        if message == Win.WM_LBUTTONDOWN || message == Win.WM_LBUTTONDBLCLK {
+            event.kind = ifx message == Win.WM_LBUTTONDBLCLK then .DOUBLE else .DOWN;
             Win.SetCapture(window);
         } else if message == Win.WM_LBUTTONUP {
             event.kind = .UP;
             editor_queue_event(event);
             Win.ReleaseCapture();
             return 0;
-        } else if message == Win.WM_MOUSEMOVE event.kind = .MOVE;
+        } else if message == Win.WM_KILLFOCUS event.kind = .FOCUS_LOST;
+        else if message == Win.WM_MOUSEMOVE event.kind = .MOVE;
         else if message == Win.WM_MOUSEWHEEL {
             event.kind = .WHEEL;
             event.y    = cast,trunc(s16) (wparam >> 16);

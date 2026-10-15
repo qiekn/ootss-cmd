@@ -107,7 +107,8 @@ check_memory :: () {
     put(bytes,520,cast(float64)1.25);
     session: App.Game_Speed_Session=.{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=1.25,last=1.25,writable=true};
     check(!App.game_speed_set(*session,0).count && (cast(*float64)(bytes.data+520)).*==0,"Pause an isolated time multiplier.");
-    check(App.game_speed_set(*session,4.01).count>0 && (cast(*float64)(bytes.data+520)).*==0,"Reject out-of-range writes without mutation.");
+    check(App.game_speed_set(*session,16.01).count>0 && (cast(*float64)(bytes.data+520)).*==0,"Reject out-of-range writes without mutation.");
+    check(!App.game_speed_set(*session,16).count && (cast(*float64)(bytes.data+520)).*==16,"Allow the temporary 16x scrub multiplier.");
     bytes[32]^=1;
     check(App.game_speed_close(*session).count>0 && session.memory.handle!=null,"Changed code blocks restoration and retains retry ownership.");
     bytes[32]^=1;
@@ -133,6 +134,35 @@ check_memory :: () {
     session = .{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=2,last=2};
     check(App.game_speed_set(*session,0).count>0,"A read-only session refuses all writes.");
     App.game_speed_close(*session);
+    // The current build inserts a complete conditional pause gate before storing dt.
+    for i: 0..27 bytes[32 + 20 + 30 + 27 - i] = bytes[32 + 20 + 27 - i];
+    gate := u8.[0x80,0x3d,0,0,0,0,0,0x74,0x15,0x80,0x3d,0,0,0,0,0,
+                0x0f,0x95,0xc0,0x0a,0x05,0,0,0,0,0x74,0x03,0x0f,0x57,0xc0];
+    memcpy(bytes.data + 52, gate.data, gate.count);
+    put(bytes,86,cast(s32)(528-90)); put(bytes,98,cast(s32)(536-102)); put(bytes,106,cast(s32)(536-110));
+    layout,error = App.game_speed_layout_from_code(bytes,base);
+    check(!error.count && layout.code[0].count == 78 && layout.multiplier == base+520 && layout.delta == base+528 &&
+          layout.clock == base+536, "Recognize the complete new pause-gated dt chain.");
+    bytes[60] = 0x14;
+    ignored,bad = App.game_speed_layout_from_code(bytes,base);
+    check(bad.count > 0, "A changed pause-gate branch fails closed.");
+    bytes[60] = 0x15;
+    for mode: 0..2 {
+        put(bytes,520,cast(float64)16);
+        App.editor = .{open = true, speed_override = .{memory=.{handle=Win.GetCurrentProcess()},layout=layout,
+                       original = 1.5,last=16,writable=true,changed=true}};
+        App.editor.transport.scrubbing  = true;
+        App.editor.transport.scrub_rate = 16;
+        if mode == 0 App.editor_end_fast_scrub();
+        if mode == 1 App.editor_pause();
+        if mode == 2 App.editor_on_game_position_changed();
+        check(!App.editor.speed_override.memory.handle && (cast(*float64)(bytes.data+520)).* == 1.5,
+              "Ending a scrub, pausing or changing position restores the exact prior game speed.");
+        check(App.editor.game_speed_known && App.editor.game_speed_value == 1.5,
+              "The actual-speed display follows the restored game value.");
+        free(App.editor.status);
+        App.editor = .{};
+    }
 }
 
 #import "Basic";

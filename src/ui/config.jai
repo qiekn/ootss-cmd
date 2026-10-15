@@ -51,15 +51,17 @@ hud_config_equal :: (a: Hud_Config, b: Hud_Config) -> bool {
 
 Console_Config :: struct {
     show_startup_blow := true;
-    hud:                      Hud_Config;
-    game_path:                string;
-    subtitle_font_size:       float64 = 30;        // Font rows per game client height; smaller is larger.
-    freecam_speed:            float64 = 12;             // World units per second.
-    freecam_sensitivity:      float64 = 0.1;      // Degrees of view rotation per mouse count.
-    freecam_shift_multiplier: float64 = 4;   // Speed scale while Shift is held.
-    freecam_ctrl_multiplier:  float64 = 0.25; // Speed scale while Ctrl is held.
-    aliases:                  [..] Console_Alias;
-    shortcuts:                [..] Command_Shortcut;
+    hud:                       Hud_Config;
+    game_path:                 string;
+    subtitle_font_size:        float64 = 30;        // Font rows per game client height; smaller is larger.
+    freecam_speed:             float64 = 12;             // World units per second.
+    freecam_sensitivity:       float64 = 0.1;      // Degrees of view rotation per mouse count.
+    freecam_shift_multiplier:  float64 = 4;   // Speed scale while Shift is held.
+    freecam_ctrl_multiplier:   float64 = 0.25; // Speed scale while Ctrl is held.
+    time_stop_alt_probability: float64 = 1.0 / 3.0;
+    time_stop_no_audio:        bool;
+    aliases:                   [..] Console_Alias;
+    shortcuts:                 [..] Command_Shortcut;
 }
 
 console_alias_find :: (aliases: [] Console_Alias, name: string) -> s64 {
@@ -212,6 +214,14 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         return "";
     }
     if !command.count return "A configuration value cannot be empty.";
+    if equal_nocase(name, "time_stop_alt_probability") {
+        value, success, remainder := string_to_float64(command);
+        if !success || remainder.count || !is_finite(value) || value < 0 || value > 1
+            return "time_stop_alt_probability must be a number between 0 and 1.";
+        config.time_stop_alt_probability = value;
+        return "";
+    }
+    if equal_nocase(name, "time_stop_no_audio") return console_config_bool(name, command, *config.time_stop_no_audio);
     if equal_nocase(name, "hud_enabled") return console_config_bool(name, command, *config.hud.enabled);
     if equal_nocase(name, "hud_hide_on_focus_loss") return console_config_bool(name, command, *config.hud.hide_on_focus_loss);
     if equal_nocase(name, "hud_show_level_name") {

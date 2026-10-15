@@ -166,11 +166,11 @@ shortcut_filter_key :: (state: *Shortcut_State, bindings: [] Command_Shortcut, v
         return binding.consume, true;
     }
     // Configured mappings take precedence. The editor retains its own [ / ].
-    if speed_keys && !modifiers && (vk==0xdb || vk==0xdd) {
+    if !modifiers && (vk == #char "P" || (speed_keys && (vk==0xdb || vk==0xdd))) {
         state.consumed[vk]=true;
         if state.queue_count<state.queue.count {
             offset := (state.queue_start+state.queue_count)%state.queue.count;
-            state.queue[offset]=.{index=ifx vk==0xdb then -1 else -2,game=state.game,pid=state.pid,key=vk};
+            state.queue[offset]=.{index=ifx vk == #char "P" then -3 else ifx vk==0xdb then -1 else -2,game=state.game,pid=state.pid,key=vk};
             state.queue_count+=1;
         } else state.overflow=true;
         return true,true;
@@ -198,12 +198,18 @@ shortcuts_dispatch_next :: (state: *Shortcut_State, console: *Console_State, gam
         return false;
     }
     if !state.queue_count || console.pending_action != .NONE || console.pending_send.count ||
-       console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change return false;
+       console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change || console.pending_jump return false;
     request := state.queue[state.queue_start];
-    if request.game != game || request.pid != pid || request.index < -2 || request.index >= console.config.shortcuts.count ||
-       (request.index<0 && editor.open) {
+    if request.game != game || request.pid != pid || request.index < -3 || request.index >= console.config.shortcuts.count ||
+       ((request.index == -1 || request.index == -2) && editor.open) {
         shortcuts_clear_queue(state);
         return false;
+    }
+    if request.index == -3 {
+        state.queue_start = (state.queue_start + 1) % state.queue.count;
+        state.queue_count -= 1;
+        time_stop_toggle(game, pid);
+        return true;
     }
     binding: Command_Shortcut;
     if request.index<0 binding.command=ifx request.index==-1 then "speed down" else "speed up";

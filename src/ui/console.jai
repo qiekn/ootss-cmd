@@ -65,6 +65,7 @@ Console_State :: struct {
     blow_index:                                    s64;
     next_blow_index:                               s64;
     pending_send:                                  string;
+    pending_send_waits:                            [..] s32;
     submission:                                    Console_Submission;
     pending_send_hold_ms:                          s32 = DEFAULT_HOLD;
     pending_send_interval_ms:                      s32 = DEFUALT_INTERVAL;
@@ -81,6 +82,7 @@ Console_State :: struct {
     pending_edit_level:                            string;
     pending_edit_custom:                           bool;
     pending_jump_step:                             s64;
+    pending_jump:                                  bool;
     pending_position:                              Game_Position;
     pending_position_relative:                     bool;
     pending_position_take:                         bool;
@@ -377,6 +379,7 @@ command_edit :: (console: *Console_State, arguments: string) {
 }
 
 command_jump :: (console: *Console_State, arguments: string) {
+    if !console_position_command_ready(console) return;
     position: s64;
     value := console_next_argument(arguments, *position);
     extra := console_next_argument(arguments, *position);
@@ -526,7 +529,9 @@ console_queue_send :: (console: *Console_State, commands: string, alternate: boo
 
 console_queue_send_source :: (console: *Console_State, source: string, request: Console_Send_Arguments,
                               interrupt_on_input := true) {
-    expanded, error := expand_send(source, request.alternate);
+    waits: [..] s32;
+    defer array_free(waits);
+    expanded, error := expand_send(source, request.alternate, *waits);
     defer free(expanded);
     if error.count {
         console_write(console, error, .ERROR);
@@ -546,7 +551,11 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
     }
 
     // The input buffer is cleared after dispatch. The main loop owns this queued copy.
-    console.pending_send               = copy_string(expanded);
+    console.pending_send = copy_string(expanded);
+    array_free(console.pending_send_waits);
+    console.pending_send_waits = waits;
+    empty_waits: [..] s32;
+    waits                              = empty_waits;
     console.pending_reset              = false;
     console.pending_send_hold_ms       = send_hold_for_delay(request.delay_ms);
     console.pending_send_interval_ms   = request.delay_ms - console.pending_send_hold_ms;
@@ -584,7 +593,7 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "close editor             Close the editor; confirm unsaved changes.",
        "edit custom <name>       Open a saved input from data/custom_inputs.json.",
        "jump <step>, jump $      Seek the open editor to a step, or to the end.",
-       "                         Forward: superfast (75 ms); backward: undo (10 ms).",
+       "                         Replay at 16x; earlier targets restart then replay from the beginning.",
        "                         Alias: j 13, j 0, j $",
        "record                   Start recording in the open editor.",
        "pause                    Pause editor playback; keep recording armed.",
@@ -613,39 +622,38 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "list markers             List saved marker names and positions.",
        "remove markers <name>    Remove a saved position.",
        "rename <name> <new_name> Rename a marker; keep its coordinates.",
+       "reset marker registers   Clear a-z and start at a; keep custom marker names.",
+       "",
        "back, tp <name>          Place the controlled group's anchor at a saved marker.",
-       "alias [name=command]     List aliases, or define a temporary alias.",
-       "                         Example: alias tp=back  or  alias home=\"back a\"",
+       "alias <name>=<command>   Define a temporary alias.",
+       "                         Example: alias tp=back, alias pos=\"show position\"",
        "unalias <name>           Remove a temporary alias; restore the configured default.",
        "switch <level_name>      Teleport to an overworld entrance, then use TakeOrDrop.",
        "                         Overworld only; uses level-catalog.json and User.keymap (default V).",
        "                         Example: switch mirror_21",
-       "reset marker registers   Clear a-z and start at a; keep custom marker names.",
        "noclip [enable|disable]  Toggle W/S/A/D position movement; hold Shift for 2x speed.",
-       "                         W/S: Y +/-1; A/D: X +/-1; one grid step per input.",
-       "unfog                    Temporarily hide exploration fog (does not explore the save).",
-       "speed [0..4|up|down|reset] Set/query time multiplier; 0 pauses, 1 is normal; [ / ] step down/up.",
-       "fog                      Restore exploration fog; also restored when the helper exits.",
-       "freecam [enable|disable] Toggle the free camera; disable restores the view.",
-       "                         W/S/A/D/Q/E fly along the view; the mouse turns the view.",
+       "",
+       "unfog                    Temporarily hide fog (does not affect your save).",
+       "fog                      Restore exploration fog",
+       "speed                    speed up/down/reset or speed [0, 4] (0 pauses, 1 is normal)",
+       "hud [enable|disable]     Toggle the HUD; hidden automatically while the console is open.",
+       "freecam [enable|disable] W/S/A/D/Q/E fly along the view; the mouse turns the view.",
        "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q down, E up.",
-       "freecam -topdown         Lock a vertical north-up view; W/S/A/D pan; Q down, E up.",
+       "freecam -topdown         Lock a vertical north-up view;",
        "                         Hold Shift to move faster or Ctrl to move slower in any mode.",
        "show camera              Show world XYZ, view angles and vertical FOV.",
-       "hud [enable|disable]     Toggle the HUD; hidden automatically while the console is open.",
-       "set camera <x> <y> <z>   Set absolute world coordinates while freecam is enabled.",
-       "capture start <plan.json> Photograph a planned grid; return focus to the game to start.",
-       "capture pause|resume     Pause and restore the view, or continue a capture job.",
-       "capture cancel|status    Stop a capture (retain frames), or show its progress.",
+       "set  camera <x> <y> <z>  Set absolute world coordinates while freecam is enabled.",
        "show subtitles [name]    Read English / Chinese dialogue for a level (default: current).",
        "                         Example: show subtitles mirror_21 -comment",
-       "                         -en: centered English; -cn / -sc: centered Chinese.",
+       "                         -en:       centered English;",
+       "                         -cn / -sc: centered Chinese.",
        "                         -no_character / -nosayer hides speaker names.",
-       "                         -comment includes notes; wheel / Page Up / Page Down scroll.",
+       "                         -comment includes notes;",
+       "                         wheel / Page Up / Page Down scroll.",
        "clear, cl                Clear console output; keep command history.",
-       "toggle <mode>            Resize the console: full, small, normal, or mini.",
-       "                         full: 100%; small: 30%; normal: 70%; mini: quick input.",
-       "blow                     Clear output; cycle alien -> mirror -> wave.",
+       "toggle <mode>            Resize the console: full, small, normal",
+       "                         full: 100%; small: 30%; normal: 70%;",
+       "blow                     Clear output; cycle meme gif: alien -> mirror -> wave.",
        "blow <name>              Play alien, mirror, or wave without advancing the cycle.",
        "                         Example: blow alien",
        "about                    Show the icon, author, and GitHub repository.",
@@ -666,7 +674,8 @@ tprint("    -superslow, -turtle      Use % ms and hold the game's slow-time key.
        "    w3:    repeats w three times;",
        "    w 3 s: move up and change to character 3, then move down",
        "    (ad)3: repeats a group: adadad.",
-       "    _ sleep",
+       "    _3.5_ waits 3.5 base seconds; _ defaults to 0.25 seconds.",
+       "    Key cycles follow game speed; waits follow both -delay / 250 and game speed.",
        "",
        "    Command names and options are case-insensitive.",
        "    Choose one speed preset. -delay overrides its interval;",
@@ -685,15 +694,19 @@ tprint("    -superslow, -turtle      Use % ms and hold the game's slow-time key.
        "Space                    Editor: toggle play / pause, including when bound to fast time.",
        "Esc                      Editor: pause and return input to the game.",
        "N                        Editor: toggle compact / full view.",
+       "F5                       Editor: toggle recording without changing the timeline.",
        "[ / ]                    Editor: step-back / step-forward.",
-       "J / K / L                Editor: faster / play-pause / slower (five speed levels).",
-       "                         superfast / fast / normal / slow / superslow: 75/175/250/500/750 ms.",
+       "J / K / L                Editor: slower / play-pause / faster.",
+       "                         0.25x / 0.5x / 1x / 1.5x / 2x / 3x / 4x.",
+       "                         Temporarily scales game speed; pause restores the original.",
        "W/A/S/D or arrows        Editor: insert movement at the text cursor.",
        "B or _                   Editor: insert a wait cell at the text cursor.",
+       "Double-click a wait      Edit seconds in the cell; Enter applies, Esc cancels.",
        "Ctrl+Left / Ctrl+Right   Editor: move the text cursor; add Shift to select.",
        "Ctrl+A                   Editor: select Executed or Future, according to the text cursor.",
        "Backspace / Delete       Editor: delete selected steps, including Executed; no game undo.",
        "Timeline link button     Toggle game input while dragging or using the wheel.",
+       "                         Forward uses temporary 16x; releasing restores game speed.",
        "                         Off: reposition the playhead only; Play resumes from there.",
        "Ctrl+S                   Editor: save the solution.",
        "Ctrl+C                   Editor: copy the complete current solution.",
@@ -1037,6 +1050,7 @@ console_deinit :: (console: *Console_State) {
     for command: console.history free(command);
     free(console.draft);
     free(console.pending_send);
+    array_free(console.pending_send_waits);
     free(console.pending_switch_level);
     free(console.pending_play.source);
     free(console.pending_edit_level);

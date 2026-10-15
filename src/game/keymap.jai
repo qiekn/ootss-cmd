@@ -88,6 +88,7 @@ game_key_for_symbol :: (map: *Game_Keymap, symbol: u8) -> Game_Key {
         case #char "X"; return map.activate;
         case #char "F"; return map.dragon;
         case #char "V"; return map.take;
+        case #char "!"; return map.restart;
     }
     if symbol >= #char "0" && symbol <= #char "9" return game_key_for_vk(symbol);
     return .{};

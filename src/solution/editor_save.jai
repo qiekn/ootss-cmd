@@ -34,6 +34,7 @@ editor_save_prompt_message :: (message: string, error := false) {
 
 editor_begin_save_prompt :: (after: Editor_After_Save = .NONE, next_level: string = "", next_custom := false) {
     if !editor.open return;
+    editor_finish_wait_edit();
     if editor_save_prompt.active {
         if after != .NONE {
             next := copy_string(next_level);
@@ -132,6 +133,9 @@ editor_confirm_save :: () -> bool {
     error          = solutions_write(*database, filename);
     if error.count { editor_save_prompt_message(error, true); return false; }
     updated := solution_record_copy(entry.*);
+    updated.position = editor.record.position;
+    free(updated.area);
+    updated.area = copy_string(editor.record.area);
     solution_record_free(*editor.record);
     editor.record         = updated;
     editor.timeline.dirty = false;

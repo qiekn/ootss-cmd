@@ -13,6 +13,12 @@ send_hold_for_delay :: (delay_ms: s32) -> s32 {
     return cast(s32) min(DEFAULT_HOLD, max(1, delay_ms / 2));
 }
 
+// Return nominal milliseconds; sub-millisecond cycles may have no released gap.
+send_scaled_hold :: (cycle_ms: float64, rate: float64) -> float64 {
+    hold := min(cast(float64) DEFAULT_HOLD, max(cast(float64) 1, floor(cycle_ms / rate / 2)));
+    return min(cycle_ms, hold * rate);
+}
+
 // Suffixes repeat letters or parenthesized groups; whitespace separates literal digit keys.
 // Uppercase letters do not hold Shift.
 send :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL) -> bool {
@@ -29,14 +35,53 @@ Send_Result :: struct {
     error:     string;
 }
 
+Send_Timing :: struct {
+    reader:         Playback_Speed_Reader;
+    clock:          Playback_Clock;
+    automatic_hold: bool;
+}
+
+send_wait_duration :: (milliseconds: s32, cycle_ms: float64) -> float64 {
+    return cast(float64) milliseconds * cycle_ms / DEFAULT_DELAY;
+}
+
+send_timed_wait :: (milliseconds: float64, target: Windows.HWND, poll: () -> bool,
+                    timing: *Send_Timing) -> string {
+    rate, error := playback_speed_read(*timing.reader, target);
+    if error.count return error;
+    now      := playback_clock_update(*timing.clock, seconds_since_init(), rate);
+    deadline := now + milliseconds / 1000;
+    while true {
+        error = send_abort_reason(target, poll);
+        if error.count return error;
+        rate, error = playback_speed_read(*timing.reader, target);
+        if error.count return error;
+        now = playback_clock_update(*timing.clock, seconds_since_init(), rate);
+        if now >= deadline return "";
+        // Clamp before narrowing: tiny positive game rates can imply very long waits.
+        remaining := (deadline - now) * 1000 / rate;
+        sleep_milliseconds(cast(s32) max(cast(float64) 1, min(cast(float64) 10, remaining)));
+    }
+    return "";
+}
+
+send_cycle_wait :: (milliseconds: float64, target: Windows.HWND, poll: () -> bool,
+                    wait:   (milliseconds: s32, target: Windows.HWND, poll: () -> bool) -> string,
+                    timing: *Send_Timing) -> string {
+    if timing return send_timed_wait(milliseconds, target, poll, timing);
+    return wait(cast(s32) milliseconds, target, poll);
+}
+
 SEND_KEY_LIMIT :: 65536;
 
 // Returns owned, fully expanded key presses. Parse before removing whitespace:
 // w3 means www, while w 3 means the W key followed by the digit 3.
 // (ad)3 repeats the whole group; groups may nest and contain letter repeats.
-expand_send :: (commands: string, alternate := false) -> (expanded: string, error: string) {
+expand_send :: (commands: string, alternate := false, waits: *[..] s32 = null) -> (expanded: string, error: string) {
     keys: [..] u8;
     defer array_free(keys);
+    durations: [..] s32;
+    defer array_free(durations);
     groups: [..] s64;
     defer array_free(groups);
     position: s64;
@@ -61,18 +106,28 @@ expand_send :: (commands: string, alternate := false) -> (expanded: string, erro
             }
             extra := length * (count - 1);
             // Refer to the original group by index: appending can reallocate keys.data.
-            for i: 0..extra-1 array_add(*keys, keys[first + i % length]);
+            for i: 0..extra-1 {
+                array_add(*keys, keys[first + i % length]);
+                array_add(*durations, durations[first + i % length]);
+            }
             continue;
         }
         if c >= #char "A" && c <= #char "Z" c += #char "a" - #char "A";
-        letter := c >= #char "a" && c <= #char "z";
-        wait   := c == #char "_";
-        if !letter && !wait && (c < #char "0" || c > #char "9") {
+        letter   := c >= #char "a" && c <= #char "z";
+        restart  := c == #char "!";
+        wait     := c == #char "_";
+        duration := cast(s32)(ifx wait then DEFAULT_DELAY else 0);
+        if wait {
+            error: string;
+            duration, error = send_wait_token(commands, *position);
+            if error.count return "", error;
+        }
+        if !letter && !wait && !restart && (c < #char "0" || c > #char "9") {
             return "", "Use letters, repeat groups, _ waits, digit keys, or whitespace (example: w3 (ad)3 _2 2).";
         }
 
         count: s64 = 1;
-        if letter || wait {
+        if letter || wait || restart {
             error: string;
             count, error = send_repeat_count(commands, *position);
             if error.count return "", error;
@@ -88,10 +143,56 @@ expand_send :: (commands: string, alternate := false) -> (expanded: string, erro
             if c == #char "l" key = #char "a";
             if c == #char "r" key = #char "d";
         }
-        for 0..count-1 array_add(*keys, key);
+        for 0..count-1 {
+            array_add(*keys, key);
+            array_add(*durations, duration);
+        }
     }
     if groups.count return "", "Unmatched '(' in the send sequence.";
+    if waits {
+        array_free(waits.*);
+        waits.* = durations;
+        empty: [..] s32;
+        durations = empty;
+    }
     return copy_string(.{data = keys.data, count = keys.count}), "";
+}
+
+// Position starts immediately after the opening underscore. A closing underscore
+// makes a timed wait; a bare integer suffix retains legacy _3 repetition.
+send_wait_token :: (commands: string, position: *s64) -> (milliseconds: s32, error: string) {
+    first := position.*;
+    if first == commands.count return DEFAULT_DELAY, "";
+    if commands[first] == #char "<" return 0, "A timed wait must use _seconds_ (example: _3.5_).";
+    if !contains("0123456789.+-", commands[first]) return DEFAULT_DELAY, "";
+    closing := first;
+    integer := true;
+    while closing < commands.count && contains("0123456789.eE+-", commands[closing]) {
+        if commands[closing] < #char "0" || commands[closing] > #char "9" integer = false;
+        closing += 1;
+    }
+    if closing > first && closing < commands.count && commands[closing] == #char "_" {
+        milliseconds, error := send_parse_wait_seconds(slice(commands, first, closing - first));
+        if error.count return 0, error;
+        position.* = closing + 1;
+        return milliseconds, "";
+    }
+    if !integer {
+        return 0, "A timed wait must use _seconds_ (example: _3.5_).";
+    }
+    return DEFAULT_DELAY, "";
+}
+
+send_parse_wait_seconds :: (source: string) -> (milliseconds: s32, error: string) {
+    seconds, success, remaining := string_to_float64(source);
+    if !source.count || !success || remaining.count || !is_finite(seconds) || seconds < 0.001 || seconds > 2147483.647 {
+        return 0, "Wait time must be between 0.001 and 2147483.647 seconds.";
+    }
+    return cast(s32) floor(seconds * 1000 + 0.5), "";
+}
+
+send_wait_seconds_text :: (milliseconds: s32) -> string {
+    return tprint("%", formatFloat(cast(float64) milliseconds / 1000, mode = .SHORTEST));
 }
 
 expand_udlr :: (commands: string) -> (expanded: string, error: string) {
@@ -103,7 +204,7 @@ validate_send :: (commands: string) -> (key_count: s64, error: string) {
     key_count: s64;
     for c: commands {
         if is_separator(c) continue;
-        if c != #char "_" && !scan_code_for_char(c) {
+        if c != #char "_" && c != #char "!" && !scan_code_for_char(c) {
             return 0, tprint("Unsupported command byte %. Use a-z, 0-9, _ waits, or whitespace.", c);
         }
         key_count += 1;
@@ -127,7 +228,8 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
                    target_window: Windows.HWND = null, poll: () -> bool = null,
                    emit:          (scan: u16, key_up: bool, extended: bool) -> (bool, string) = send_key_event,
                    wait:          (milliseconds: s32, target: Windows.HWND, poll: () -> bool) -> string = null,
-                   after_release: (data: *void) -> string = null, release_data: *void = null) -> Send_Result {
+                   after_release: (data: *void) -> string = null, release_data: *void = null,
+                   timing:        *Send_Timing = null) -> Send_Result {
     result: Send_Result;
     if !wait wait = send_wait;
     if !scan || hold_ms <= 0 || interval_ms < 0 {
@@ -136,12 +238,19 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
     }
     target := ifx target_window then target_window else Windows.GetForegroundWindow();
     if !target { result.error = "No foreground window."; return result; }
-    result.error = wait(0, target, poll);
+    result.error = send_cycle_wait(0, target, poll, wait, timing);
     if result.error.count return result;
+    hold_duration     := cast(float64) hold_ms;
+    interval_duration := cast(float64) interval_ms;
+    if timing && timing.automatic_hold {
+        cycle := cast(float64) hold_ms + interval_ms;
+        hold_duration     = send_scaled_hold(cycle, timing.clock.rate);
+        interval_duration = cycle - hold_duration;
+    }
     pressed, press_error := emit(scan, false, extended);
     if !pressed { result.error = press_error; return result; }
     result.sent_keys = 1;
-    hold_error              := wait(hold_ms, target, poll);
+    hold_error              := send_cycle_wait(hold_duration, target, poll, wait, timing);
     released, release_error := emit(scan, true, extended);
     if !released {
         emit(scan, true, extended); // Retry the release even if focus was lost during the hold.
@@ -151,12 +260,12 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
     result.error = hold_error;
     if result.error.count return result;
     if after_release {
-        result.error = wait(0, target, poll);
+        result.error = send_cycle_wait(0, target, poll, wait, timing);
         if result.error.count return result;
         result.error = after_release(release_data);
         if result.error.count return result;
     }
-    result.error   = wait(interval_ms, target, poll);
+    result.error   = send_cycle_wait(interval_duration, target, poll, wait, timing);
     result.success = !result.error.count;
     return result;
 }
@@ -166,12 +275,15 @@ send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, in
 // A specified target must stay in the foreground. poll lets the caller process cancellation events.
 send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL,
                   target_window: Windows.HWND = null, poll: () -> bool = null,
-                  modifier_scan: u16 = 0, modifier_extended := false) -> Send_Result {
+                  modifier_scan: u16 = 0, modifier_extended := false, waits: [] s32 = .[], adapt_speed := false,
+                  automatic_hold := false) -> Send_Result {
     result: Send_Result;
     if hold_ms <= 0 || interval_ms < 0 {
         result.error = "hold_ms must be positive and interval_ms must be nonnegative.";
         return result;
     }
+    if waits.count && waits.count != commands.count { result.error = "Wait durations do not match the sequence."; return result; }
+    for duration: waits if duration < 0 { result.error = "Invalid wait duration."; return result; }
 
     // Validate everything before sending any input, so a typo cannot play half a sequence.
     key_count, error := validate_send(commands);
@@ -190,6 +302,15 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
         return result;
     }
 
+    timing: Send_Timing = .{automatic_hold = automatic_hold};
+    defer playback_speed_close(*timing.reader);
+    timing_pointer: *Send_Timing;
+    if adapt_speed {
+        rate, error := playback_speed_read(*timing.reader, target);
+        if error.count { result.error = error; return result; }
+        playback_clock_update(*timing.clock, seconds_since_init(), rate);
+        timing_pointer = *timing;
+    }
     if modifier_scan {
         for c: commands {
             if scan_code_for_char(c) == modifier_scan && !modifier_extended {
@@ -203,7 +324,7 @@ send_sequence :: (commands: string, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s3
         if !pressed { result.error = error; return result; }
     }
 
-    result = send_sequence_keys(commands, hold_ms, interval_ms, target, poll);
+    result = send_sequence_keys(commands, hold_ms, interval_ms, target, poll, waits, timing_pointer);
     if modifier_scan {
         released, error := send_scan_code(modifier_scan, key_up = true, extended = modifier_extended);
         if !released {
@@ -237,23 +358,37 @@ send_repeat_count :: (commands: string, position: *s64) -> (count: s64, error: s
 }
 
 send_sequence_keys :: (commands: string, hold_ms: s32, interval_ms: s32,
-                       target: Windows.HWND, poll: () -> bool) -> Send_Result {
+                       target: Windows.HWND, poll: () -> bool, waits: [] s32, timing: *Send_Timing) -> Send_Result {
     result: Send_Result;
 
+    restart: Game_Key;
+    if contains(commands, #char "!") {
+        map:   Game_Keymap;
+        ready: bool;
+        result.error, ready = game_keymap_load(*map, only_action = "Restart");
+        if !ready return result;
+        if !map.restart.scan { result.error = "No keyboard binding for restart."; return result; }
+        result.error = "";
+        restart      = map.restart;
+    }
     for c: commands {
         if is_separator(c) continue;
         result.error = send_abort_reason(target, poll);
         if result.error.count return result;
 
         if c == #char "_" {
-            result.error = send_wait(hold_ms, target, poll);
-            if !result.error.count result.error = send_wait(interval_ms, target, poll);
+            duration := ifx waits.count && waits[it_index] > 0 then waits[it_index] else DEFAULT_DELAY;
+            if timing {
+                scaled := send_wait_duration(duration, cast(float64) hold_ms + interval_ms);
+                result.error = send_timed_wait(scaled, target, poll, timing);
+            } else result.error = send_wait(duration, target, poll);
             if result.error.count return result;
             continue;
         }
 
-        cycle := send_key_cycle(scan_code_for_char(c), hold_ms = hold_ms, interval_ms = interval_ms,
-                                target_window = target, poll = poll);
+        key   := ifx c == #char "!" then restart else Game_Key.{scan = scan_code_for_char(c)};
+        cycle := send_key_cycle(key.scan, extended = key.extended, hold_ms = hold_ms, interval_ms = interval_ms,
+                                target_window = target, poll = poll, timing = timing);
         result.sent_keys += cycle.sent_keys;
         if !cycle.success { result.error = cycle.error; return result; }
     }
@@ -263,13 +398,15 @@ send_sequence_keys :: (commands: string, hold_ms: s32, interval_ms: s32,
 }
 
 send_with_mode :: (commands: string, alternate: bool, hold_ms: s32, interval_ms: s32) -> bool {
-    expanded, error := expand_send(commands, alternate);
+    waits: [..] s32;
+    defer array_free(waits);
+    expanded, error := expand_send(commands, alternate, *waits);
     defer free(expanded);
     if error.count {
         print("%\n", error);
         return false;
     }
-    result := send_sequence(expanded, hold_ms, interval_ms);
+    result := send_sequence(expanded, hold_ms, interval_ms, waits = waits, adapt_speed = true);
     if !result.success print("%\n", result.error);
     return result.success;
 }

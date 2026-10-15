@@ -28,6 +28,7 @@ Json  :: #import "Json";
 #load "platform/windows/capture.jai";
 #load "platform/windows/hud.jai";
 #load "platform/windows/editor.jai";
+#load "platform/windows/time_audio.jai";
 #load "platform/windows/zork.jai";
 
 #load "game/commands.jai";
@@ -50,6 +51,7 @@ Json  :: #import "Json";
 #load "game/fog.jai";
 #load "game/speed_memory.jai";
 #load "game/speed.jai";
+#load "game/time_stop.jai";
 #load "game/shortcuts.jai";
 #load "game/state.jai";
 #load "game/subtitle_mapping.jai";
@@ -57,8 +59,10 @@ Json  :: #import "Json";
 
 #load "solution/solution.jai";
 #load "solution/timeline.jai";
+#load "solution/playback.jai";
 #load "solution/transport.jai";
 #load "solution/editor.jai";
+#load "solution/record_timer.jai";
 #load "solution/editor_save.jai";
 #load "solution/editor_view.jai";
 
@@ -91,6 +95,11 @@ main :: () {
     defer noclip_deinit();
     defer fog_deinit();
     defer speed_deinit();
+    defer time_audio_deinit();
+    defer {
+        error := time_stop_cancel();
+        if error.count print("Time stop restoration failed: %\n", error);
+    }
     defer hud_deinit();
     defer freecam_deinit();
     defer capture_deinit();
@@ -208,7 +217,8 @@ main :: () {
         if console.pending_action == .CONSOLE_MODE overlay_set_mode(console.pending_mode);
         if console.pending_action == .EDIT_SOLUTION editor_open_solution(console.pending_edit_level, console.pending_edit_custom);
         if console.pending_action == .PLAY_SOLUTION console_play_saved_solution(*console);
-        if console.pending_action == .JUMP editor_jump_solution(console.pending_jump_step);
+        if console.pending_action == .JUMP console.pending_jump = true;
+        console_run_pending_jump(*console);
         if console.pending_action == .ZORK_START zork_start(*console);
         if console.pending_action == .ZORK_INPUT zork_send_input(*console);
         if console.pending_action == .ZORK_BACK zork_back(*console);
@@ -239,6 +249,7 @@ main :: () {
         if editor.open && console.pending_send.count && !console.pending_reset {
             console_write(*console, "Use the editor controls, or close it with Exit before send/play/do/undo.", .ERROR);
             free(console.pending_send);
+            array_reset(*console.pending_send_waits);
             console.pending_send               = "";
             console.pending_send_hold_ms       = DEFAULT_HOLD;
             console.pending_send_interval_ms   = DEFUALT_INTERVAL;
@@ -252,9 +263,10 @@ main :: () {
         console_run_pending_freecam(*console);
         console_run_pending_fog(*console);
         console_run_pending_speed(*console);
+        time_stop_update();
         capture_update(seconds_since_init());
         freecam_update(*console, seconds_since_init());
-        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change && !console.pending_speed_change console.submission = .{};
+        if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change && !console.pending_speed_change && !console.pending_jump console.submission = .{};
         zork_update(*console);
         overlay_present_output(*console);
 
@@ -358,7 +370,7 @@ console_tab_complete :: (backwards: bool) {
             if !error.count for entry: markers.entries array_add(*marker_names, entry.name);
         }
         if kind == .EDIT || kind == .PLAY {
-            error := solutions_load(*database, marker_file = ifx kind == .PLAY then "" else "data/marker.json", answer_file = "");
+            error := solutions_load(*database, catalog_file = ifx kind == .PLAY then "" else LEVEL_CATALOG_FILE);
             if !error.count for entry: database.entries array_add(*levels, entry.name);
         }
         if kind == .SWITCH {

@@ -10,7 +10,8 @@ Game_Speed_Session :: struct {
     writable, changed: bool;
 }
 
-GAME_SPEED_MAX :: 4.0;
+GAME_SPEED_MAX        :: 16.0;
+GAME_SPEED_PRESET_MAX :: 4.0;
 
 game_speed_valid :: (value: float64) -> bool {
     return is_finite(value) && value >= 0 && value <= GAME_SPEED_MAX;
@@ -25,20 +26,31 @@ game_speed_layout_from_code :: (code: [] u8, base: u64) -> (layout: Game_Speed_L
         0xf2,0x0f,0x5a,0xc0, 0xf3,0x0f,0x11,0x05,-1,-1,-1,-1,
         0xf3,0x0f,0x5a,0xc0, 0xf2,0x0f,0x58,0x05,-1,-1,-1,-1,
         0xf2,0x0f,0x11,0x05,-1,-1,-1,-1]);
+    gated := game_camera_find_code(code, s16.[
+        0xf2,0x0f,0x59,0x05,-1,-1,-1,-1, 0xf2,0x0f,0x59,0x05,-1,-1,-1,-1,
+        0xf2,0x0f,0x5a,0xc0,
+        0x80,0x3d,-1,-1,-1,-1,0, 0x74,0x15,
+        0x80,0x3d,-1,-1,-1,-1,0, 0x0f,0x95,0xc0,
+        0x0a,0x05,-1,-1,-1,-1, 0x74,0x03, 0x0f,0x57,0xc0,
+        0xf3,0x0f,0x11,0x05,-1,-1,-1,-1, 0xf3,0x0f,0x5a,0xc0,
+        0xf2,0x0f,0x58,0x05,-1,-1,-1,-1, 0xf2,0x0f,0x11,0x05,-1,-1,-1,-1]);
+    if at == -2 || gated == -2 || (at >= 0 && gated >= 0) return layout,"Ambiguous time multiplier evidence.";
+    gap: s64;
+    if gated >= 0 { at = gated; gap = 30; }
     init := game_camera_find_code(code, s16.[0x0f,0x28,0x05,-1,-1,-1,-1,0x0f,0x11,0x05,-1,-1,-1,-1,
         0x4c,0x8d,0xa4,0x24,-1,-1,-1,-1]);
     if at < 0 || init < 0 return layout,"Unsupported game build: time multiplier evidence is missing or ambiguous.";
     layout.multiplier  = game_speed_rip(code,base,at,4,8);
     layout.native_rate = game_speed_rip(code,base,at+8,4,8);
-    layout.delta       = game_speed_rip(code,base,at+20,4,8);
-    layout.clock       = game_speed_rip(code,base,at+32,4,8);
+    layout.delta       = game_speed_rip(code,base,at+20+gap,4,8);
+    layout.clock       = game_speed_rip(code,base,at+32+gap,4,8);
     layout.initial     = game_speed_rip(code,base,init,3,7);
     if layout.multiplier != layout.native_rate+8 || layout.multiplier%8 || layout.delta%4 || layout.clock%8 ||
        layout.delta==layout.multiplier || layout.delta==layout.native_rate || layout.clock==layout.multiplier ||
        layout.clock==layout.native_rate || layout.clock==layout.delta ||
-       game_speed_rip(code,base,at+40,4,8)!=layout.clock ||
+       game_speed_rip(code,base,at+40+gap,4,8)!=layout.clock ||
        game_speed_rip(code,base,init+7,3,7)!=layout.native_rate return .{},"Time multiplier dataflow differs from the supported layout.";
-    if !game_camera_save_code(*layout.code[0],code,base,at,48) ||
+    if !game_camera_save_code(*layout.code[0],code,base,at,48+gap) ||
        !game_camera_save_code(*layout.code[1],code,base,init,22) return .{},"Invalid time code bounds.";
     return layout,"";
 }
@@ -85,12 +97,12 @@ game_speed_read :: (session: *Game_Speed_Session) -> (value: float64, error: str
     }
     value: float64;
     if !process_read_memory(session.memory.handle,session.layout.multiplier,*value,8) || !game_speed_valid(value)
-        return 0,"Time multiplier is unreadable or outside the supported range 0-4.";
+        return 0,"Time multiplier is unreadable or outside the supported range 0-16.";
     return value,"";
 }
 
 game_speed_set :: (session: *Game_Speed_Session, value: float64) -> string {
-    if !session.writable || !game_speed_valid(value) return "Speed must be a finite number from 0 to 4 in a writable session.";
+    if !session.writable || !game_speed_valid(value) return "Speed must be a finite number from 0 to 16 in a writable session.";
     current,error := game_speed_read(session);
     if error.count return error;
     if current!=session.last return "Time speed changed outside this session; no memory overwritten.";

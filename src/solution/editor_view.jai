@@ -7,6 +7,7 @@ EDITOR_MINIMIZE_BUTTON  :: 8;
 EDITOR_SAVE_BUTTON      :: 9;
 EDITOR_EXIT_BUTTON      :: 10;
 EDITOR_INPUT_HINT       :: "W/A/S/D or arrows: move; C/X/F/V and digits: actions; B or _: wait.";
+EDITOR_WAIT_FONT_SIZE   :: 16;
 
 // Nerd Font glyphs: Font Awesome controls/arrows and the Material Design swap icon.
 // https://www.nerdfonts.com/cheat-sheet
@@ -31,17 +32,17 @@ Editor_Icon :: struct {
     UP        :: ""; DOWN :: ""; LEFT :: ""; RIGHT :: "";
     SWAP      :: "󰣁";
     SLEEP     :: "󰒲";
-    FUNCTION  :: ""; // 󰊕
+    FUNCTION  :: "X"; // 󰊕
 }
 
 
 Editor_View :: struct {
-    font, small_font: *Simp.Dynamic_Font;
-    font_dpi:         s32;
-    minimized:        bool;
+    font, small_font, wait_font: *Simp.Dynamic_Font;
+    font_dpi:                    s32;
+    minimized:                   bool;
     drag_affects_game := true;
-    cell_width:                                float = 36;
-    compact_cell_width:                        float = 28;
+    cell_width:                                float = 60;
+    compact_cell_width:                        float = 56;
     mouse_down, dragging, strip_down:          bool;
     down_x:                                    s32;
     origin_head:                               s64;
@@ -52,6 +53,8 @@ Editor_View :: struct {
     recording_motion:                          bool;
     animation_time:                            float64 = -1;
     button_down:                               s64 = -1;
+    clicked_wait:                              s64 = -1;
+    clicked_count, clicked_playhead:           s64;
 }
 editor_view: Editor_View;
 
@@ -85,6 +88,7 @@ editor_view_cancel_drag :: () {
 
 editor_view_reset :: () {
     editor_view_cancel_drag();
+    editor_view.clicked_wait     = -1;
     editor_view.wheeling         = false;
     editor_view.recording_motion = false;
     editor_view.display_head     = cast(float) editor.timeline.playhead;
@@ -92,7 +96,29 @@ editor_view_reset :: () {
     editor_view.animation_time   = -1;
 }
 
+// Display-only progress: the logical playhead stays on the wait until its deadline.
+editor_wait_progress :: (now: float64) -> (progress: float, active: bool) {
+    index := editor.timeline.playhead;
+    if editor.transport.phase != .WAIT || index < 0 || index >= editor.timeline.keys.count ||
+       editor.timeline.keys[index] != #char "_" return 0, false;
+    duration := editor.transport.wait_duration;
+    if duration <= 0 return 0, false;
+    time     := playback_clock_time(*editor.transport.clock, now);
+    fraction := 1.0 - (editor.transport.deadline - time) / duration;
+    return cast(float) max(cast(float64) 0, min(cast(float64) 1, fraction)), true;
+}
+
 editor_view_tick :: (now: float64) {
+    if editor_wait_edit.active { editor_view.animation_time = now; return; }
+    progress, waiting := editor_wait_progress(now);
+    if waiting && !(editor_view.dragging && editor_view.mouse_down) && !editor_view.wheeling {
+        // One cell crosses the fixed line over the actual wait duration, including
+        // the first rendered frame and consecutive waits. No eased timing lag.
+        editor_view.display_head     = cast(float) editor.timeline.playhead + progress;
+        editor_view.recording_motion = false;
+        editor_view.animation_time   = now;
+        return;
+    }
     if editor_view.animation_time < 0 { editor_view.animation_time = now; return; }
     elapsed := max(0.0, min(0.1, cast(float)(now - editor_view.animation_time)));
     editor_view.animation_time = now;
@@ -209,9 +235,9 @@ editor_timeline_icon :: (key: u8) -> string {
         case #char "D"; return Editor_Icon.DOWN;
         case #char "L"; return Editor_Icon.LEFT;
         case #char "R"; return Editor_Icon.RIGHT;
+        case #char "!"; return "R";
         case #char "C"; return Editor_Icon.SWAP;
         case #char "X"; return Editor_Icon.FUNCTION;
-        case #char "_"; return Editor_Icon.SLEEP;
     }
     return "";
 }
@@ -241,10 +267,12 @@ editor_paste :: () {
     source, error := clipboard_read_text(editor_window.handle);
     defer free(source);
     if error.count { editor_set_status(error, true); return; }
-    keys, parse_error := timeline_parse(source);
+    waits: [..] s32;
+    defer array_free(waits);
+    keys, parse_error := timeline_parse(source, *waits);
     defer free(keys);
     if parse_error.count { editor_set_status(parse_error, true); return; }
-    error = timeline_insert(*editor.timeline, keys);
+    error = timeline_insert(*editor.timeline, keys, waits);
     if error.count editor_set_status(error, true);
 }
 
@@ -262,18 +290,41 @@ editor_delete_steps :: (backwards := false) {
 
 editor_handle_event :: (event: Editor_Event) {
     if editor_save_prompt.active { editor_save_prompt_event(event); return; }
+    if editor_wait_edit.active { editor_wait_edit_event(event); return; }
     strip, controls := editor_layout();
-    if event.kind == .DOWN {
-        editor_view.mouse_down  = true;
-        editor_view.dragging    = false;
-        editor_view.down_x      = event.x;
-        editor_view.button_down = -1;
+    if event.kind == .DOUBLE {
+        if editor_hit(strip, event.x, event.y) {
+            center := strip.x + strip.w / 2;
+            head   := ifx cast(float) event.x < center then editor_view.display_head else editor_future_head();
+            index  := cast(s64) floor(head + (cast(float) event.x - center) / editor_pitch());
+            // The strip may ease between the two clicks. Edit the wait selected
+            // by the first click, provided no recording/deletion reindexed it.
+            if editor_view.clicked_wait >= 0 && editor_view.clicked_count == editor.timeline.keys.count &&
+               editor_view.clicked_playhead == editor.timeline.playhead index = editor_view.clicked_wait;
+            editor_view.clicked_wait = -1;
+            if editor_begin_wait_edit(index) return;
+        }
+    }
+    if event.kind == .DOWN || event.kind == .DOUBLE {
+        editor_view.clicked_wait = -1;
+        editor_view.mouse_down   = true;
+        editor_view.dragging     = false;
+        editor_view.down_x       = event.x;
+        editor_view.button_down  = -1;
         for i: 0..EDITOR_BUTTON_COUNT-1 {
             if editor_view.minimized && i != 0 && i != EDITOR_DRAG_GAME_BUTTON && i != EDITOR_MINIMIZE_BUTTON continue;
             if editor_hit(editor_button_rect(i), event.x, event.y) editor_view.button_down = i;
         }
         editor_view.strip_down = editor_hit(strip, event.x, event.y);
         if editor_view.strip_down {
+            center := strip.x + strip.w / 2;
+            head   := ifx cast(float) event.x < center then editor_view.display_head else editor_future_head();
+            index  := cast(s64) floor(head + (cast(float) event.x - center) / editor_pitch());
+            if index >= 0 && index < editor.timeline.keys.count && editor.timeline.keys[index] == #char "_" {
+                editor_view.clicked_wait     = index;
+                editor_view.clicked_count    = editor.timeline.keys.count;
+                editor_view.clicked_playhead = editor.timeline.playhead;
+            }
             editor_pause();
             editor_view.origin_head      = editor.timeline.playhead;
             editor_view.origin_view_head = editor_view.display_head;
@@ -283,6 +334,7 @@ editor_handle_event :: (event: Editor_Event) {
         delta := event.x - editor_view.down_x;
         if cast(float) abs(delta) > 6 * editor_scale() editor_view.dragging = true;
         if editor_view.dragging {
+            editor_view.clicked_wait = -1;
             editor_window_set_drag_cursor(true);
             editor_view.drag_head = max(0.0, min(cast(float) editor.timeline.keys.count,
                                                editor_view.origin_view_head - cast(float) delta / editor_pitch()));
@@ -291,6 +343,7 @@ editor_handle_event :: (event: Editor_Event) {
             editor_scrub_to(target);
         }
     } else if event.kind == .UP {
+        if editor_view.dragging editor_end_fast_scrub();
         if editor_view.mouse_down {
             if editor_view.button_down >= 0 && editor_hit(editor_button_rect(editor_view.button_down), event.x, event.y) {
                 editor_button_action(editor_view.button_down);
@@ -304,12 +357,13 @@ editor_handle_event :: (event: Editor_Event) {
         }
         editor_view_cancel_drag();
     } else if event.kind == .CANCEL {
+        if editor_view.mouse_down editor_view.clicked_wait = -1;
         if editor_view.mouse_down && editor_view.dragging editor_pause();
         editor_view_cancel_drag();
     } else if event.kind == .WHEEL {
         if event.ctrl {
             width := ifx editor_view.minimized then *editor_view.compact_cell_width else *editor_view.cell_width;
-            width.* = max(20.0, min(64.0, width.* + cast(float) event.y / 30.0));
+            width.* = max(44.0, min(96.0, width.* + cast(float) event.y / 30.0));
         } else editor_wheel(event.y, seconds_since_init());
     } else if event.kind == .KEY {
         editor_key_input(event);
@@ -332,6 +386,10 @@ editor_handle_event :: (event: Editor_Event) {
 }
 
 editor_key_input :: (event: Editor_Event) {
+    if event.key == 0x74 && !event.ctrl && !event.alt && !event.shift {
+        if !event.repeat editor_toggle_record();
+        return;
+    }
     if event.key == 0x1b { editor_pause(); editor_focus_game(); return; }
     if event.key == 0x20 { if !event.repeat editor_toggle_play(); return; }
     if event.key == #char "K" && !event.ctrl && !event.alt && !event.shift {
@@ -339,7 +397,7 @@ editor_key_input :: (event: Editor_Event) {
         return;
     }
     if (event.key == #char "J" || event.key == #char "L") && !event.ctrl && !event.alt && !event.shift {
-        if !event.repeat editor_adjust_playback_speed(event.key == #char "J");
+        if !event.repeat editor_adjust_playback_speed(event.key == #char "L");
         return;
     }
     if event.key == #char "N" && !event.ctrl && !event.alt && !event.shift {
@@ -391,6 +449,7 @@ draw_solution_editor :: () {
     if editor_view.font_dpi != editor_window.dpi {
         editor_view.font       = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(21 * scale));
         editor_view.small_font = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(13 * scale));
+        editor_view.wait_font  = Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, cast(s32)(EDITOR_WAIT_FONT_SIZE * scale));
         editor_view.font_dpi   = editor_window.dpi;
     }
     if !editor_view.font || !editor_view.small_font return;
@@ -422,7 +481,7 @@ draw_solution_editor :: () {
     editor_draw_text(editor_view.small_font, strip.x, 54 * scale, "EXECUTED", muted);
     editor_draw_text(editor_view.small_font, center + 10 * scale, 54 * scale, "FUTURE", accent);
     progress := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
-                       editor_playback_speed_name(editor.transport.speed));
+                       editor_display_speed());
     progress_width := editor_text_width(editor_view.small_font, progress);
     editor_draw_text(editor_view.small_font, strip.x + strip.w - progress_width, 54 * scale, progress, primary);
 
@@ -431,9 +490,9 @@ draw_solution_editor :: () {
     mouse: Win.POINT;
     Win.GetCursorPos(*mouse);
     Win.ScreenToClient(editor_window.handle, *mouse);
-    labels := string.[ifx editor.recording then "Stop Recording" else "Record", "Undo", "Step",
+    labels := string.[ifx editor.recording then "Stop Recording (F5)" else "Record (F5)", "Undo", "Step",
                       ifx editor.transport.playing then "Pause" else "Play", "Reset: restore last saved solution",
-                      "Rabbit: continue from playhead at 75 ms with fast time",
+                      ifx editor.transport.rabbit then "Rabbit: pause 4x playback" else "Rabbit: continue from playhead at 4x",
                       ifx editor_view.drag_affects_game then "Drag affects game: ON (click to position the playhead only)" else "Drag affects game: OFF (click for undo/redo)",
                       "Export: copy the complete solution",
                       "Minimize (N)", "Save", "Exit"];
@@ -446,11 +505,13 @@ draw_solution_editor :: () {
     }
     Simp.set_scissor(20, 0, width - 20, height);
     status := ifx hovered >= 0 then labels[hovered] else editor.status;
+    if editor_wait_edit.active status = editor_wait_edit_hint();
     editor_draw_text(editor_view.small_font, 20 * scale, 221 * scale, status,
-                   ifx hovered < 0 && editor.status_error then console_color(Naysayer.warning) else muted);
+                   ifx (editor_wait_edit.active && editor_wait_edit.error.count > 0) ||
+                        (hovered < 0 && editor.status_error) then console_color(Naysayer.warning) else muted);
     editor_draw_text(editor_view.small_font, 20 * scale, 240 * scale,
-                   tprint("% K/Space   J faster   L slower   % Esc   % [   % ]   % B/_   % Ctrl+C   % Ctrl+S   % N   % :",
-                          Editor_Icon.PLAY, Editor_Icon.PAUSE, Editor_Icon.UNDO, Editor_Icon.STEP,
+                   tprint("% K/Space   J slower / L faster   F5 record   % [   % ]   % B/_   % Ctrl+C   % Ctrl+S   % N   % :",
+                          Editor_Icon.PLAY, Editor_Icon.UNDO, Editor_Icon.STEP,
                           Editor_Icon.SLEEP, Editor_Icon.CLIPBOARD, Editor_Icon.SAVE, Editor_Icon.MINIMIZE,
                           Editor_Icon.KEYBOARD), muted);
     Simp.clear_scissor();
@@ -469,10 +530,11 @@ editor_draw_timeline :: (strip: RectUI.Rect) {
     editor_draw_rect(strip, console_color(Naysayer.highlight));
     editor_draw_timeline_cells(strip, editor_view.display_head, past = true);
     editor_draw_timeline_cells(strip, editor_future_head(), past = false);
+    if editor_wait_edit.active editor_draw_wait_edit(strip);
     Simp.set_scissor(cast(s32) strip.x, cast(s32) strip.y, cast(s32)(strip.x + strip.w), cast(s32)(strip.y + strip.h + 16 * scale));
     boundary := editor_playhead_x(strip);
     editor_draw_rect(RectUI.get_rect(boundary - scale, strip.y - 2 * scale, 2 * scale, strip.h + 6 * scale), accent);
-    if Win.GetForegroundWindow() == editor_window.handle && (cast(s64)(seconds_since_init() * 2) % 2) == 0 {
+    if !editor_wait_edit.active && Win.GetForegroundWindow() == editor_window.handle && (cast(s64)(seconds_since_init() * 2) % 2) == 0 {
         head := ifx timeline_caret_is_executed(*editor.timeline) then editor_view.display_head else editor_future_head();
         x    := center + (cast(float) editor.timeline.caret - head) * pitch;
         editor_draw_rect(RectUI.get_rect(x, strip.y + (ifx compact then 4 else 20) * scale,
@@ -503,11 +565,27 @@ editor_draw_timeline_cells :: (strip: RectUI.Rect, head: float, past: bool) {
         if i >= selected_first && i < selected_last color = console_color(Naysayer.line_fg);
         editor_draw_rect(cell, color);
         key := editor.timeline.keys[i];
+        if key == #char "_" && i == editor.timeline.playhead && editor.transport.phase == .WAIT {
+            crossed := max(0.0, min(cell.w, center - cell.x));
+            // The passed portion dims as it crosses the line; a thin accent keeps
+            // elapsed time visible without covering the duration text.
+            editor_draw_rect(RectUI.get_rect(cell.x, cell.y, crossed, cell.h), console_color(Naysayer.background));
+            editor_draw_rect(RectUI.get_rect(cell.x, cell.y + cell.h - 2 * scale, crossed, 2 * scale),
+                             console_color(Naysayer.punctuation));
+        }
         text: string = .{data = *key, count = 1};
         icon := editor_timeline_icon(key);
         if icon.count text = icon;
-        text_width := editor_text_width(editor_view.font, text);
-        editor_draw_text(editor_view.font, cell.x + (cell.w - text_width) / 2, cell.y + (ifx compact then 24 else 29) * scale, text,
+        font := editor_view.font;
+        if key == #char "_" {
+            text = tprint("%", formatFloat(cast(float64) timeline_wait_ms(*editor.timeline, i) / 1000,
+                                           trailing_width = 2, zero_removal = .NO));
+            font = editor_wait_cell_font(text, cell.w);
+        }
+        text_width := editor_text_width(font, text);
+        baseline   := ifx key == #char "_" then cell.y + (cell.h + cast(float)(font.typical_ascender + font.typical_descender)) / 2
+                    else cell.y + (ifx compact then 24 else 29) * scale;
+        editor_draw_text(font, cell.x + (cell.w - text_width) / 2, baseline, text,
                        ifx past then muted else primary);
         if !compact {
             number       := tprint("%", i + 1);
@@ -522,7 +600,7 @@ editor_draw_button :: (index: s64, hover: bool) {
     r      := editor_button_rect(index);
     active := (index == 0 && editor.recording) || (index == 3 && editor.transport.playing) ||
               (index == EDITOR_RESET_BUTTON && editor.reset_requested) ||
-              (index == EDITOR_RABBIT_BUTTON && editor.transport.playing && editor.transport.speed == .RABBIT) ||
+              (index == EDITOR_RABBIT_BUTTON && editor.transport.playing && editor.transport.rabbit) ||
               (index == EDITOR_DRAG_GAME_BUTTON && editor_view.drag_affects_game);
     color := ifx active || hover then console_color(Naysayer.line_fg) else console_color(Naysayer.selection);
     editor_draw_rect(r, color);
@@ -544,14 +622,15 @@ editor_draw_preview :: (width: float) {
     record_hover := editor_hit(editor_button_rect(0), mouse.x, mouse.y);
     drag_hover   := editor_hit(editor_button_rect(EDITOR_DRAG_GAME_BUTTON), mouse.x, mouse.y);
     progress     := tprint("% / %  %", editor.timeline.playhead, editor.timeline.keys.count,
-                       editor_playback_speed_name(editor.transport.speed));
+                       editor_display_speed());
     progress_x := width - 12 * scale - editor_text_width(editor_view.small_font, progress);
     Simp.set_scissor(cast(s32)(12 * scale), 0, cast(s32)(progress_x - 12 * scale), cast(s32)(28 * scale));
-    title := ifx hover then "Edit (N)" else ifx record_hover then (ifx editor.recording then "Stop Recording" else "Record")
+    title := ifx hover then "Edit (N)" else ifx record_hover then (ifx editor.recording then "Stop Recording (F5)" else "Record (F5)")
              else ifx drag_hover then (ifx editor_view.drag_affects_game then "Drag affects game: ON" else "Drag affects game: OFF")
              else tprint("% / % %", editor.record.area, editor_record_title(), ifx editor.timeline.dirty then "*" else "");
+    if editor_wait_edit.active title = editor_wait_edit_hint();
     editor_draw_text(editor_view.small_font, 12 * scale, 20 * scale, title,
-                     primary);
+                     ifx editor_wait_edit.active && editor_wait_edit.error.count > 0 then console_color(Naysayer.warning) else primary);
     Simp.clear_scissor();
     editor_draw_text(editor_view.small_font, progress_x, 20 * scale, progress, muted);
     editor_draw_timeline(strip);
@@ -649,6 +728,254 @@ editor_draw_save_prompt :: (width: float) {
     }
     editor_draw_text(font, 20 * scale, 232 * scale,
                      "Enter: confirm save    Esc: cancel    Ctrl+V: paste name", muted);
+}
+
+Editor_Wait_Edit :: struct {
+    active:     bool;
+    index:      s64;
+    field:      Console_State;
+    anchor:     s64;
+    error:      string;
+    mouse_down: bool;
+    font:       *Simp.Dynamic_Font;
+}
+editor_wait_edit: Editor_Wait_Edit;
+
+editor_begin_wait_edit :: (index: s64) -> bool {
+    if !editor.open || editor_save_prompt.active || index < 0 || index >= editor.timeline.keys.count ||
+       editor.timeline.keys[index] != #char "_" return false;
+    editor_pause();
+    if editor.transport.held.scan || editor.transport.time_held return false;
+    editor_finish_wait_edit();
+    editor_view_cancel_drag();
+    editor_wait_edit = .{active = true, index = index};
+    text := tprint("%", formatFloat(cast(float64) timeline_wait_ms(*editor.timeline, index) / 1000,
+                                    trailing_width = 2, zero_removal = .NO));
+    editor_wait_edit.font = editor_wait_cell_font(text, editor_pitch() - 6 * editor_scale());
+    console_set_input(*editor_wait_edit.field, send_wait_seconds_text(timeline_wait_ms(*editor.timeline, index)));
+    // Keep the clicked cell still and retain both the execution boundary and editor size.
+    editor_focus_text();
+    return true;
+}
+
+editor_finish_wait_edit :: () {
+    if !editor_wait_edit.active return;
+    console_deinit(*editor_wait_edit.field);
+    free(editor_wait_edit.error);
+    editor_wait_edit = .{};
+}
+
+editor_confirm_wait :: () -> bool {
+    if !editor_wait_edit.active return true;
+    milliseconds, error := send_parse_wait_seconds(trim(console_input(*editor_wait_edit.field)));
+    if error.count {
+        free(editor_wait_edit.error);
+        editor_wait_edit.error = copy_string("Enter seconds between 0.001 and 2147483.647.");
+        return false;
+    }
+    if !timeline_set_wait(*editor.timeline, editor_wait_edit.index, milliseconds) return false;
+    editor_finish_wait_edit();
+    editor_set_status(tprint("Wait: % base seconds (scales with playback and game speed).", send_wait_seconds_text(milliseconds)));
+    return true;
+}
+
+editor_wait_edit_hint :: () -> string {
+    if editor_wait_edit.error.count return editor_wait_edit.error;
+    return "Seconds (scales with speed)  Enter: apply  Esc: cancel";
+}
+
+editor_wait_edit_selection :: () -> (first: s64, last: s64) {
+    cursor := editor_wait_edit.field.cursor;
+    anchor := min(editor_wait_edit.field.input.count, editor_wait_edit.anchor);
+    return min(cursor, anchor), max(cursor, anchor);
+}
+
+editor_wait_edit_erase_selection :: () -> bool {
+    first, last := editor_wait_edit_selection();
+    if first == last return false;
+    console_erase_range(*editor_wait_edit.field, first, last);
+    editor_wait_edit.anchor = editor_wait_edit.field.cursor;
+    return true;
+}
+
+editor_wait_edit_clear_error :: () {
+    free(editor_wait_edit.error);
+    editor_wait_edit.error = "";
+}
+
+editor_wait_edit_rect :: (strip: RectUI.Rect) -> RectUI.Rect {
+    scale := editor_scale();
+    head  := ifx editor_wait_edit.index < editor.timeline.playhead then editor_view.display_head else editor_future_head();
+    x     := strip.x + strip.w / 2 + (cast(float) editor_wait_edit.index - head) * editor_pitch();
+    return RectUI.get_rect(x + 3 * scale, strip.y + (ifx editor_view.minimized then 4 else 21) * scale,
+                           editor_pitch() - 6 * scale, (ifx editor_view.minimized then 32 else 43) * scale);
+}
+
+editor_wait_edit_font :: () -> *Simp.Dynamic_Font {
+    if editor_wait_edit.font return editor_wait_edit.font;
+    return ifx editor_view.wait_font then editor_view.wait_font else editor_view.small_font;
+}
+
+editor_wait_cell_font :: (text: string, width: float) -> *Simp.Dynamic_Font {
+    font := ifx editor_view.wait_font then editor_view.wait_font else editor_view.small_font;
+    if !font return null;
+    scale    := editor_scale();
+    measured := editor_text_width(font, text);
+    if measured > width - 8 * scale {
+        size   := cast(s32) max(6 * scale, EDITOR_WAIT_FONT_SIZE * scale * (width - 8 * scale) / measured);
+        fitted := Simp.get_font_at_size("data/fonts", CONSOLE_FONT_FILE, size);
+        if fitted font = fitted;
+    }
+    return font;
+}
+
+// Shared positioning keeps mouse hit testing and the drawn caret together.
+// Long drafts scroll inside the cell instead of shrinking while typing.
+editor_wait_edit_text_x :: (cell: RectUI.Rect, font: *Simp.Dynamic_Font) -> float {
+    text      := console_input(*editor_wait_edit.field);
+    width     := editor_text_width(font, text);
+    caret     := editor_text_width(font, slice(text, 0, editor_wait_edit.field.cursor));
+    padding   := 4 * editor_scale();
+    available := max(1.0, cell.w - 2 * padding);
+    if width <= available return cell.x + (cell.w - width) / 2;
+    return cell.x + padding - max(0.0, caret - available + 2 * editor_scale());
+}
+
+editor_wait_edit_click :: (x: s32, cell: RectUI.Rect, extend: bool) {
+    font := editor_wait_edit_font();
+    if !font return;
+    text    := console_input(*editor_wait_edit.field);
+    local_x := cast(float) x - editor_wait_edit_text_x(cell, font);
+    cursor:   s64;
+    previous: float;
+    for i: 1..text.count {
+        next := editor_text_width(font, slice(text, 0, i));
+        if local_x < (previous + next) / 2 break;
+        cursor   = i;
+        previous = next;
+    }
+    editor_wait_edit.field.cursor = cursor;
+    if !extend editor_wait_edit.anchor = cursor;
+}
+
+editor_wait_edit_event :: (event: Editor_Event) {
+    field := *editor_wait_edit.field;
+    if event.kind == .KEY {
+        if event.key == 0x1b { editor_finish_wait_edit(); return; }
+        if event.key == 0x0d { editor_confirm_wait(); return; }
+        if event.ctrl && event.key == #char "S" {
+            if !event.repeat && editor_confirm_wait() editor_save();
+            return;
+        }
+        if event.alt && event.key == 0x73 {
+            if editor_confirm_wait() editor_close();
+            return;
+        }
+        if event.ctrl && event.key == #char "A" {
+            editor_wait_edit.anchor = 0;
+            field.cursor            = field.input.count;
+            return;
+        }
+        if event.ctrl && (event.key == #char "C" || event.key == #char "X") {
+            first, last := editor_wait_edit_selection();
+            if first == last return;
+            error := clipboard_write_text(editor_window_handle(), slice(console_input(field), first, last - first));
+            if !error.count && event.key == #char "X" editor_wait_edit_erase_selection();
+            return;
+        }
+        if (event.ctrl && event.key == #char "V") || (event.shift && event.key == 0x2d) {
+            source, error := clipboard_read_text(editor_window_handle());
+            defer free(source);
+            if error.count return;
+            text := trim(source);
+            if !text.count return;
+            valid := text.count <= 32;
+            for c: text if !contains("0123456789.eE+-", c) valid = false;
+            first, last := editor_wait_edit_selection();
+            if !valid || field.input.count - (last - first) + text.count > 32 {
+                editor_wait_edit_clear_error();
+                editor_wait_edit.error = copy_string("Paste a duration in seconds.");
+                return;
+            }
+            editor_wait_edit_erase_selection();
+            console_paste_text(field, text);
+            editor_wait_edit.anchor = field.cursor;
+            editor_wait_edit_clear_error();
+            return;
+        }
+        if event.key == 8 || event.key == 0x2e {
+            if !editor_wait_edit_erase_selection() {
+                if event.key == 8 console_backspace(field);
+                else console_delete(field);
+            }
+            editor_wait_edit.anchor = field.cursor;
+            editor_wait_edit_clear_error();
+        } else if event.key == 0x25 || event.key == 0x27 || event.key == 0x24 || event.key == 0x23 {
+            first, last := editor_wait_edit_selection();
+            if event.key == 0x25 field.cursor = ifx !event.shift && first != last then first else console_previous_character(field);
+            if event.key == 0x27 field.cursor = ifx !event.shift && first != last then last else console_next_character(field);
+            if event.key == 0x24 field.cursor = 0;
+            if event.key == 0x23 field.cursor = field.input.count;
+            if !event.shift editor_wait_edit.anchor = field.cursor;
+        }
+    } else if event.kind == .TEXT && !event.ctrl && !event.alt && event.key < 128 &&
+              contains("0123456789.eE+-", cast(u8) event.key) {
+        first, last := editor_wait_edit_selection();
+        if field.input.count - (last - first) >= 32 return;
+        editor_wait_edit_erase_selection();
+        console_insert_character(field, event.key);
+        editor_wait_edit.anchor = field.cursor;
+        editor_wait_edit_clear_error();
+    } else if event.kind == .DOWN || event.kind == .DOUBLE {
+        strip, controls := editor_layout();
+        cell            := editor_wait_edit_rect(strip);
+        if editor_hit(cell, event.x, event.y) && editor_hit(strip, event.x, event.y) {
+            if event.kind == .DOUBLE {
+                editor_wait_edit.anchor = 0;
+                field.cursor            = field.input.count;
+            } else editor_wait_edit_click(event.x, cell, event.shift);
+            editor_wait_edit.mouse_down = true;
+            editor_focus_text();
+        } else if editor_confirm_wait() {
+            editor_handle_event(event);
+        }
+    } else if event.kind == .MOVE && editor_wait_edit.mouse_down {
+        strip, controls := editor_layout();
+        editor_wait_edit_click(event.x, editor_wait_edit_rect(strip), true);
+    } else if event.kind == .UP || event.kind == .CANCEL {
+        editor_wait_edit.mouse_down = false;
+    } else if event.kind == .WHEEL {
+        if editor_confirm_wait() editor_handle_event(event);
+    }
+}
+
+editor_draw_wait_edit :: (strip: RectUI.Rect) {
+    cell := editor_wait_edit_rect(strip);
+    font := editor_wait_edit_font();
+    if !font return;
+    scale := editor_scale();
+    left  := max(strip.x, cell.x);
+    right := min(strip.x + strip.w, cell.x + cell.w);
+    if left >= right return;
+    Simp.set_scissor(cast(s32) left, cast(s32) cell.y, cast(s32) right, cast(s32)(cell.y + cell.h));
+    editor_draw_rect(cell, console_color(Naysayer.background));
+    primary := console_color(Naysayer.text);
+    accent  := console_color(cast(u32)(ifx editor_wait_edit.error.count then Naysayer.warning else Naysayer.punctuation));
+    editor_draw_rect(RectUI.get_rect(cell.x, cell.y + cell.h - 2 * scale, cell.w, 2 * scale), accent);
+    text        := console_input(*editor_wait_edit.field);
+    x           := editor_wait_edit_text_x(cell, font);
+    baseline    := cell.y + (cell.h + cast(float)(font.typical_ascender + font.typical_descender)) / 2;
+    first, last := editor_wait_edit_selection();
+    first_x     := x + editor_text_width(font, slice(text, 0, first));
+    last_x      := x + editor_text_width(font, slice(text, 0, last));
+    if first != last editor_draw_rect(RectUI.get_rect(first_x, cell.y + 5 * scale, last_x - first_x, cell.h - 10 * scale),
+                                     console_color(Naysayer.line_fg));
+    editor_draw_text(font, x, baseline, text, primary);
+    if Win.GetForegroundWindow() == editor_window.handle && (cast(s64)(seconds_since_init() * 2) % 2) == 0 {
+        caret_x := x + editor_text_width(font, slice(text, 0, editor_wait_edit.field.cursor));
+        editor_draw_rect(RectUI.get_rect(caret_x, cell.y + 6 * scale, 2 * scale, cell.h - 12 * scale), console_color(Naysayer.white));
+    }
+    Simp.clear_scissor();
 }
 
 #scope_file

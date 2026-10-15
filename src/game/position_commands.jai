@@ -1,5 +1,5 @@
 console_position_command_ready :: (state: *Console_State) -> bool {
-    if state.pending_action != .NONE || state.pending_send.count || state.pending_position_change || state.pending_freecam_change || state.pending_fog_change || state.pending_speed_change {
+    if state.pending_action != .NONE || state.pending_send.count || state.pending_position_change || state.pending_freecam_change || state.pending_fog_change || state.pending_speed_change || state.pending_jump {
         console_write(state, "A command is already waiting to run.", .ERROR);
         return false;
     }

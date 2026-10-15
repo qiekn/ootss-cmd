@@ -1,5 +1,6 @@
 Solution_Timeline :: struct {
     keys:     [..] u8;
+    wait_ms:  [..] s32; // Parallel to keys; only wait cells have a positive duration.
     playhead: s64;
     caret:    s64;
     anchor:   s64;
@@ -8,12 +9,13 @@ Solution_Timeline :: struct {
 
 timeline_free :: (timeline: *Solution_Timeline) {
     array_free(timeline.keys);
+    array_free(timeline.wait_ms);
     timeline.* = .{};
 }
 
 timeline_key_valid :: (key: u8) -> bool {
     // Z is an editor transport action, not a forward step.
-    return contains("UDLRCXFV0123456789_", key);
+    return contains("UDLRCXFV0123456789_!", key);
 }
 
 timeline_key_is_character_switch :: (key: u8) -> bool {
@@ -21,28 +23,41 @@ timeline_key_is_character_switch :: (key: u8) -> bool {
 }
 
 timeline_key_is_undoable :: (key: u8) -> bool {
-    return key != #char "_" && !timeline_key_is_character_switch(key);
+    return key != #char "_" && key != #char "!" && !timeline_key_is_character_switch(key);
 }
 
-timeline_parse :: (source: string) -> (keys: string, error: string) {
-    keys, error := expand_send(source);
+timeline_parse :: (source: string, waits: *[..] s32 = null) -> (keys: string, error: string) {
+    durations: [..] s32;
+    defer array_free(durations);
+    keys, error := expand_send(source, waits = *durations);
     if error.count return "", error;
     for *key: keys {
         if key.* >= #char "a" && key.* <= #char "z" key.* -= #char "a" - #char "A";
-        if key.* == #char "B" key.* = #char "_";
+        if key.* == #char "B" { key.* = #char "_"; durations[it_index] = DEFAULT_DELAY; }
         if !timeline_key_valid(key.*) {
             free(keys);
-            return "", "Use U/D/L/R, C/X/F/V, digit keys, or _ waits. Use Undo to rewind.";
+            return "", "Use U/D/L/R, C/X/F/V, digit keys, _ waits, or ! to restart. Use Undo to rewind.";
         }
+    }
+    if waits {
+        array_free(waits.*);
+        waits.* = durations;
+        empty: [..] s32;
+        durations = empty;
     }
     return keys, "";
 }
 
 timeline_load :: (timeline: *Solution_Timeline, source: string) -> string {
-    keys, error := timeline_parse(source);
+    waits: [..] s32;
+    defer array_free(waits);
+    keys, error := timeline_parse(source, *waits);
     defer free(keys);
     if error.count return error;
     timeline_free(timeline);
+    timeline.wait_ms = waits;
+    empty_waits: [..] s32;
+    waits = empty_waits;
     for key: keys {
         array_add(*timeline.keys, key);
     }
@@ -76,8 +91,10 @@ timeline_erase :: (timeline: *Solution_Timeline, first: s64, last: s64) -> bool 
     removed_executed := max(0, min(last, timeline.playhead) - min(first, timeline.playhead));
     for i: last..timeline.keys.count-1 {
         timeline.keys[i - (last - first)] = timeline.keys[i];
+        timeline.wait_ms[i - (last - first)] = timeline.wait_ms[i];
     }
     timeline.keys.count -= last - first;
+    timeline.wait_ms.count -= last - first;
     timeline.playhead -= removed_executed;
     timeline_move_caret(timeline, first);
     timeline.dirty = true;
@@ -93,17 +110,21 @@ timeline_delete :: (timeline: *Solution_Timeline, backwards := false) {
     timeline_erase(timeline, first, last);
 }
 
-timeline_insert :: (timeline: *Solution_Timeline, keys: string) -> string {
+timeline_insert :: (timeline: *Solution_Timeline, keys: string, waits: [] s32 = .[]) -> string {
     first, last := timeline_selection(timeline);
     if first < timeline.playhead return "Executed steps can be deleted. Move the caret to Future to insert new steps.";
     if keys.count > SEND_KEY_LIMIT - (timeline.keys.count - (last - first)) {
         return tprint("A solution can contain at most % steps.", SEND_KEY_LIMIT);
     }
     for key: keys if !timeline_key_valid(key) return "Unsupported solution key.";
+    if waits.count && waits.count != keys.count return "Wait durations do not match the timeline.";
+    for duration: waits if duration < 0 return "Invalid wait duration.";
     if !keys.count return "";
     timeline_erase(timeline, first, last);
     for key: keys {
         array_insert_at(*timeline.keys, key, first + it_index);
+        duration := cast(s32)(ifx key == #char "_" then (ifx waits.count && waits[it_index] > 0 then waits[it_index] else DEFAULT_DELAY) else 0);
+        array_insert_at(*timeline.wait_ms, duration, first + it_index);
     }
     timeline_move_caret(timeline, first + keys.count);
     timeline.dirty = true;
@@ -113,6 +134,7 @@ timeline_insert :: (timeline: *Solution_Timeline, keys: string) -> string {
 timeline_record :: (timeline: *Solution_Timeline, key: u8) -> bool {
     if !timeline_key_valid(key) || timeline.keys.count == SEND_KEY_LIMIT return false;
     array_insert_at(*timeline.keys, key, timeline.playhead);
+    array_insert_at(*timeline.wait_ms, cast(s32)(ifx key == #char "_" then DEFAULT_DELAY else 0), timeline.playhead);
     if timeline.caret >= timeline.playhead timeline.caret += 1;
     if timeline.anchor >= timeline.playhead timeline.anchor += 1;
     timeline.playhead += 1;
@@ -129,13 +151,19 @@ timeline_advance :: (timeline: *Solution_Timeline, direction: s64) {
     }
 }
 
-// A physical Z undoes one game action, skipping character switches and waits.
+// A physical Z removes one game action and its trailing switches/waits, keeping the future.
 timeline_apply_game_undo :: (timeline: *Solution_Timeline) -> bool {
     position := timeline.playhead;
     while position > 0 {
         position -= 1;
+        if timeline.keys[position] == #char "!" return false; // Restart cleared the game's undo history.
         if !timeline_key_is_undoable(timeline.keys[position]) continue;
-        timeline_advance(timeline, position - timeline.playhead);
+        removed := timeline.playhead - position;
+        caret   := timeline.caret - max(0, min(removed, timeline.caret - position));
+        anchor  := timeline.anchor - max(0, min(removed, timeline.anchor - position));
+        if !timeline_erase(timeline, position, timeline.playhead) return false;
+        timeline.caret  = caret;
+        timeline.anchor = anchor;
         return true;
     }
     return false; // There is no known game action to undo in this session.
@@ -155,8 +183,23 @@ timeline_serialize :: (timeline: *Solution_Timeline) -> string {
         // Digit cells are literal character switches, never a suffix repetition.
         digit := key >= #char "0" && key <= #char "9";
         if digit append(*result, " ");
-        append(*result, key);
+        if key == #char "_" append(*result, tprint("_%_", send_wait_seconds_text(timeline_wait_ms(timeline, it_index))));
+        else append(*result, key);
         if digit append(*result, " ");
     }
     return builder_to_string(*result);
+}
+
+timeline_wait_ms :: (timeline: *Solution_Timeline, index: s64) -> s32 {
+    if index >= 0 && index < timeline.wait_ms.count && timeline.wait_ms[index] > 0 return timeline.wait_ms[index];
+    return DEFAULT_DELAY;
+}
+
+timeline_set_wait :: (timeline: *Solution_Timeline, index: s64, milliseconds: s32) -> bool {
+    if index < 0 || index >= timeline.keys.count || timeline.keys[index] != #char "_" || milliseconds <= 0 return false;
+    if timeline.wait_ms[index] != milliseconds {
+        timeline.wait_ms[index] = milliseconds;
+        timeline.dirty = true;
+    }
+    return true;
 }

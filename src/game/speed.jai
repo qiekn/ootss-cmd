@@ -10,7 +10,7 @@ speed_parse :: (arguments: string) -> (request: Speed_Request, value: float64, e
     if equal_nocase(text,"down") return .DOWN,0,"";
     if equal_nocase(text,"reset") return .RESET,0,"";
     value,ok,rest := string_to_float64(text);
-    if !ok || rest.count || !game_speed_valid(value) return .QUERY,0,"Usage: speed [0..4|up|down|reset]. 0 pauses; 1 is normal speed.";
+    if !ok || rest.count || !game_speed_valid(value) || value > GAME_SPEED_PRESET_MAX return .QUERY,0,"Usage: speed [0..4|up|down|reset]. 0 pauses; 1 is normal speed.";
     return .SET,value,"";
 }
 
@@ -18,7 +18,7 @@ speed_step :: (current: float64, up: bool) -> float64 {
     steps := float64.[0.25,0.5,1,1.25,1.5,1.75,2,3,4];
     if up {
         for value:steps if value>current return value;
-        return GAME_SPEED_MAX;
+        return GAME_SPEED_PRESET_MAX;
     }
     for i:0..steps.count-1 {
         value := steps[steps.count-1-i];
@@ -50,6 +50,14 @@ console_run_pending_speed :: (state: *Console_State) {
         console_write(state,"Speed command cancelled: focus or the game changed.",.ERROR); return;
     }
     request := state.pending_speed_request;
+    if request != .QUERY && (time_stop.session.memory.handle || time_stop.phase != .IDLE) {
+        error := time_stop_cancel();
+        if error.count { console_write(state, error, .ERROR); return; }
+    }
+    if request != .QUERY && editor.open && !editor_restore_speed() {
+        console_write(state, "Restore the editor's temporary speed before changing the base speed.", .ERROR);
+        return;
+    }
     if request!=.QUERY && (capture_active() || capture_speed.memory.handle) { console_write(state,"Pause capture and restore its time control before changing speed.",.ERROR); return; }
     if speed_session.memory.handle && (game!=speed_game || pid!=speed_pid || process_memory_has_exited(speed_session.memory)) {
         error := game_speed_close(*speed_session);

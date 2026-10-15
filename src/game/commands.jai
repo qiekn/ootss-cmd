@@ -61,6 +61,20 @@ console_submission_ready :: (state: *Console_State, sends_input := true) -> (rea
     return true, false;
 }
 
+console_run_pending_jump :: (state: *Console_State,
+                            ready_check: (state: *Console_State, sends_input: bool) -> (bool, bool) = console_submission_ready) {
+    if !state.pending_jump return;
+    ready, waiting := ready_check(state, true);
+    if waiting return;
+    state.pending_jump = false;
+    if !ready || !editor_game_valid() || editor.game != find_game_window() ||
+       !console_submission_target_matches(state.submission, editor.game, editor.game_pid) {
+        console_write(state, "Jump cancelled: focus or the game changed.", .ERROR);
+        return;
+    }
+    editor_jump_solution(state.pending_jump_step);
+}
+
 console_show_current_level :: (console: *Console_State, read_scene: Game_Level_Query = game_read_scene) {
     name, error := read_scene();
     defer free(name);
@@ -81,7 +95,7 @@ console_play_saved_solution :: (console: *Console_State, filename := SOLUTIONS_F
     database: Solutions_Database;
     defer solutions_free(*database);
     // Play the saved record without importing answers or reading game coordinates.
-    error = solutions_load(*database, filename, marker_file = "", answer_file = "");
+    error = solutions_load(*database, filename);
     if error.count { console_write(console, error, .ERROR); return; }
     index := solution_find_name(*database, name, ignore_case = true);
     if index < 0 && request.source.count {
@@ -107,7 +121,11 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
     can_start, waiting := console_submission_ready(console);
     if waiting return 0;
 
-    commands      := console.pending_send;
+    commands := console.pending_send;
+    waits    := console.pending_send_waits;
+    empty_waits: [..] s32;
+    console.pending_send_waits = empty_waits;
+    defer array_free(waits);
     hold_ms       := console.pending_send_hold_ms;
     interval_ms   := console.pending_send_interval_ms;
     time_mode     := console.pending_send_time_mode;
@@ -165,7 +183,8 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
     // Give the game a short moment to process activation before its first key press.
     if !console.submission.shortcut sleep_milliseconds(100);
     result := send_sequence(commands, hold_ms, interval_ms, target_window = game, poll = console_poll_send,
-                            modifier_scan = modifier.scan, modifier_extended = modifier.extended);
+                            modifier_scan = modifier.scan, modifier_extended = modifier.extended, waits = waits,
+                            adapt_speed   = interruptible, automatic_hold = true);
     if !result.success && result.error == "Send cancelled." && send_input_interrupted() {
         result.error = "Stopped by player input.";
     }

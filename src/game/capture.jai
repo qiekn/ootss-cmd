@@ -129,6 +129,10 @@ capture_requests :: () {
     argument := ifx at<0 then "" else trim(slice(request,at+1,request.count-at-1));
     if argument.count>=2 && argument[0]==#char "\"" && argument[argument.count-1]==#char "\"" argument=slice(argument,1,argument.count-2);
     error: string;
+    if time_stop.session.memory.handle && (equal_nocase(verb,"start") || equal_nocase(verb,"restart") || equal_nocase(verb,"resume")) {
+        console_write(*console, "Resume time with P before starting map capture.", .ERROR);
+        return;
+    }
     if equal_nocase(verb,"start") && argument.count error=capture_load(argument);
     else if equal_nocase(verb,"restart") && argument.count {
         error = capture_load(argument,fresh=true);

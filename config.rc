@@ -12,7 +12,7 @@ subtitle_font_size = 40;
 # Info rows follow file order;
 hud_enabled            = true;
 hud_show_notifications = true;
-hud_hide_on_focus_loss = false;
+hud_hide_on_focus_loss = true;
 
 # Top-left HUD items (item order as blow)
 hud_show_level_name    = true;
@@ -29,6 +29,10 @@ freecam_speed = 8;
 freecam_sensitivity = 0.1;
 freecam_shift_multiplier = 4;
 freecam_ctrl_multiplier = 0.25;
+
+# Time stop (shorcut key: P)
+time_stop_alt_probability = 0.25; # easter egg version
+time_stop_no_audio = false;       # immediately or audio version
 
 # Game installation directory (contains sinking_star.exe, not its data/ folder).
 # Use forward slashes; set to "" to locate the running game automatically.
@@ -52,6 +56,8 @@ go         = "switch"; # swtich level, e.g. swtich mirror_1
 map m = "move -z 1";
 map , = noclip;
 map o = "show subtitles";
+# map > = "speed up";
+# map < = "speed down";
 # map e = 'noclip';
 
 # vim: ft=sh

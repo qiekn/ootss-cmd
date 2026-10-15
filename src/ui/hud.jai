@@ -274,15 +274,19 @@ hud_draw_panel :: (panel: *Hud_Panel, x: s32, y: s32, width: s32, height: s32,
 }
 
 hud_update :: (now: float64) {
-    foreground := Win.GetForegroundWindow();
-    if !hud.enabled || hud.suppressed || overlay.visible || !overlay.game || HudIsIconic(overlay.game) ||
-       (hud.settings.hide_on_focus_loss && foreground != overlay.game && foreground != editor_window.handle) {
+    hud_update_for_focus(now, Win.GetForegroundWindow());
+}
+
+hud_update_for_focus :: (now: float64, foreground: Win.HWND) {
+    if !hud.enabled || hud.suppressed || overlay.visible || !overlay.game || HudIsIconic(overlay.game) {
         hud_hide();
         return;
     }
+    show_info := !hud.settings.hide_on_focus_loss || foreground == overlay.game || foreground == editor_window.handle;
+    if !show_info hud_panel_hide(*hud.info);
     if now < hud.next_frame return;
     hud.next_frame = now + 1.0/30;
-    hud_sample(now);
+    if show_info hud_sample(now);
     bounds: Win.RECT;
     origin: Win.POINT;
     if !Win.GetClientRect(overlay.game, *bounds) || !Win.ClientToScreen(overlay.game, *origin) return;
@@ -290,7 +294,7 @@ hud_update :: (now: float64) {
     notice_height := hud_font_height(bounds.bottom, HUD_NOTICE_SIZE);
     margin        := max(cast(s32) 8, bounds.bottom / 60);
     rows          := hud_info_line_count(hud.settings);
-    if rows {
+    if show_info && rows {
         hud_draw_panel(*hud.info, origin.x + margin, origin.y + margin, bounds.right - 2*margin,
                        hud_info_panel_height(info_height, rows, bounds.bottom - 2*margin), hud.details, info_height, false, 255);
     } else hud_panel_hide(*hud.info);
