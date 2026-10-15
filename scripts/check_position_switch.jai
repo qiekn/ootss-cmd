@@ -4,6 +4,7 @@
 #run {
     set_build_options_dc(.{do_output = false});
     check_switch_handoff();
+    check_view_movement();
     print("PASS: % switch handoff/selection checks; no game writes or input.\n", checks);
 }
 
@@ -32,6 +33,7 @@ Fixture_Entity :: struct {
 Fixture_Manager :: struct {
     padding: [0x370] u8;
     objects: App.Game_Entity_List;
+    camera:  [0x400] u8;
 }
 
 Fixture :: struct {
@@ -242,7 +244,104 @@ check_switch_handoff :: () {
     }
 }
 
+check_view_movement :: () {
+    fixture: Fixture;
+    fixture_init(*fixture, 0x10000);
+    defer free(fixture.image.data);
+    base := fixture.memory.module.base;
+    // Add writable PE data for the camera mode and reflected camera metadata.
+    put(fixture.image, 0x86, cast(u16) 2);
+    put(fixture.image, 0x1b8, cast(u32) 0xe000);
+    put(fixture.image, 0x1bc, cast(u32) 0x2000);
+    put(fixture.image, 0x1d4, cast(u32) 0xc0000040);
+    locator: App.Game_Manager_Locator;
+    slot, error := App.game_entity_manager_slot(fixture.memory, *locator);
+    check(!error.count, "Resolve the synthetic camera/player scene.");
+    layout: App.Game_Camera_Layout = .{manager = locator, mode = base + 0x2208,
+        cameras = 0x538, position = 0x600, orientation = 0x618, projection = 0x628};
+    for *code: layout.code {
+        at := 0x1100 + it_index;
+        fixture.image[at] = 0x90;
+        code.address = base + cast(u64) at;
+        code.count   = 1;
+        code.bytes[0]    = 0x90;
+    }
+    cursor: s64 = 0x5800;
+    fixture_metadata_type(*fixture, *cursor, 0x5000, "Camera_Control", 0x650, 0x5100, 4);
+    fixture_metadata_member(*fixture, *cursor, 0x5100, "entity", 0x3300, 0);
+    fixture_metadata_member(*fixture, *cursor, 0x5140, "fov_vertical", 0x3a00, 0x600);
+    fixture_metadata_member(*fixture, *cursor, 0x5180, "z_near", 0x3a00, 0x604);
+    fixture_metadata_member(*fixture, *cursor, 0x51c0, "z_far", 0x3a00, 0x608);
+    // Entity contains the reflected Entity_Manager pointer used by camera validation.
+    put(fixture.image, 0x3340, App.Game_Entity_List.{count = 3, data = base + 0x3500});
+    fixture_metadata_member(*fixture, *cursor, 0x3580, "entity_manager", 0x5700, 0xf0);
+    fixture_metadata_type(*fixture, *cursor, 0x5600, "Entity_Manager", cast(u32) size_of(Fixture_Manager));
+    fixture_metadata_type(*fixture, *cursor, 0x5700, "", 8, kind = 4);
+    put(fixture.image, 0x5710, base + 0x5600);
+    fixture.entities[5].type = base + 0x5000;
+    put(fixture.image, 0x5500, cast(u64) *fixture.entities[5]);
+    manager_bytes: [] u8 = .{data = cast(*u8) *fixture.managers[0], count = size_of(Fixture_Manager)};
+    put(manager_bytes, 0x538, App.Game_Entity_List.{count = 1, data = base + 0x5500});
+    put(manager_bytes, 0x600, float.[50, 60, 30]);
+    put(manager_bytes, 0x618, App.game_camera_orientation(PI64, -PI64 / 4));
+    put(manager_bytes, 0x628, float.[1, 0.1, 1000]);
+    // Two selected characters retain their relative spacing under a rotated view.
+    fixture.entities[0].position = .[10, 20, 0];
+    fixture.entities[3].position = .[12, 23, 0];
+    fixture.lists[0][0] = cast(u64) *fixture.entities[3];
+    snapshot: App.Game_Camera_Snapshot;
+    snapshot, error = App.game_camera_snapshot(fixture.memory, layout);
+    check(!error.count, "The synthetic current camera passes full metadata validation.");
+    changed: bool;
+    error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true,
+                                                locator = *locator, view_relative = true, camera_layout = *layout);
+    check(!error.count && changed, "View movement uses the same validated group writer.");
+    check(fixture.entities[0].position[0] == 9 && fixture.entities[0].position[1] == 20,
+          "Screen up in the rotated camera moves along world negative X.");
+    check(fixture.entities[3].position[0] == 11 && fixture.entities[3].position[1] == 23,
+          "View movement preserves spacing for every selected character.");
+    // Centering uses the shared anchor, even when the camera begins far away.
+    App.freecam.session = .{memory = fixture.memory, layout = layout, original = snapshot,
+        position = snapshot.position, orientation = snapshot.orientation, owns_mode = true, settled = true};
+    put(fixture.image, 0x2208, cast(s64) App.GAME_CAMERA_FROZEN_MODE);
+    error, changed = App.freecam_center_topdown();
+    check(!error.count && changed && App.freecam.session.position[0] == 9 && App.freecam.session.position[1] == 20 &&
+          App.freecam.session.position[2] == 30, "Topdown centers above the actual selected anchor while retaining altitude.");
+    error, changed = App.game_write_position_to(fixture.memory, .[1, 0, 0], relative = true, instant = true,
+                                                locator = *locator, view_relative = true, camera_layout = *layout);
+    check(!error.count && changed && fixture.entities[0].position[0] == 10,
+          "Noclip-style movement still works while the native camera is frozen.");
+    pose, pose_error := App.game_camera_read_session(*App.freecam.session);
+    check(!pose_error.count && App.game_camera_pose_unchanged(*App.freecam.session, pose),
+          "Moving the player leaves the locked camera untouched.");
+    App.freecam = .{};
+    put(manager_bytes, 0x618, float.[0, 0, 0, 0]);
+    error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true,
+                                                locator = *locator, view_relative = true, camera_layout = *layout);
+    check(error.count > 0 && !changed && fixture.entities[0].position[0] == 10,
+          "An invalid camera never falls back to guessed coordinates or partially moves a player.");
+    error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true, locator = *locator);
+    check(!error.count && changed && fixture.entities[0].position[1] == 21,
+          "Explicit world offsets work independently of camera availability.");
+    // A valid camera belonging to another manager must not direct these players.
+    other_bytes: [] u8 = .{data = cast(*u8) *fixture.managers[1], count = size_of(Fixture_Manager)};
+    for byte: manager_bytes other_bytes[it_index] = byte;
+    put(other_bytes, 0x618, App.GAME_CAMERA_TOPDOWN);
+    fixture.entities[5].manager = cast(u64) *fixture.managers[1];
+    fixture_signature(*fixture, 0x1040, 0x2300);
+    layout.manager.slot        = base + 0x2300;
+    layout.manager.instruction = base + 0x1040;
+    for i: 0..layout.manager.count-1 layout.manager.bytes[i] = fixture.image[0x1040 + i];
+    snapshot, error = App.game_camera_snapshot(fixture.memory, layout);
+    check(!error.count, "The other scene's synthetic camera is independently valid.");
+    error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true,
+                                                locator = *locator, view_relative = true, camera_layout = *layout);
+    check(error.count > 0 && !changed && fixture.entities[0].position[1] == 21,
+          "Camera and player scene mismatch rejects movement before any write.");
+}
+
 #import "Basic";
+#import "Math";
 #import "Compiler";
 #import "String";
 Win :: #import "Windows";

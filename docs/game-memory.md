@@ -379,6 +379,10 @@ jai -quiet scripts/check_centered_capture.jai -import_dir ../modules
 
 `show camera` 使用已验证的 camera layout 只读查询。`set camera` 在既有 freecam 会话内直接写入绝对 float32 XYZ，保留小数；没有通过 delta 相减再相加来换算绝对位置。
 
+`lock` 保留已验证的冻结相机会话，清除待移动状态、释放鼠标捕获并停止消费新的移动键；已消费按键的 keyup 仍按原状态处理。`unlock` 恢复原 freecam 模式的控制。两条命令在提交和执行时均要求 freecam 已开启，不能隐式创建相机会话。锁定期间继续检查原场景、相机实体和姿态，失焦或身份变化时沿既有清理流程恢复跟随。`freecam -topdown` 使用同一进程、同一场景的受控组锚点，将相机 X/Y 置于其上方，保留高度并保证至少 10 个世界单位的间距；拍摄会话跳过角色居中。
+
+noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面坐标轴，选取最近的一对正交网格轴，保持整数步长及受控组间距。写入前复核相机代码、实体身份、方向和玩家所属场景；期间场景检查沿用整组写入的逐字段验证。无法读取相机时拒绝视角相对移动，显式世界坐标命令保持独立。相机角度恰在两条网格轴之间时优先选择 X 为右轴，不宣称复现游戏内部所有转向阈值。`scripts/check_camera_controls.jai`、`scripts/check_camera_capture.jai` 和 `scripts/check_position_switch.jai` 使用隔离状态及合成内存验证这些行为。
+
 `-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型；拍摄比例使用已验证的垂直 FOV。
 
 自动拍摄独占同一个会话，逐帧检查相机身份与姿态；完整帧和元数据分别原子保存。全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [地图拍摄文档](map-capture.md)、`scripts/check_camera_capture.jai` 与 `scripts/check_hud.jai`。

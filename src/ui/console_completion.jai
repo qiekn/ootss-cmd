@@ -132,7 +132,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             console_completion_add(state, prefix, "position");
             console_completion_add(state, prefix, "camera");
         case .MOVE_AXIS;
-            for name: string.["-x", "-y", "-z"] console_completion_add(state, prefix, name);
+            for name: string.["-x", "-y", "-z", "-view"] console_completion_add(state, prefix, name);
         case .SWITCH;
             for name: levels console_completion_add(state, prefix, name);
         case .MARKERS;

@@ -26,7 +26,7 @@ console_parse_coordinates :: (arguments: string, axes: string, required: s64) ->
 }
 
 console_queue_position_request :: (state: *Console_State, arguments: string, axes: string, required: s64,
-                                   relative: bool, usage: string) {
+                                   relative: bool, usage: string, view_relative := false) {
     position, error := console_parse_coordinates(arguments, axes, required);
     if error.count { console_write(state, tprint("% Usage: %", error, usage), .ERROR); return; }
     if !console_position_command_ready(state) return;
@@ -36,6 +36,7 @@ console_queue_position_request :: (state: *Console_State, arguments: string, axe
     }
     state.pending_position          = position;
     state.pending_position_relative = relative;
+    state.pending_position_view     = view_relative;
     state.pending_position_take     = false;
     state.pending_action            = .SET_POSITION;
 }
@@ -43,6 +44,11 @@ console_queue_position_request :: (state: *Console_State, arguments: string, axe
 command_move :: (state: *Console_State, arguments: string) {
     cursor: s64;
     option := console_next_argument(arguments, *cursor);
+    if equal_nocase(option, "-view") {
+        console_queue_position_request(state, slice(arguments, cursor, arguments.count - cursor), "xyz", 2, true,
+                                       "move -view <right> <up> [dz]", view_relative = true);
+        return;
+    }
     axis: string;
     if equal_nocase(option, "-x") axis = "x";
     else if equal_nocase(option, "-y") axis = "y";
@@ -52,7 +58,7 @@ command_move :: (state: *Console_State, arguments: string) {
                                        tprint("move -% <value>", axis));
         return;
     }
-    console_queue_position_request(state, arguments, "xyz", 2, true, "move <dx> <dy> [dz] or move -x|-y|-z <value>");
+    console_queue_position_request(state, arguments, "xyz", 2, true, "move [-view] <dx> <dy> [dz] or move -x|-y|-z <value>");
 }
 
 command_move_xy :: (state: *Console_State, arguments: string) {
@@ -254,7 +260,8 @@ console_run_pending_position :: (state: *Console_State) {
 
 console_set_game_position :: (state: *Console_State) {
     console_change_game_position(state, state.pending_position, state.pending_position_relative,
-                                 take_after = state.pending_position_take);
+                                 take_after    = state.pending_position_take,
+                                 view_relative = state.pending_position_relative && state.pending_position_view);
 }
 
 game_direction_delta :: (direction: u8) -> Game_Position {
@@ -267,7 +274,7 @@ game_direction_delta :: (direction: u8) -> Game_Position {
 }
 
 console_change_game_position :: (state: *Console_State, requested: Game_Position, relative: bool,
-                                 from_game := false, report_success := true, take_after := false) -> bool {
+                                 from_game := false, report_success := true, take_after := false, view_relative := false) -> bool {
     if editor_save_prompt.active {
         console_write(state, "Finish or cancel the save confirmation before changing position.", .ERROR);
         return false;
@@ -327,11 +334,14 @@ console_change_game_position :: (state: *Console_State, requested: Game_Position
     changed:        bool;
     locator:        *Game_Manager_Locator;
     switch_locator: Game_Manager_Locator;
+    camera_layout:  *Game_Camera_Layout;
     if from_game locator = *noclip.locator;
     else if take_after locator = *switch_locator;
+    if from_game camera_layout = *noclip.camera_layout;
     error, changed = game_write_position_to(memory, requested, relative, instant = true,
                                              written_position = *destination, written_player = *player,
-                                             required_scene   = ifx take_after then "overworld" else "", locator = locator);
+                                             required_scene   = ifx take_after then "overworld" else "", locator = locator,
+                                             view_relative    = view_relative, camera_layout = camera_layout);
     if changed editor_on_game_position_changed();
     if error.count { console_write(state, error, .ERROR); return false; }
     if !already_in_game && !take_after {

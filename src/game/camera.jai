@@ -200,8 +200,7 @@ game_camera_read :: () -> (snapshot: Game_Camera_Snapshot, error: string) {
     return snapshot, snapshot_error;
 }
 
-// Pan along the level's grid: +X is right and +Y is up on screen (the Sokoban
-// directions noclip uses), +Z rises away from the ground. The view is unchanged.
+// Scale a world-space pan without increasing speed for combined directions.
 game_camera_pan :: (x: float, y: float, z: float, distance: float) -> Game_Position {
     delta: Game_Position;
     delta[0] = x;
@@ -246,4 +245,62 @@ game_camera_orientation_valid :: (orientation: [4] float) -> bool {
         norm += cast(float64) value * value;
     }
     return abs(norm - 1) <= 0.002;
+}
+
+game_camera_topdown_position :: (camera: Game_Position, player: Game_Position) -> (position: Game_Position, error: string) {
+    if !game_position_valid(camera) || !game_position_valid(player) return .[0, 0, 0], "Invalid camera or player coordinates.";
+    // Preserve altitude when already above the player; avoid starting inside or
+    // below the character when switching from a low free-camera view.
+    height := max(cast(float64) 10, cast(float64) camera[2] - cast(float64) player[2]);
+    z      := cast(float64) player[2] + height;
+    if z > GAME_POSITION_LIMIT return .[0, 0, 0], "There is no room above the player within the supported camera range.";
+    return .[player[0], player[1], cast(float) z], "";
+}
+
+// Project screen right onto the ground, with a perpendicular screen-up axis.
+// Grid movement picks the nearest cardinal pair, preserving one-cell steps and
+// spacing instead of putting characters at fractional diagonal coordinates.
+game_camera_ground_move :: (orientation: [4] float, offset: Game_Position, grid := false)
+                           -> (delta: Game_Position, error: string) {
+    if !game_camera_orientation_valid(orientation) || !game_position_valid(offset) return .[0, 0, 0], "Invalid view-relative movement.";
+    x      := cast(float64) orientation[0]; y := cast(float64) orientation[1];
+    z      := cast(float64) orientation[2]; w := cast(float64) orientation[3];
+    rx     := 2 * (z*w - x*y);
+    ry     := -(1 - 2 * (x*x + z*z));
+    length := sqrt(rx*rx + ry*ry);
+    if length < 0.000001 return .[0, 0, 0], "The camera is rolled vertically; ground directions are unavailable.";
+    rx /= length;
+    ry /= length;
+    ux     := -ry;
+    uy     := rx;
+    facing := ux * 2 * (x*z + y*w) + uy * 2 * (y*z - x*w);
+    // At the horizon, screen-up has no ground projection. Use view-forward.
+    if abs(facing) < 0.000001 facing = ux * (1 - 2 * (y*y + z*z)) + uy * 2 * (x*y + z*w);
+    sign: float64 = ifx facing < 0 then -1.0 else 1.0;
+    if grid {
+        if abs(rx) + 0.000001 >= abs(ry) {
+            rx = ifx rx < 0 then -1.0 else 1.0;
+            ry = 0;
+        } else {
+            ry = ifx ry < 0 then -1.0 else 1.0;
+            rx = 0;
+        }
+        ux = -ry;
+        uy = rx;
+    }
+    dx := cast(float64) offset[0] * rx + cast(float64) offset[1] * ux * sign;
+    dy := cast(float64) offset[0] * ry + cast(float64) offset[1] * uy * sign;
+    if abs(dx) > GAME_POSITION_LIMIT || abs(dy) > GAME_POSITION_LIMIT return .[0, 0, 0], "View-relative movement is outside the supported range.";
+    return .[cast(float) dx, cast(float) dy, offset[2]], "";
+}
+
+game_camera_grid_view_current :: (memory: Process_Memory, layout: Game_Camera_Layout, snapshot: Game_Camera_Snapshot,
+                                  requested: Game_Position, movement: Game_Position) -> bool {
+    if !game_camera_identity_current(memory, layout, snapshot) return false;
+    orientation: [4] float;
+    if !process_read_memory(memory.handle, snapshot.scene.manager + layout.orientation, *orientation, 16) return false;
+    current, error := game_camera_ground_move(orientation, requested, grid = true);
+    if error.count return false;
+    for value: current if value != movement[it_index] return false;
+    return game_camera_identity_current(memory, layout, snapshot);
 }

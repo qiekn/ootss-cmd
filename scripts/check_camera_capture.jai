@@ -67,7 +67,21 @@ check_absolute_camera :: () {
     check(!error.count && pose.position[0]==session.position[0] && pose.position[1]==-0.000125 && pose.position[2]==19.75,"Read back all absolute camera coordinates.");
     error,changed = App.game_camera_move(*session,.[0,0,0],App.GAME_CAMERA_TOPDOWN);
     check(!error.count && changed,"Exact top-down orientation can be written independently.");
-    error,changed = App.game_camera_set_position(*session,.[1000001,0,0]);
+    check(App.game_camera_grid_view_current(session.memory, layout, original, .[0, 1, 0], .[0, 1, 0]),
+          "Read-only view validation accepts the current screen grid direction.");
+    put(bytes, 0x4618, App.game_camera_orientation(PI64, -PI64 / 4));
+    check(!App.game_camera_grid_view_current(session.memory, layout, original, .[0, 1, 0], .[0, 1, 0]),
+          "A view turn before player movement rejects the stale direction.");
+    put(bytes, 0x4618, session.orientation);
+    App.freecam.session = session;
+    error, changed      = App.freecam_center_topdown();
+    check(error.count > 0 && !changed, "Missing player selection cannot move the topdown camera.");
+    App.capture.owns_camera = true;
+    error, changed          = App.freecam_center_topdown();
+    check(!error.count && !changed, "Capture keeps its planned position without requiring a selected player.");
+    App.capture.owns_camera = false;
+    App.freecam             = .{};
+    error,changed           = App.game_camera_set_position(*session,.[1000001,0,0]);
     check(error.count>0 && !changed,"Out-of-range camera writes are rejected before mutation.");
     error,changed = App.game_camera_set_position(*session,session.position);
     check(!error.count && !changed,"Setting the current camera is a no-op.");

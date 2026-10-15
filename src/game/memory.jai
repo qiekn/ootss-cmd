@@ -42,9 +42,11 @@ game_read_position_from :: (memory: Process_Memory) -> (position: Game_Position,
 game_write_position_to :: (memory: Process_Memory, requested: Game_Position, relative := false,
                           written_position: *Game_Position = null, written_player: *Game_Player_Location = null,
                           expected_player:  *Game_Player_Location = null, expected_position: *Game_Position = null,
-                          instant := false, required_scene: string = "", locator: *Game_Manager_Locator = null)
+                          instant       := false, required_scene: string = "", locator: *Game_Manager_Locator = null,
+                          view_relative := false, camera_layout: *Game_Camera_Layout = null)
                           -> (error: string, changed: bool) {
     if !game_position_valid(requested) return "Coordinates must be finite numbers between -1000000 and 1000000.", false;
+    if view_relative && !relative return "View-relative movement requires a relative offset.", false;
     resolved: Game_Manager_Locator;
     error:    string;
     if locator && game_manager_locator_current(memory, locator.*) resolved = locator.*;
@@ -62,6 +64,21 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         if error.count return error, false;
         if !equal_nocase(scene_name, required_scene) return "Return to the overworld before using switch.", false;
     }
+    view:        Game_Camera_Snapshot;
+    view_layout: Game_Camera_Layout;
+    movement := requested;
+    if view_relative {
+        if camera_layout && game_camera_code_current(memory, camera_layout.*) view_layout = camera_layout.*;
+        else {
+            view_layout, error = game_camera_layout(memory);
+            if error.count return error, false;
+            if camera_layout camera_layout.* = view_layout;
+        }
+        view, error = game_camera_snapshot(memory, view_layout);
+        if error.count return error, false;
+        movement, error = game_camera_ground_move(view.orientation, requested, grid = true);
+        if error.count return error, false;
+    }
     reader: Game_Position_Reader;
     defer game_position_reader_close(*reader);
     reader.memory  = memory;
@@ -77,10 +94,13 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         }
     }
     if required_scene.count && sample.player.manager != scene.manager return "The scene changed before teleport. Nothing was written.", false;
+    if view_relative && (sample.player.manager != view.scene.manager || sample.player.slot != view.scene.locator.slot) {
+        return "The camera and player belong to different scenes. Nothing was written.", false;
+    }
     // Freeze the whole selected set before writing. Absolute placement translates
     // it relative to the actual lexicographically first controlled character.
     delta: [3] float64;
-    for i: 0..2 delta[i] = ifx relative then cast(float64) requested[i]
+    for i: 0..2 delta[i] = ifx relative then cast(float64) movement[i]
                           else cast(float64) requested[i] - cast(float64) sample.position[i];
     targets := NewArray(sample.controlled_count, Game_Position_Target);
     defer free(targets.data);
@@ -115,9 +135,15 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         }
         target_index += 1;
     }
+    if view_relative && !game_camera_grid_view_current(memory, view_layout, view, requested, movement) {
+        return "The camera direction changed before movement. Nothing was written; try again.", false;
+    }
+    checked_scene := ifx required_scene.count then *scene else ifx view_relative then *view.scene else null;
+    checked_name  := scene_name;
+    if view_relative && !required_scene.count checked_name = .{data = view.name.data, count = cast(s64) view.scene.name.count};
     changed: bool;
     error, changed = game_commit_positions(*reader, sample, targets, instant,
-                                           ifx required_scene.count then *scene else null, scene_name);
+                                           checked_scene, checked_name);
     if error.count {
         if changed error = tprint("% Controlled characters may have been partially moved.", error);
         return error, changed;

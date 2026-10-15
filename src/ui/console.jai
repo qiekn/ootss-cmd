@@ -85,6 +85,7 @@ Console_State :: struct {
     pending_jump:                                  bool;
     pending_position:                              Game_Position;
     pending_position_relative:                     bool;
+    pending_position_view:                         bool;
     pending_position_take:                         bool;
     pending_position_change:                       bool;
     pending_switch_level:                          string;
@@ -101,6 +102,7 @@ Console_State :: struct {
     pending_freecam_pan:                           bool;
     pending_freecam_topdown, pending_camera_write: bool;
     pending_camera_position:                       Game_Position;
+    pending_camera_lock:                           Camera_Lock_Action;
     zork_mode:                                     bool;
     zork_input_kind:                               Zork_Input_Kind;
     pending_zork_input:                            string;
@@ -150,6 +152,8 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "speed",         run = command_speed            },
     .{name = "fog",           run = command_fog              },
     .{name = "freecam",       run = command_freecam          },
+    .{name = "lock",          run = command_lock             },
+    .{name = "unlock",        run = command_unlock           },
     .{name = "hud",           run = command_hud              },
     .{name = "capture",       run = command_capture          },
     .{name = "open",          run = command_open             },
@@ -277,6 +281,7 @@ command_set :: (console: *Console_State, arguments: string) {
         if editor_save_prompt.active { console_write(console, "Finish the save confirmation first.", .ERROR); return; }
         console.pending_camera_position = position;
         console.pending_camera_write    = true;
+        console.pending_camera_lock     = .NONE;
         console.pending_action          = .SET_CAMERA;
         return;
     }
@@ -612,6 +617,7 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "move -x <value>          Teleport by a signed X offset.",
        "move -y <value>          Teleport by a signed Y offset.",
        "move -z <value>          Teleport by a signed Z offset.",
+       "move -view <right> <up> <z>  Move along the screen's nearest grid axes; Z stays vertical.",
        "                         move -x / move -y with zero do nothing.",
        "                         Example: move -x -2  or  move -z 1",
        "mark [name] [x y z]      Save a position; omitted coordinates use the anchor.",
@@ -639,9 +645,11 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "hud [enable|disable]     Toggle the HUD; hidden automatically while the console is open.",
        "freecam [enable|disable] W/S/A/D/Q/E fly along the view; the mouse turns the view.",
        "freecam -pan             Pan with a fixed view: W/S/A/D up/down/left/right; Q down, E up.",
-       "freecam -topdown         Lock a vertical north-up view;",
+       "freecam -topdown         Center above the controlled player with a vertical north-up view;",
        "                         Hold Shift to move faster or Ctrl to move slower in any mode.",
        "show camera              Show world XYZ, view angles and vertical FOV.",
+       "lock                     Freeze the freecam view and give movement keys back to the player.",
+       "unlock                   Resume controls at the locked view; requires freecam enabled.",
        "set  camera <x> <y> <z>  Set absolute world coordinates while freecam is enabled.",
        "show subtitles [name]    Read English / Chinese dialogue for a level (default: current).",
        "                         Example: show subtitles mirror_21 -comment",

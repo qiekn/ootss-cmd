@@ -1,5 +1,6 @@
-Freecam_Mode  :: enum { MOUSE; PAN; TOPDOWN; }
-Freecam_Speed :: enum { NORMAL; FAST; SLOW; }
+Freecam_Mode       :: enum { MOUSE; PAN; TOPDOWN; }
+Freecam_Speed      :: enum { NORMAL; FAST; SLOW; }
+Camera_Lock_Action :: enum { NONE; LOCK; UNLOCK; }
 
 FREECAM_MOUSE_HINT   :: "Okay, now you can fly. [Fly Guide] W/S/A/D/Q/E, Hold Shift to speed up, Ctrl to slow down. other options: -pan -topdown";
 FREECAM_PAN_HINT     :: "Fixed orientation, WSAD to North/South/West/East";
@@ -19,6 +20,7 @@ freecam_hint :: (mode: Freecam_Mode) -> string {
 
 Freecam_State :: struct {
     enabled, stopping, reported_cleanup_error, looking: bool;
+    locked:                                             bool;
     mode:                                               Freecam_Mode;
     game:                                               Win.HWND;
     pid:                                                u32;
@@ -57,7 +59,7 @@ freecam_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND
         return consumed;
     }
     if was_down return freecam.consumed[index];
-    if !freecam.enabled || !freecam.game || foreground != freecam.game || editor_save_prompt.active return false;
+    if !freecam.enabled || freecam.locked || !freecam.game || foreground != freecam.game || editor_save_prompt.active return false;
     freecam.consumed[index] = true;
     if capture.owns_camera { capture.pause_requested = true; return true; }
     // Configured shortcuts have already had priority. Shift and Ctrl only scale
@@ -133,7 +135,63 @@ command_freecam :: (state: *Console_State, arguments: string) {
     state.pending_freecam_pan     = pan;
     state.pending_freecam_topdown = topdown;
     state.pending_camera_write    = false;
+    state.pending_camera_lock     = .NONE;
     state.pending_action          = .FREECAM;
+}
+
+command_lock :: (state: *Console_State, arguments: string) {
+    console_queue_camera_lock(state, arguments, true);
+}
+
+command_unlock :: (state: *Console_State, arguments: string) {
+    console_queue_camera_lock(state, arguments, false);
+}
+
+console_queue_camera_lock :: (state: *Console_State, arguments: string, locked: bool) {
+    if arguments.count { console_write(state, ifx locked then "Usage: lock" else "Usage: unlock", .ERROR); return; }
+    if capture_active() { console_write(state, "Pause or cancel capture before changing the camera.", .ERROR); return; }
+    if !console_position_command_ready(state) return;
+    if editor_save_prompt.active { console_write(state, "Finish the save confirmation first.", .ERROR); return; }
+    if !freecam.enabled || freecam.stopping { console_write(state, "Enable freecam before using lock or unlock.", .ERROR); return; }
+    state.pending_camera_lock  = ifx locked then Camera_Lock_Action.LOCK else .UNLOCK;
+    state.pending_camera_write = false;
+    state.pending_action       = .FREECAM;
+}
+
+freecam_set_locked :: (locked: bool) -> string {
+    if !freecam.enabled || freecam.stopping return "Enable freecam before changing its lock.";
+    if freecam.locked == locked return "";
+    if !locked && freecam.mode == .MOUSE {
+        error := freecam_install_mouse(overlay.window);
+        if error.count return error;
+    }
+    freecam.locked = locked;
+    freecam_clear_motion();
+    noclip_clear_motion();
+    if locked freecam_remove_mouse();
+    return "";
+}
+
+freecam_center_topdown :: () -> (error: string, changed: bool) {
+    // Capture supplies its own positions and must not depend on a selected Guy.
+    if capture.owns_camera {
+        error, changed := game_camera_move(*freecam.session, .[0, 0, 0], GAME_CAMERA_TOPDOWN);
+        return error, changed;
+    }
+    reader: Game_Position_Reader;
+    defer game_position_reader_close(*reader);
+    reader.memory  = freecam.session.memory;
+    reader.locator = freecam.session.layout.manager;
+    sample := game_position_reader_sample(*reader);
+    if !sample.valid return reader.error, false;
+    if sample.player.manager != freecam.session.original.scene.manager return "The scene changed before centering the camera.", false;
+    position, error := game_camera_topdown_position(freecam.session.position, sample.position);
+    if error.count return error, false;
+    current := game_position_reader_sample(*reader, allow_resolve = false);
+    if !game_position_sample_same_player(sample, current) return "The controlled player changed before centering the camera.", false;
+    changed: bool;
+    error, changed = game_camera_move(*freecam.session, position, GAME_CAMERA_TOPDOWN, absolute = true);
+    return error, changed;
 }
 
 freecam_finish_stop :: (state: *Console_State) {
@@ -155,6 +213,7 @@ freecam_finish_stop :: (state: *Console_State) {
 
 freecam_stop :: (state: *Console_State) {
     freecam.enabled  = false;
+    freecam.locked   = false;
     freecam.stopping = true;
     freecam_clear_motion();
     freecam_remove_mouse();
@@ -163,14 +222,19 @@ freecam_stop :: (state: *Console_State) {
 
 freecam_switch_mode :: (state: *Console_State, mode: Freecam_Mode) {
     if mode == .TOPDOWN && freecam.session.settled {
-        error, changed := game_camera_move(*freecam.session, .[0,0,0], GAME_CAMERA_TOPDOWN);
-        if error.count { console_write(state, error, .ERROR); freecam_stop(state); return; }
+        error, changed := freecam_center_topdown();
+        if error.count {
+            console_write(state, error, .ERROR);
+            if changed freecam_stop(state);
+            return;
+        }
     }
     if mode == .MOUSE {
         error := freecam_install_mouse(overlay.window);
         if error.count { console_write(state, error, .ERROR); return; }
     } else freecam_remove_mouse();
     freecam.mode               = mode;
+    freecam.locked             = false;
     freecam.yaw, freecam.pitch = game_camera_angles(freecam.session.orientation);
     freecam_clear_motion(); // Releases the parked cursor; movement resumes with a fresh press.
     console_write(state, tprint("Freecam mode changed. %", freecam_hint(mode)));
@@ -181,14 +245,29 @@ console_run_pending_freecam :: (state: *Console_State) {
     if !state.pending_freecam_change return;
     ready, waiting := console_submission_ready(state, sends_input = false);
     if waiting return;
-    if ready && state.pending_camera_write && freecam.enabled && !freecam.session.settled return;
+    if ready && freecam.enabled && !freecam.session.settled return;
     state.pending_freecam_change = false;
+    lock_action := state.pending_camera_lock;
+    state.pending_camera_lock = .NONE;
     if !ready || editor_save_prompt.active {
         state.pending_camera_write = false;
         console_write(state, "Camera mode change cancelled before starting.", .ERROR);
         return;
     }
     if capture_active() { state.pending_camera_write = false; console_write(state, "Pause capture before changing the camera.", .ERROR); return; }
+    if freecam.enabled && !console_submission_target_matches(state.submission, freecam.game, freecam.pid) {
+        state.pending_camera_write = false;
+        console_write(state, "Camera command cancelled: the target game changed.", .ERROR);
+        return;
+    }
+    if lock_action != .NONE {
+        error := freecam_set_locked(lock_action == .LOCK);
+        if error.count { console_write(state, error, .ERROR); return; }
+        message := ifx freecam.locked then "Camera locked. Movement keys control the player." else "Camera unlocked. Freecam controls resumed.";
+        console_write(state, message);
+        hud_notify(ifx freecam.locked then "Camera locked" else "Camera unlocked");
+        return;
+    }
     if state.pending_camera_write {
         state.pending_camera_write = false;
         if !freecam.enabled { console_write(state, "Enable freecam before setting its position.", .ERROR); return; }
@@ -212,7 +291,7 @@ console_run_pending_freecam :: (state: *Console_State) {
     }
     if freecam.stopping { console_write(state, "Wait for the previous camera session to finish restoring.", .ERROR); return; }
     if freecam.enabled {
-        if mode == freecam.mode { console_write(state, "Freecam is already enabled."); return; }
+        if mode == freecam.mode && mode != .TOPDOWN && !freecam.locked { console_write(state, "Freecam is already enabled."); return; }
         freecam_switch_mode(state, mode);
         return;
     }
@@ -256,6 +335,7 @@ freecam_start :: (game: Win.HWND, mode: Freecam_Mode) -> string {
         }
     }
     freecam.mode     = mode;
+    freecam.locked   = false;
     freecam.game     = game;
     freecam.pid      = pid;
     freecam.enabled  = true;
@@ -296,11 +376,17 @@ freecam_update :: (state: *Console_State, now: float64) {
         error := game_camera_settle(*freecam.session);
         if error.count { console_write(state, error, .ERROR); freecam_stop(state); return; }
         if freecam.mode == .TOPDOWN {
-            top_error, changed := game_camera_move(*freecam.session, .[0,0,0], GAME_CAMERA_TOPDOWN);
+            top_error, changed := freecam_center_topdown();
             if top_error.count { console_write(state, top_error, .ERROR); freecam_stop(state); return; }
         }
         freecam.yaw, freecam.pitch = game_camera_angles(freecam.session.orientation);
-        hud_notify(tprint("Freecam enabled: %", freecam_mode_name(freecam.mode)));
+        hud_notify(ifx freecam.locked then "Camera locked" else tprint("Freecam enabled: %", freecam_mode_name(freecam.mode)));
+    }
+    if freecam.locked {
+        freecam_clear_motion();
+        error, changed := game_camera_move(*freecam.session, .[0, 0, 0]);
+        if error.count { console_write(state, error, .ERROR); freecam_stop(state); }
+        return;
     }
     if capture.owns_camera || foreground != freecam.game || editor_save_prompt.active || state.pending_send.count || state.pending_position_change {
         freecam_clear_motion();
@@ -341,6 +427,6 @@ console_show_camera :: (state: *Console_State) {
     yaw, pitch := game_camera_angles(snapshot.orientation);
     console_write(state, tprint("Camera XYZ: % (absolute world coordinates)", game_position_text(snapshot.position)));
     console_write(state, tprint("View: %; yaw: %; pitch: %; vertical FOV: % degrees",
-        ifx freecam.enabled then freecam_mode_name(freecam.mode) else "Game",
+        ifx freecam.locked then "Locked" else ifx freecam.enabled then freecam_mode_name(freecam.mode) else "Game",
         yaw*180/PI64, pitch*180/PI64, snapshot.projection[0]*180/PI64));
 }
