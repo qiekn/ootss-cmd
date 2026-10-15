@@ -281,6 +281,7 @@ jai -quiet scripts/check_game_layout.jai -import_dir ../modules - '实际路径/
 ### 共享 reader
 
 - `Game_Position_Reader` 核对定位指令的完整字节、当前 manager、对象数量及完整指针数组；列表改变时重新解析所有有效 `Guy`。同一列表也会重新读取所有 Guy 的 owner、类型、实体 ID 和 `status_flags`，对 ACTIVE 实体读取 XYZ，再复核完整列表和所有身份，拒绝混合切换前后的控制组。
+- 选择变化只比较反射发现的 `ACTIVE` 位；`ON_EXIT` 等非选择位的逐帧变化不改变受控组。首次只读采样遇到两次读取不一致时最多重取三次完整快照；字段写入之间仍只检查一次，发生真实选择或身份变化立即停止，不自动重写或回滚。
 - `selection_version` 记录选择或身份变化，因此 C / 数字键切换不依赖对象列表变化，也不需要辅助程序捕获按键。
 - `allow_resolve = false` 时不打开进程、不扫描代码、不分配内存、不重新搜索实体，只在一次写入内核对原控制集合，变化时立即失败。
 - `game_position_sample_same_group` 允许空间锚点在分批平移中改变，但不授权下一次写入复用原实体地址。
@@ -291,7 +292,9 @@ jai -quiet scripts/check_game_layout.jai -import_dir ../modules - '实际路径/
 - `src/game/level.jai` 的 `game_read_scene` / `game_read_scene_from` 通过同一代码特征定位 manager，独立读取名称，不读取 Guy、选择状态或 XYZ。名称限制为 1–128 字节的资源名（字母、数字、下划线、连字符和点），完整读取后再次核对签名、manager 指针、字符串头及内容；场景或名称改变时返回错误，不保留上次关卡供失败时使用。
 - 2026-09-14 用只申请 QUERY_LIMITED_INFORMATION / VM_READ 的生产接口（`position_tests.exe --read-level`）在同一 Demo 中读到 `quadrants_follow_up`。
 - `show level` 显示场景名并区分 Overworld。无名称的 `show subtitles`、`play`、`do`、`edit` 通过 `game_resolve_level_name` 使用已进入的小关；Overworld、菜单和非关卡场景不能作为默认小关。显式名称不调用场景读取。
-- `switch <level_name>` 从 `data/marker.json` 读取官方关卡入口，保留同坐标的不同关卡名，不用改名的解法或 custom input 替换目录名称。先验证名称、坐标、当前场景为 `overworld`（`game_player_scene_name` 配合已验证玩家检查）和 `User.keymap` 中的 `TakeOrDrop` 绑定，再瞬移；写后核对玩家和坐标，最后发送并释放 TakeOrDrop（默认 V）。在小关内拒绝该命令；普通位置命令不发送这个键。
+- `switch <level_name>` 从 `data/level-catalog.json` 读取包中提取的完整入口 XYZ，保留同坐标的不同关卡名，不用改名的解法或 custom input 替换目录名称。同名多入口会拒绝执行。先验证名称、坐标、当前场景为 `overworld` 和 `User.keymap` 中的 `TakeOrDrop` 绑定，再瞬移；写入期间逐字段核对场景签名、manager、名称和受控角色组，写后核对场景、玩家和坐标，最后发送并释放 TakeOrDrop（默认 V）。在小关内拒绝该命令；普通位置命令不发送这个键。单脚本生成和数据格式见 [关卡目录](level-catalog.md)。
+- `switch` 先完成游戏激活并等待 100 ms，再写入位置；写入后再等待 100 ms 供原生入口检测更新。等待期间保留焦点、Esc 和物理输入取消检查。完整实体列表与受控组校验只用于位置写入阶段；V 前直接确认同一场景和传送目标的 owner、Guy 类型、实体 ID 与 XYZ，不再采样 `ACTIVE` 或要求整张实体列表与上一帧一致。真实坐标变化会报告目标与实际 XYZ，不放宽坐标容差。别名（例如 `go = switch;`）使用相同路径。
+- `jai -quiet scripts/check_position_switch.jai -import_dir ../modules` 用隔离内存检查：原生标志、无关实体和列表重分配不拦截 V；目标实体身份、场景或落点变化仍拒绝按键；取消与按下后的释放正常工作。`scripts/inspect_game_layout.jai -import_dir ../modules - --positions` 提供真实游戏的只读采样诊断。
 
 ## 关卡数据
 

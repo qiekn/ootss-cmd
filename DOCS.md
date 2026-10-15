@@ -3,8 +3,11 @@
 - [俯视相机、HUD 与大地图拍摄](docs/map-capture.md)
 - [游戏内存布局与版本适配](docs/game-memory.md)
 - [离线关卡格式](docs/custom_levels.md)
+- [自动提取关卡名、区域和入口坐标](docs/level-catalog.md)
 
 控制台内执行 `help` 查看命令；命令名称和相机选项不区分大小写。
+
+`switch <level_name>` 使用 `data/level-catalog.json` 中的完整 XYZ 传送到关卡入口，再触发 TakeOrDrop（默认 V）。仅在大世界生效，小关卡内会拒绝执行；支持关卡名称 Tab 补全。目录由 `scripts/generate_level_catalog.jai` 从游戏 `levels.package` 生成，详见上面的入口数据文档。
 
 `noclip` 模式下，W/S/A/D 每步移动一格；持续按住时默认间隔为 150 ms，按住左或右 Shift 加速至 2 倍（间隔 75 ms），松开后恢复原速。
 

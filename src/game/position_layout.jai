@@ -110,7 +110,9 @@ game_player_scene_name :: (memory: Process_Memory, player: Game_Player_Location)
     return name, "";
 }
 
-game_position_writer_current :: (reader: *Game_Position_Reader, original: Game_Position_Sample) -> bool {
+game_position_writer_current :: (reader: *Game_Position_Reader, original: Game_Position_Sample,
+                                 scene: *Game_Scene_Location = null, scene_name: string = "") -> bool {
+    if scene && !game_scene_location_current(reader.memory, scene.*, scene_name) return false;
     current := game_position_reader_sample(reader, allow_resolve = false);
     // Moving one member can temporarily change which member is leftmost. The
     // fixed controlled set, not the changing spatial anchor, authorizes this write.
@@ -118,10 +120,11 @@ game_position_writer_current :: (reader: *Game_Position_Reader, original: Game_P
 }
 
 game_commit_positions :: (reader: *Game_Position_Reader, original: Game_Position_Sample,
-                          targets: [] Game_Position_Target, instant: bool) -> (error: string, changed: bool) {
+                          targets: [] Game_Position_Target, instant: bool,
+                          scene:   *Game_Scene_Location = null, scene_name: string = "") -> (error: string, changed: bool) {
     memory := reader.memory;
     if !original.valid || !targets.count || targets.count != original.controlled_count ||
-       !game_position_writer_current(reader, original) {
+       !game_position_writer_current(reader, original, scene, scene_name) {
         return "The controlled characters changed. Nothing was written.", false;
     }
     field_count := ifx instant then 5 else 1;
@@ -152,7 +155,7 @@ game_commit_positions :: (reader: *Game_Position_Reader, original: Game_Position
         // This is a sequence of field writes, not an atomic transaction. On any
         // failure, report possible changes and stop without rolling old state back.
         for field: 0..field_count-1 {
-            if !game_position_writer_current(reader, original) {
+            if !game_position_writer_current(reader, original, scene, scene_name) {
                 return "The controlled characters changed during teleport. No further fields were written.", changed;
             }
             index            := ifx instant then order[field] else 0;
@@ -174,7 +177,7 @@ game_commit_positions :: (reader: *Game_Position_Reader, original: Game_Position
             }
         }
     }
-    if !game_position_writer_current(reader, original) {
+    if !game_position_writer_current(reader, original, scene, scene_name) {
         return "Teleport was written, but the controlled characters changed before verification.", changed;
     }
     return "", changed;

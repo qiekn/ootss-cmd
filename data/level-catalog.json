@@ -1,0 +1,5529 @@
+{
+  "source": {
+    "package": "levels.package",
+    "sha256": "6f7fb54a757db8ca41e54f9ce098d980c07df17955facad99cf44e94d7ccf5f7",
+    "scene": "overworld"
+  },
+  "levels": [
+    {
+      "name": "3d_intro_heroes",
+      "region": "intro_to_3d",
+      "position": [80, 74, 33],
+      "entity_id": 46146581
+    },
+    {
+      "name": "3d_intro_mirrors",
+      "region": "intro_to_3d",
+      "position": [85, 69, 33],
+      "entity_id": 46146512
+    },
+    {
+      "name": "3d_intro_promesst_v5",
+      "region": "intro_to_3d",
+      "position": [75, 69, 33],
+      "entity_id": 95425287
+    },
+    {
+      "name": "3d_intro_skipping",
+      "region": "intro_to_3d",
+      "position": [80, 64, 33],
+      "entity_id": 46149616
+    },
+    {
+      "name": "3d_intro_vanilla",
+      "region": "intro_to_3d",
+      "position": [81, 70, 33],
+      "entity_id": 46140904
+    },
+    {
+      "name": "3wc_into_forest_v7",
+      "region": "underworld_heroes_and_promesst",
+      "position": [-3, 79, -21],
+      "entity_id": 62985643
+    },
+    {
+      "name": "3wcn_purple_goblin",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [-20, 71, -21],
+      "entity_id": 95458118
+    },
+    {
+      "name": "3wcn_purple_mirror_skip",
+      "region": "orange_beam_highway_worlds_collide",
+      "position": [160, 29, -21],
+      "entity_id": 62985638
+    },
+    {
+      "name": "3wcn_shm_dragon_lily",
+      "region": "orange_beam_highway_worlds_collide",
+      "position": [160, 132, -21],
+      "entity_id": 115466579
+    },
+    {
+      "name": "3wcn_stonehenge",
+      "region": "underworld_heroes_and_promesst",
+      "position": [-3, 81, -21],
+      "entity_id": 63029892
+    },
+    {
+      "name": "4wc_dragon_cyan_s_v2",
+      "region": "orange_beam_highway_worlds_collide",
+      "position": [163, 147, -21],
+      "entity_id": 62985646
+    },
+    {
+      "name": "4wcn_all_fast",
+      "region": "orange_beam_highway_worlds_collide",
+      "position": [162, 147, -21],
+      "entity_id": 62985641
+    },
+    {
+      "name": "a_wiz_out_of_water",
+      "region": "heroes_and_water",
+      "position": [102, 122, 0],
+      "entity_id": 59769091
+    },
+    {
+      "name": "accidentally_unlock_v2",
+      "region": "beaming_objects",
+      "position": [22, 123, 0],
+      "entity_id": 59776535
+    },
+    {
+      "name": "across_the_fence_vtrader_m_p",
+      "region": "beams_and_mirrors",
+      "position": [-19, 45, 0],
+      "entity_id": 92275002
+    },
+    {
+      "name": "adjust_explorer_v4",
+      "region": "beams_and_mirrors",
+      "position": [154, 44, 0],
+      "entity_id": 95422621
+    },
+    {
+      "name": "after_wings",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [121, 16, -21],
+      "entity_id": 63005675
+    },
+    {
+      "name": "aggro_maze",
+      "region": "goblin_rotation",
+      "position": [19, 90, 38],
+      "entity_id": 62933269
+    },
+    {
+      "name": "aggro_which0",
+      "region": "goblin_rotation",
+      "position": [18, 96, 38],
+      "entity_id": 62933253
+    },
+    {
+      "name": "air_skating_v6",
+      "region": "double_beam_falling",
+      "position": [16, 55, 38],
+      "entity_id": 14681783
+    },
+    {
+      "name": "airmail",
+      "region": "mirrors_and_stones",
+      "position": [105, 37, 0],
+      "entity_id": 14681679
+    },
+    {
+      "name": "all_out_goblin_war",
+      "region": "vertical_mirrors",
+      "position": [137, 59, 35],
+      "entity_id": 58723617
+    },
+    {
+      "name": "all_together_now",
+      "region": "endgame2",
+      "position": [-9, 134, 47],
+      "entity_id": 115466566
+    },
+    {
+      "name": "allocate_heroes_end3",
+      "region": "endgame3",
+      "position": [4, 134, -24],
+      "entity_id": 115521092
+    },
+    {
+      "name": "allocate_heroes_v2",
+      "region": "endgame2",
+      "position": [-15, 151, 44],
+      "entity_id": 62915279
+    },
+    {
+      "name": "already_dropped_v2",
+      "region": "mirrors_and_stones",
+      "position": [131, 44, 0],
+      "entity_id": 46150293
+    },
+    {
+      "name": "annoying_orange_v3",
+      "region": "double_beam_falling",
+      "position": [49, 41, 38],
+      "entity_id": 46137383
+    },
+    {
+      "name": "another_stone_stopper",
+      "region": "heroes_and_stones",
+      "position": [122, 9, 0],
+      "entity_id": 16777355
+    },
+    {
+      "name": "arcadia_surprise_big",
+      "region": "clones",
+      "position": [-24, 116, 0],
+      "entity_id": 14681608
+    },
+    {
+      "name": "arcadia_surprise_big2",
+      "region": "clones",
+      "position": [163, 120, 0],
+      "entity_id": 46137432
+    },
+    {
+      "name": "arcadiav2_big",
+      "region": "clones",
+      "position": [164, 121, 0],
+      "entity_id": 14681594
+    },
+    {
+      "name": "archways_2_v2",
+      "region": "heroes_in_3d",
+      "position": [118, 91, 36],
+      "entity_id": 59771243
+    },
+    {
+      "name": "archways_4",
+      "region": "heroes_in_3d",
+      "position": [116, 96, 36],
+      "entity_id": 46146651
+    },
+    {
+      "name": "army_v5",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [130, 69, -2.10182876586914062e+01],
+      "entity_id": 95471992
+    },
+    {
+      "name": "assassins_creed",
+      "region": "heroes_in_3d",
+      "position": [55, 96, 35],
+      "entity_id": 95433290
+    },
+    {
+      "name": "automatic_door_v5",
+      "region": "heroes_in_3d",
+      "position": [139, 105, 37],
+      "entity_id": 90197371
+    },
+    {
+      "name": "baby_steps_line",
+      "region": "heroes_and_water",
+      "position": [132, 133, 0],
+      "entity_id": 62961129
+    },
+    {
+      "name": "bad_aim_v2",
+      "region": "mirrorable_stones",
+      "position": [149, 27, 0],
+      "entity_id": 59769450
+    },
+    {
+      "name": "bard_metamirror",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [125, 90, -21],
+      "entity_id": 62937701
+    },
+    {
+      "name": "bard_movable_island",
+      "region": "advanced_bard_and_water",
+      "position": [53, 137, -18],
+      "entity_id": 90194420
+    },
+    {
+      "name": "bard_movable_island2",
+      "region": "advanced_bard_and_water",
+      "position": [53, 138, -18],
+      "entity_id": 90194418
+    },
+    {
+      "name": "bard_must_stack4_fix",
+      "region": "heroes_in_3d",
+      "position": [113, 125, 36],
+      "entity_id": 59776519
+    },
+    {
+      "name": "bard_range3_with_intro",
+      "region": "heroes_and_water",
+      "position": [145, 133, 0],
+      "entity_id": 115379498
+    },
+    {
+      "name": "bard_range4",
+      "region": "heroes_and_stones",
+      "position": [15, 150, 0],
+      "entity_id": 46146952
+    },
+    {
+      "name": "bard_range5",
+      "region": "heroes_and_stones",
+      "position": [16, 150, 0],
+      "entity_id": 46146954
+    },
+    {
+      "name": "bard_range6",
+      "region": "heroes_and_stones",
+      "position": [17, 150, 0],
+      "entity_id": 46146950
+    },
+    {
+      "name": "bard_stack_intro",
+      "region": "heroes_and_water",
+      "position": [130, 133, 0],
+      "entity_id": 62915949
+    },
+    {
+      "name": "bard_triangle",
+      "region": "heroes_in_3d",
+      "position": [104, 135, 36],
+      "entity_id": 59776517
+    },
+    {
+      "name": "base_jump",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [103, 124, -18],
+      "entity_id": 58720587
+    },
+    {
+      "name": "battle_royale_v2",
+      "region": "underworld_heroes_and_promesst",
+      "position": [56, 102, -17],
+      "entity_id": 95450508
+    },
+    {
+      "name": "be_aggro_alt_2",
+      "region": "beams_and_basic_heroes",
+      "position": [44, 124, 0],
+      "entity_id": 46138465
+    },
+    {
+      "name": "beam_jail_v3",
+      "region": "vertical_reflection",
+      "position": [-2, 78, 38],
+      "entity_id": 46146906
+    },
+    {
+      "name": "beam_me_up_v3",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [11, 71, -22],
+      "entity_id": 95452213
+    },
+    {
+      "name": "beam_rooms",
+      "region": "promesst1_and_2",
+      "position": [37, 87, 0],
+      "entity_id": 46139214
+    },
+    {
+      "name": "beam_shatter",
+      "region": "beams_and_basic_heroes",
+      "position": [10, 112, 0],
+      "entity_id": 95449835
+    },
+    {
+      "name": "beam_sisters",
+      "region": "beam_carrying",
+      "position": [18, 83, 38],
+      "entity_id": 95427969
+    },
+    {
+      "name": "before_wings",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [115, 16, -21],
+      "entity_id": 63005674
+    },
+    {
+      "name": "best_beam_colors",
+      "region": "endgame3",
+      "position": [2, 132, -24],
+      "entity_id": 115521055
+    },
+    {
+      "name": "binary_maze",
+      "region": "beams_and_basic_heroes",
+      "position": [30, 105, 0],
+      "entity_id": 62922800
+    },
+    {
+      "name": "bitstring_small",
+      "region": "heroes_and_mirrors",
+      "position": [120, 102, 0],
+      "entity_id": 94372270
+    },
+    {
+      "name": "blind_spot_v2",
+      "region": "mirrors_in_3d",
+      "position": [98, 59, 31],
+      "entity_id": 115497468
+    },
+    {
+      "name": "blocking_issue",
+      "region": "heroes_and_mirrors",
+      "position": [125, 107, 0],
+      "entity_id": 14681683
+    },
+    {
+      "name": "blue_revolution_v2",
+      "region": "promesst1_and_2",
+      "position": [36, 52, 0],
+      "entity_id": 95471584
+    },
+    {
+      "name": "boat_priest_v3",
+      "region": "advanced_bard_and_water",
+      "position": [60, 123, -18],
+      "entity_id": 62944439
+    },
+    {
+      "name": "bon_voyage",
+      "region": "underworld_skipping_and_promesst",
+      "position": [2, 29, -21],
+      "entity_id": 62985634
+    },
+    {
+      "name": "boot_cycle_warrior",
+      "region": "gems",
+      "position": [42, 51, -21],
+      "entity_id": 115347697
+    },
+    {
+      "name": "both_ways",
+      "region": "heroes_and_water",
+      "position": [113, 138, 0],
+      "entity_id": 58729499
+    },
+    {
+      "name": "bothersome_mirror",
+      "region": "mirrors_in_3d",
+      "position": [110, 55, 33],
+      "entity_id": 95440985
+    },
+    {
+      "name": "bottleneck",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [100, 81, -21],
+      "entity_id": 94379584
+    },
+    {
+      "name": "bottom_adjust",
+      "region": "vertical_mirrors",
+      "position": [133, 67, 48],
+      "entity_id": 94376048
+    },
+    {
+      "name": "bottom_bridge_tall",
+      "region": "vertical_mirrors",
+      "position": [116, 70, 36],
+      "entity_id": 94376038
+    },
+    {
+      "name": "bottom_bridge_v2",
+      "region": "vertical_mirrors",
+      "position": [116, 69, 36],
+      "entity_id": 95442978
+    },
+    {
+      "name": "boxes_vs_crystals",
+      "region": "beaming_objects",
+      "position": [18, 122, 0],
+      "entity_id": 46138853
+    },
+    {
+      "name": "break_send_lily_c",
+      "region": "beams_and_stones",
+      "position": [34, 26, 0],
+      "entity_id": 90201498
+    },
+    {
+      "name": "break_through_focused",
+      "region": "beams_and_mirrors",
+      "position": [-17, 47, 0],
+      "entity_id": 46138477
+    },
+    {
+      "name": "breaking_bread",
+      "region": "gems",
+      "position": [25, 42, -21],
+      "entity_id": 94376948
+    },
+    {
+      "name": "breath_skip",
+      "region": "heroes_and_stones",
+      "position": [64, 4, 0],
+      "entity_id": 14681218
+    },
+    {
+      "name": "bridgey",
+      "region": "vertical_mirrors",
+      "position": [135, 51, 34],
+      "entity_id": 58723611
+    },
+    {
+      "name": "bridgey2",
+      "region": "vertical_mirrors",
+      "position": [136, 51, 34],
+      "entity_id": 58723613
+    },
+    {
+      "name": "bridgey2b",
+      "region": "vertical_mirrors",
+      "position": [137, 51, 34],
+      "entity_id": 111218163
+    },
+    {
+      "name": "bridgey3_abstract_art",
+      "region": "vertical_mirrors",
+      "position": [145, 56, 34],
+      "entity_id": 58723615
+    },
+    {
+      "name": "buff_explorer",
+      "region": "strength",
+      "position": [42, 78, 35],
+      "entity_id": 62929632
+    },
+    {
+      "name": "bug_spray",
+      "region": "heroes_and_artifacts",
+      "position": [26, 95, 0],
+      "entity_id": 95421408
+    },
+    {
+      "name": "busy_beaver",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [106, 83, -21],
+      "entity_id": 95450857
+    },
+    {
+      "name": "button_and_beam_v3",
+      "region": "monsters_and_beams",
+      "position": [48, 95, -21],
+      "entity_id": 95448105
+    },
+    {
+      "name": "button_clone_journey",
+      "region": "clones",
+      "position": [160, 125, 0],
+      "entity_id": 59769870
+    },
+    {
+      "name": "button_playground",
+      "region": "beams_and_basic_heroes",
+      "position": [31, 130, 0],
+      "entity_id": 46143277
+    },
+    {
+      "name": "button_shut_in",
+      "region": "skipping_in_3d",
+      "position": [75, 33, 22],
+      "entity_id": 46149758
+    },
+    {
+      "name": "bypass_gates",
+      "region": "beams_and_basic_heroes",
+      "position": [25, 113, 0],
+      "entity_id": 62922816
+    },
+    {
+      "name": "cancel_out",
+      "region": "mirrors_and_stones",
+      "position": [161, 33, 0],
+      "entity_id": 59772020
+    },
+    {
+      "name": "carry_lily",
+      "region": "skipping_in_3d",
+      "position": [67, 47, 27],
+      "entity_id": 95426178
+    },
+    {
+      "name": "carry_simplified",
+      "region": "intro_to_3d",
+      "position": [81, 68, 33],
+      "entity_id": 95425315
+    },
+    {
+      "name": "catch_and_drop",
+      "region": "mirrorable_stones",
+      "position": [123, 30, 0],
+      "entity_id": 46138129
+    },
+    {
+      "name": "catch_and_throw",
+      "region": "mirrorable_stones",
+      "position": [124, 30, 0],
+      "entity_id": 59769438
+    },
+    {
+      "name": "catching_fire_v2",
+      "region": "heroes_in_3d",
+      "position": [55, 123, 54],
+      "entity_id": 111202287
+    },
+    {
+      "name": "catching_up_v2",
+      "region": "vertical_mirrors",
+      "position": [138, 70, 48],
+      "entity_id": 46146774
+    },
+    {
+      "name": "chain_gang",
+      "region": "goblin_rotation",
+      "position": [28, 91, 37],
+      "entity_id": 62933267
+    },
+    {
+      "name": "chain_gang3",
+      "region": "goblin_rotation",
+      "position": [28, 90, 37],
+      "entity_id": 62933263
+    },
+    {
+      "name": "chain_reaction",
+      "region": "underworld_skipping_and_promesst",
+      "position": [-3, 32, -21],
+      "entity_id": 62964051
+    },
+    {
+      "name": "chart_a_course",
+      "region": "endgame2",
+      "position": [-8, 143, 44],
+      "entity_id": 115421416
+    },
+    {
+      "name": "chasm_3",
+      "region": "vertical_mirrors",
+      "position": [142, 118, 37],
+      "entity_id": 46146768
+    },
+    {
+      "name": "cleric_fly_intro3_v2",
+      "region": "heroes_and_water",
+      "position": [120, 134, 0],
+      "entity_id": 46138313
+    },
+    {
+      "name": "cleric_isles",
+      "region": "beams_and_basic_heroes",
+      "position": [6, 99, 0],
+      "entity_id": 90182078
+    },
+    {
+      "name": "cliff_duo",
+      "region": "heroes_in_3d",
+      "position": [127, 100, 36],
+      "entity_id": 46146653
+    },
+    {
+      "name": "cliff_hopping",
+      "region": "mirrors_in_3d",
+      "position": [97, 67, 30],
+      "entity_id": 115497409
+    },
+    {
+      "name": "clone_adjust",
+      "region": "clones",
+      "position": [141, 125, 0],
+      "entity_id": 46137348
+    },
+    {
+      "name": "clone_adjust_mirror",
+      "region": "clones",
+      "position": [133, 121, 0],
+      "entity_id": 46137428
+    },
+    {
+      "name": "clone_adjust_two_rocks",
+      "region": "clones",
+      "position": [142, 117, 0],
+      "entity_id": 46137350
+    },
+    {
+      "name": "clone_goblin",
+      "region": "heroes_and_mirrors",
+      "position": [130, 92, 0],
+      "entity_id": 94372442
+    },
+    {
+      "name": "clone_maze",
+      "region": "clones",
+      "position": [134, 121, 0],
+      "entity_id": 46137430
+    },
+    {
+      "name": "close_circuit",
+      "region": "beams_and_stones",
+      "position": [28, 13, 0],
+      "entity_id": 46149682
+    },
+    {
+      "name": "close_to_button",
+      "region": "heroes_and_mirrors",
+      "position": [116, 105, 0],
+      "entity_id": 14681665
+    },
+    {
+      "name": "coax_a_lot",
+      "region": "mirrors_and_stones",
+      "position": [130, 14, 0],
+      "entity_id": 14681651
+    },
+    {
+      "name": "color_picker",
+      "region": "endgame2",
+      "position": [-20, 147, 44],
+      "entity_id": 115512323
+    },
+    {
+      "name": "come_closer",
+      "region": "heroes_and_stones",
+      "position": [22, 143, 0],
+      "entity_id": 59769042
+    },
+    {
+      "name": "compactor_v2",
+      "region": "heroes3",
+      "position": [87, 119, 0],
+      "entity_id": 87037340
+    },
+    {
+      "name": "connect_the_dots_v5",
+      "region": "heroes_in_3d",
+      "position": [82, 97, 36],
+      "entity_id": 95439576
+    },
+    {
+      "name": "corner_loop",
+      "region": "beams_and_basic_heroes",
+      "position": [15, 110, 0],
+      "entity_id": 62922814
+    },
+    {
+      "name": "corner_trick_easier",
+      "region": "beam_carrying",
+      "position": [26, 78, 38],
+      "entity_id": 95436358
+    },
+    {
+      "name": "crystal_bridges",
+      "region": "heroes_and_water",
+      "position": [102, 101, 0],
+      "entity_id": 46138370
+    },
+    {
+      "name": "crystal_island",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [107, 75, -21],
+      "entity_id": 62924058
+    },
+    {
+      "name": "crystal_logistics",
+      "region": "beam_carrying",
+      "position": [22, 82, 38],
+      "entity_id": 95436360
+    },
+    {
+      "name": "crystal_rover_bridge",
+      "region": "underworld_heroes_and_promesst",
+      "position": [16, 84, -21],
+      "entity_id": 90194693
+    },
+    {
+      "name": "crystal_rover_intro",
+      "region": "promesst3",
+      "position": [10, 54, 0],
+      "entity_id": 90204431
+    },
+    {
+      "name": "crystal_rover_rush",
+      "region": "underworld_heroes_and_promesst",
+      "position": [16, 85, -21],
+      "entity_id": 90194691
+    },
+    {
+      "name": "crystals_not_stones",
+      "region": "heroes_and_stones",
+      "position": [62, 147, 0],
+      "entity_id": 59768872
+    },
+    {
+      "name": "cyan_bridge_v3",
+      "region": "strength",
+      "position": [51, 87, 35],
+      "entity_id": 95444013
+    },
+    {
+      "name": "cyan_counter_med3",
+      "region": "beams_and_mirrors",
+      "position": [-7, 27, 0],
+      "entity_id": 94373740
+    },
+    {
+      "name": "cyan_overlap_intro_longer",
+      "region": "promesst1_and_2",
+      "position": [56, 60, 0],
+      "entity_id": 115557442
+    },
+    {
+      "name": "cyan_torc_maze_vs",
+      "region": "beams_and_mirrors",
+      "position": [-10, 30, 0],
+      "entity_id": 95422611
+    },
+    {
+      "name": "defender",
+      "region": "underworld_skipping_and_promesst",
+      "position": [41, 20, -21],
+      "entity_id": 95453265
+    },
+    {
+      "name": "delay_time_v2",
+      "region": "skipping_in_3d",
+      "position": [73, 57, 33],
+      "entity_id": 46149750
+    },
+    {
+      "name": "depositor_bard",
+      "region": "skipping_in_3d",
+      "position": [77, 23, 19],
+      "entity_id": 92276782
+    },
+    {
+      "name": "depositor_thief",
+      "region": "skipping_in_3d",
+      "position": [77, 22, 19],
+      "entity_id": 95426199
+    },
+    {
+      "name": "design_corner",
+      "region": "endgame3",
+      "position": [23, 133, -24],
+      "entity_id": 32508554
+    },
+    {
+      "name": "design_fts",
+      "region": "endgame3",
+      "position": [21, 131, -24],
+      "entity_id": 135312362
+    },
+    {
+      "name": "detachment",
+      "region": "heroes_and_mirrors",
+      "position": [112, 108, 0],
+      "entity_id": 46141069
+    },
+    {
+      "name": "detonator",
+      "region": "heroes_and_water",
+      "position": [94, 112, 0],
+      "entity_id": 95455093
+    },
+    {
+      "name": "diag_slide",
+      "region": "mirrors_and_stones",
+      "position": [162, 11, 0],
+      "entity_id": 59778902
+    },
+    {
+      "name": "dipping_your_toes_in",
+      "region": "heroes_and_water",
+      "position": [102, 100, 0],
+      "entity_id": 46138372
+    },
+    {
+      "name": "ditching_cargo",
+      "region": "mirrors_and_stones",
+      "position": [116, 16, 0],
+      "entity_id": 14681157
+    },
+    {
+      "name": "do_not_want",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [39, 85, -21],
+      "entity_id": 95461110
+    },
+    {
+      "name": "dont_push_the_button",
+      "region": "heroes_and_water",
+      "position": [92, 112, 0],
+      "entity_id": 51380254
+    },
+    {
+      "name": "doorstop",
+      "region": "beams_and_stones",
+      "position": [45, 32, 0],
+      "entity_id": 59769730
+    },
+    {
+      "name": "doorstop_reprise_easier",
+      "region": "beams_and_stones",
+      "position": [46, 32, 0],
+      "entity_id": 59769732
+    },
+    {
+      "name": "double_break",
+      "region": "heroes_and_mirrors",
+      "position": [122, 113, 0],
+      "entity_id": 59771330
+    },
+    {
+      "name": "double_door",
+      "region": "beams_and_stones",
+      "position": [22, 13, 0],
+      "entity_id": 46149684
+    },
+    {
+      "name": "double_sided_skip",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [141, 53, -12],
+      "entity_id": 95462602
+    },
+    {
+      "name": "double_sideways",
+      "region": "beams_and_mirrors",
+      "position": [-3, 45, 0],
+      "entity_id": 90184976
+    },
+    {
+      "name": "double_team",
+      "region": "beams_and_basic_heroes",
+      "position": [8, 108, 0],
+      "entity_id": 14681397
+    },
+    {
+      "name": "double_tempo",
+      "region": "beams_and_basic_heroes",
+      "position": [31, 132, 0],
+      "entity_id": 46140977
+    },
+    {
+      "name": "double_the_fun",
+      "region": "elevators",
+      "position": [27, 68, 37],
+      "entity_id": 59770793
+    },
+    {
+      "name": "double_trouble",
+      "region": "double_beam_falling_dropdown",
+      "position": [31, 53, 0],
+      "entity_id": 62977291
+    },
+    {
+      "name": "double_up",
+      "region": "double_beam_falling",
+      "position": [44, 32, 38],
+      "entity_id": 95426946
+    },
+    {
+      "name": "dragon_bridge",
+      "region": "heroes_in_3d",
+      "position": [76, 97, 36],
+      "entity_id": 95438499
+    },
+    {
+      "name": "dragon_compass",
+      "region": "heroes_and_water",
+      "position": [125, 129, 0],
+      "entity_id": 59769181
+    },
+    {
+      "name": "dragon_drag",
+      "region": "beams_and_stones",
+      "position": [24, 12, 0],
+      "entity_id": 46149690
+    },
+    {
+      "name": "dragon_garden",
+      "region": "heroes_and_stones",
+      "position": [93, 134, 0],
+      "entity_id": 46138376
+    },
+    {
+      "name": "dragon_on_the_wall",
+      "region": "sideways_gates",
+      "position": [58, 108, 0],
+      "entity_id": 90204160
+    },
+    {
+      "name": "dragons_layer",
+      "region": "double_beam_falling",
+      "position": [19, 29, 34],
+      "entity_id": 14681773
+    },
+    {
+      "name": "dragonsweeper",
+      "region": "monsters_and_beams",
+      "position": [57, 84, -21],
+      "entity_id": 94372098
+    },
+    {
+      "name": "drawbridge",
+      "region": "vertical_mirrors",
+      "position": [122, 72, 35],
+      "entity_id": 94377310
+    },
+    {
+      "name": "drop_off",
+      "region": "advanced_bard_and_water",
+      "position": [53, 119, -18],
+      "entity_id": 90203885
+    },
+    {
+      "name": "drop_operation_v3",
+      "region": "underworld_skipping_and_promesst",
+      "position": [49, 13, -21],
+      "entity_id": 92279932
+    },
+    {
+      "name": "drop_sokoban",
+      "region": "elevators",
+      "position": [31, 69, 40],
+      "entity_id": 59770495
+    },
+    {
+      "name": "drop_tool",
+      "region": "heroes_and_mirrors",
+      "position": [122, 114, 0],
+      "entity_id": 59771332
+    },
+    {
+      "name": "drowner",
+      "region": "heroes_and_water",
+      "position": [101, 113, 0],
+      "entity_id": 59769101
+    },
+    {
+      "name": "druid_3d_beam",
+      "region": "heroes_in_3d",
+      "position": [54, 110, 36],
+      "entity_id": 92279063
+    },
+    {
+      "name": "druid_and_dragon",
+      "region": "heroes3",
+      "position": [79, 116, 0],
+      "entity_id": 95464854
+    },
+    {
+      "name": "druid_metamirror",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [114, 100, -21],
+      "entity_id": 62937703
+    },
+    {
+      "name": "druid_multismash_v3",
+      "region": "beams_and_basic_heroes",
+      "position": [1, 78, 0],
+      "entity_id": 14681302
+    },
+    {
+      "name": "druid_stone_p",
+      "region": "heroes_and_stones",
+      "position": [104, 3, 0],
+      "entity_id": 63029893
+    },
+    {
+      "name": "druid_vertical_mirror",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [99, 96, -21],
+      "entity_id": 95445402
+    },
+    {
+      "name": "druids_stone_0_v2",
+      "region": "heroes_and_stones",
+      "position": [99, 5, 0],
+      "entity_id": 87043000
+    },
+    {
+      "name": "druids_stone_2_v4",
+      "region": "heroes_and_stones",
+      "position": [105, 0, 0],
+      "entity_id": 106964130
+    },
+    {
+      "name": "druids_stone_alt",
+      "region": "heroes_and_stones",
+      "position": [105, 3, 0],
+      "entity_id": 46150185
+    },
+    {
+      "name": "dual_screen",
+      "region": "beams_and_mirrors",
+      "position": [-22, 50, 0],
+      "entity_id": 62929640
+    },
+    {
+      "name": "duality_2",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [154, 2, -21],
+      "entity_id": 94379214
+    },
+    {
+      "name": "duality_condensed",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [153, 2, -21],
+      "entity_id": 59769922
+    },
+    {
+      "name": "dunk_tank_alt",
+      "region": "heroes_and_water",
+      "position": [102, 118, 0],
+      "entity_id": 59769156
+    },
+    {
+      "name": "easy_reset_small",
+      "region": "spawners",
+      "position": [-11, 18, -18],
+      "entity_id": 62915263
+    },
+    {
+      "name": "easy_situation_v2",
+      "region": "heroes_and_water",
+      "position": [120, 120, 0],
+      "entity_id": 46139454
+    },
+    {
+      "name": "elevator_cyan",
+      "region": "elevators",
+      "position": [38, 69, 34],
+      "entity_id": 46149778
+    },
+    {
+      "name": "elevator_mechanic",
+      "region": "endgame2",
+      "position": [-22, 148, 44],
+      "entity_id": 62986117
+    },
+    {
+      "name": "elope",
+      "region": "heroes_and_mirrors",
+      "position": [142, 113, 0],
+      "entity_id": 62929646
+    },
+    {
+      "name": "emergency_brake",
+      "region": "mirrors_and_stones",
+      "position": [97, 26, 0],
+      "entity_id": 14681189
+    },
+    {
+      "name": "en_root_alt",
+      "region": "monsters_and_beams",
+      "position": [61, 95, -23],
+      "entity_id": 94377701
+    },
+    {
+      "name": "end1",
+      "region": "endgame1",
+      "position": [-15, 147, 0],
+      "entity_id": 111200165
+    },
+    {
+      "name": "end2_clone_divergence",
+      "region": "endgame3",
+      "position": [21, 123, -24],
+      "entity_id": 62967823
+    },
+    {
+      "name": "end2_clone_divergence_2",
+      "region": "endgame3",
+      "position": [25, 123, -24],
+      "entity_id": 62967824
+    },
+    {
+      "name": "end2_heroes_1_2",
+      "region": "endgame2",
+      "position": [-15, 152, 44],
+      "entity_id": 115399444
+    },
+    {
+      "name": "end2_heroes_1_5",
+      "region": "endgame2",
+      "position": [-15, 153, 44],
+      "entity_id": 115399446
+    },
+    {
+      "name": "end2_mirror1",
+      "region": "endgame3",
+      "position": [28, 109, -24],
+      "entity_id": 115520808
+    },
+    {
+      "name": "end2_mirror_3",
+      "region": "endgame2",
+      "position": [-11, 147, 44],
+      "entity_id": 115399447
+    },
+    {
+      "name": "end2_mirror_4_islands_v2",
+      "region": "endgame3",
+      "position": [30, 109, -24],
+      "entity_id": 115520769
+    },
+    {
+      "name": "end2_monster_connect",
+      "region": "endgame2",
+      "position": [-22, 4, 44],
+      "entity_id": 115420540
+    },
+    {
+      "name": "end2_prism_hp",
+      "region": "endgame2",
+      "position": [-21, 151, 44],
+      "entity_id": 115420979
+    },
+    {
+      "name": "end2_river_place",
+      "region": "endgame2",
+      "position": [-13, 142, 44],
+      "entity_id": 62967826
+    },
+    {
+      "name": "end3_denoise_pool",
+      "region": "endgame3",
+      "position": [26, 109, -24],
+      "entity_id": 115520804
+    },
+    {
+      "name": "end3_heroes_1",
+      "region": "endgame3",
+      "position": [4, 133, -24],
+      "entity_id": 115521093
+    },
+    {
+      "name": "end3_mirror_1_v3",
+      "region": "endgame3",
+      "position": [6, 132, -24],
+      "entity_id": 115521096
+    },
+    {
+      "name": "end3_mirror_2_alt2",
+      "region": "endgame3",
+      "position": [5, 132, -24],
+      "entity_id": 115521064
+    },
+    {
+      "name": "end3_off_topic_alt",
+      "region": "endgame3",
+      "position": [6, 108, -24],
+      "entity_id": 115520856
+    },
+    {
+      "name": "end3_off_topic_heroes",
+      "region": "endgame3",
+      "position": [4, 108, -24],
+      "entity_id": 115520889
+    },
+    {
+      "name": "end3_off_topic_mirror",
+      "region": "endgame3",
+      "position": [5, 108, -24],
+      "entity_id": 115520867
+    },
+    {
+      "name": "end3_pipeline_aesthetics",
+      "region": "endgame3",
+      "position": [-15, 125, -24],
+      "entity_id": 115577832
+    },
+    {
+      "name": "end3_pipeline_cleanup",
+      "region": "endgame3",
+      "position": [-19, 120, -24],
+      "entity_id": 115577831
+    },
+    {
+      "name": "end3_pipeline_cut",
+      "region": "endgame3",
+      "position": [-11, 121, -24],
+      "entity_id": 115577828
+    },
+    {
+      "name": "end3_pipeline_design",
+      "region": "endgame3",
+      "position": [-19, 119, -24],
+      "entity_id": 115577827
+    },
+    {
+      "name": "end3_pipeline_reorder",
+      "region": "endgame3",
+      "position": [-11, 122, -24],
+      "entity_id": 115577829
+    },
+    {
+      "name": "end3_pipeline_setup",
+      "region": "endgame3",
+      "position": [-15, 117, -24],
+      "entity_id": 115577826
+    },
+    {
+      "name": "end3_promesst_red",
+      "region": "endgame3",
+      "position": [3, 132, -24],
+      "entity_id": 115521066
+    },
+    {
+      "name": "end3_redundant_beams",
+      "region": "endgame3",
+      "position": [24, 109, -24],
+      "entity_id": 115520774
+    },
+    {
+      "name": "end3_reorder_mirror",
+      "region": "endgame3",
+      "position": [-3, 108, -24],
+      "entity_id": 115520905
+    },
+    {
+      "name": "end3_reorder_skipping_fix",
+      "region": "endgame3",
+      "position": [-2, 108, -24],
+      "entity_id": 115520918
+    },
+    {
+      "name": "end3_skipping_1",
+      "region": "endgame3",
+      "position": [4, 130, -24],
+      "entity_id": 115521044
+    },
+    {
+      "name": "end3_skipping_red",
+      "region": "endgame3",
+      "position": [4, 131, -24],
+      "entity_id": 115521034
+    },
+    {
+      "name": "endpoint1_skipping",
+      "region": "beams_and_stones",
+      "position": [17, 17, 0],
+      "entity_id": 46144257
+    },
+    {
+      "name": "endpoint_gates",
+      "region": "beams_and_basic_heroes",
+      "position": [7, 119, 0],
+      "entity_id": 46137646
+    },
+    {
+      "name": "endpoint_holder3",
+      "region": "underworld_skipping_and_promesst",
+      "position": [35, 31, -21],
+      "entity_id": 59779233
+    },
+    {
+      "name": "endpoint_holder4",
+      "region": "underworld_skipping_and_promesst",
+      "position": [35, 29, -21],
+      "entity_id": 59779237
+    },
+    {
+      "name": "endpoint_maze",
+      "region": "underworld_heroes_and_promesst",
+      "position": [20, 73, -24],
+      "entity_id": 14682224
+    },
+    {
+      "name": "endpoint_object",
+      "region": "beaming_objects",
+      "position": [36, 122, 0],
+      "entity_id": 59776529
+    },
+    {
+      "name": "endpoint_team",
+      "region": "beams_and_basic_heroes",
+      "position": [3, 121, 0],
+      "entity_id": 46137642
+    },
+    {
+      "name": "endpoint_weapon",
+      "region": "beams_and_basic_heroes",
+      "position": [25, 135, 0],
+      "entity_id": 90187334
+    },
+    {
+      "name": "endpoint_wrap_druid_alt",
+      "region": "underworld_heroes_and_promesst",
+      "position": [28, 73, -24],
+      "entity_id": 95448131
+    },
+    {
+      "name": "environment_art_background",
+      "region": "endgame3",
+      "position": [-15, 108, -24],
+      "entity_id": 95575955
+    },
+    {
+      "name": "environment_art_grid",
+      "region": "endgame3",
+      "position": [-14, 108, -24],
+      "entity_id": 95575956
+    },
+    {
+      "name": "environment_art_objects",
+      "region": "endgame3",
+      "position": [-16, 108, -24],
+      "entity_id": 115520956
+    },
+    {
+      "name": "erosion_alt",
+      "region": "heroes_in_3d",
+      "position": [124, 109, 30],
+      "entity_id": 95457739
+    },
+    {
+      "name": "escape_bridge",
+      "region": "vertical_mirrors",
+      "position": [140, 59, 35],
+      "entity_id": 58723727
+    },
+    {
+      "name": "fail_to_mirror_sequence_v2",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [164, 73, -21],
+      "entity_id": 95420852
+    },
+    {
+      "name": "fall_reset_v2",
+      "region": "spawners",
+      "position": [-18, 34, -18],
+      "entity_id": 115574655
+    },
+    {
+      "name": "falling_blocker_v3",
+      "region": "mirrors_in_3d",
+      "position": [103, 71, 35],
+      "entity_id": 115497419
+    },
+    {
+      "name": "falling_button",
+      "region": "spawners",
+      "position": [-12, 28, -18],
+      "entity_id": 95458862
+    },
+    {
+      "name": "falling_down",
+      "region": "skipping_in_3d",
+      "position": [110, 34, 26],
+      "entity_id": 58723786
+    },
+    {
+      "name": "falloff_4",
+      "region": "heroes_in_3d",
+      "position": [106, 109, 37],
+      "entity_id": 95436006
+    },
+    {
+      "name": "falloff_dragons",
+      "region": "heroes_in_3d",
+      "position": [110, 105, 37],
+      "entity_id": 95436010
+    },
+    {
+      "name": "falloff_intro",
+      "region": "heroes_in_3d",
+      "position": [105, 109, 37],
+      "entity_id": 95436004
+    },
+    {
+      "name": "falloff_kill_goblins_v6",
+      "region": "heroes_in_3d",
+      "position": [107, 109, 37],
+      "entity_id": 95436008
+    },
+    {
+      "name": "far_cl_no_walls_pit",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [144, 86, -25],
+      "entity_id": 92279939
+    },
+    {
+      "name": "far_river",
+      "region": "mirrors_and_stones",
+      "position": [115, 16, 0],
+      "entity_id": 14681163
+    },
+    {
+      "name": "far_wings",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [118, 20, -21],
+      "entity_id": 62916073
+    },
+    {
+      "name": "faster_than_stone",
+      "region": "beams_and_stones",
+      "position": [62, 19, 0],
+      "entity_id": 95421632
+    },
+    {
+      "name": "fire_and_flip",
+      "region": "heroes_and_mirrors",
+      "position": [141, 113, 0],
+      "entity_id": 59771458
+    },
+    {
+      "name": "fire_from_above_2",
+      "region": "double_beam_falling",
+      "position": [44, 27, 38],
+      "entity_id": 111240747
+    },
+    {
+      "name": "fire_stairs_part_2",
+      "region": "heroes_in_3d",
+      "position": [85, 108, 36],
+      "entity_id": 111202263
+    },
+    {
+      "name": "fire_stairs_v2",
+      "region": "heroes_in_3d",
+      "position": [82, 106, 43],
+      "entity_id": 62970853
+    },
+    {
+      "name": "first_diversions",
+      "region": "mirrors_and_stones",
+      "position": [103, 20, 0],
+      "entity_id": 59772022
+    },
+    {
+      "name": "first_flight",
+      "region": "double_beam_falling_dropdown",
+      "position": [16, 54, 0],
+      "entity_id": 62977290
+    },
+    {
+      "name": "fix_exploit",
+      "region": "endgame3",
+      "position": [23, 119, -24],
+      "entity_id": 95519320
+    },
+    {
+      "name": "fix_exploit_promesst_overworld",
+      "region": "endgame3",
+      "position": [23, 117, -24],
+      "entity_id": 115412001
+    },
+    {
+      "name": "flame_wand",
+      "region": "heroes_and_artifacts",
+      "position": [26, 92, 0],
+      "entity_id": 90180248
+    },
+    {
+      "name": "flamestrike_v3",
+      "region": "vertical_mirrors",
+      "position": [160, 96, 34],
+      "entity_id": 59779182
+    },
+    {
+      "name": "flamethrower",
+      "region": "heroes_and_water",
+      "position": [114, 138, 0],
+      "entity_id": 46138317
+    },
+    {
+      "name": "flip_flop_v2",
+      "region": "heroes_and_mirrors",
+      "position": [113, 93, 0],
+      "entity_id": 59771438
+    },
+    {
+      "name": "floating_gardens",
+      "region": "heroes_and_stones",
+      "position": [91, 130, 0],
+      "entity_id": 46138385
+    },
+    {
+      "name": "floating_orange_purple",
+      "region": "beams_and_mirrors",
+      "position": [0, 44, 0],
+      "entity_id": 94373483
+    },
+    {
+      "name": "floor_plan_v3",
+      "region": "endgame2",
+      "position": [-8, 152, 44],
+      "entity_id": 62967827
+    },
+    {
+      "name": "floorhands_v5",
+      "region": "strength",
+      "position": [50, 82, 35],
+      "entity_id": 59779662
+    },
+    {
+      "name": "fly_and_flip",
+      "region": "heroes_and_mirrors",
+      "position": [131, 112, 0],
+      "entity_id": 59771456
+    },
+    {
+      "name": "forbidden_room",
+      "region": "promesst1_and_2",
+      "position": [46, 83, 0],
+      "entity_id": 115362523
+    },
+    {
+      "name": "four_horsemen",
+      "region": "heroes_and_stones",
+      "position": [104, 138, 0],
+      "entity_id": 115382808
+    },
+    {
+      "name": "frame_advance_v5",
+      "region": "heroes_in_3d",
+      "position": [66, 125, 54],
+      "entity_id": 111202289
+    },
+    {
+      "name": "frantic_factory_v2",
+      "region": "beams_and_stones",
+      "position": [26, 31, 0],
+      "entity_id": 90201500
+    },
+    {
+      "name": "free_ride",
+      "region": "beams_and_stones",
+      "position": [26, 13, 0],
+      "entity_id": 46149686
+    },
+    {
+      "name": "friendly_nudges",
+      "region": "beams_and_basic_heroes",
+      "position": [2, 93, 0],
+      "entity_id": 46142088
+    },
+    {
+      "name": "from_the_depths",
+      "region": "heroes_in_3d",
+      "position": [75, 117, 45],
+      "entity_id": 111202275
+    },
+    {
+      "name": "front_side_bus2",
+      "region": "advanced_bard_and_water",
+      "position": [55, 121, -18],
+      "entity_id": 111158885
+    },
+    {
+      "name": "front_side_bus3",
+      "region": "advanced_bard_and_water",
+      "position": [54, 120, -18],
+      "entity_id": 90203887
+    },
+    {
+      "name": "frontier",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [69, 14, -21],
+      "entity_id": 62916138
+    },
+    {
+      "name": "fun_house",
+      "region": "beams_and_mirrors",
+      "position": [-17, 35, 0],
+      "entity_id": 46138475
+    },
+    {
+      "name": "fuse",
+      "region": "heroes_and_mirrors",
+      "position": [136, 81, 0],
+      "entity_id": 14681713
+    },
+    {
+      "name": "gate_shatter",
+      "region": "heroes_and_mirrors",
+      "position": [115, 92, 0],
+      "entity_id": 59771442
+    },
+    {
+      "name": "gated_twice_thief_v2",
+      "region": "heroes_in_3d",
+      "position": [81, 91, 35],
+      "entity_id": 46146707
+    },
+    {
+      "name": "gated_twice_v2",
+      "region": "heroes_in_3d",
+      "position": [79, 91, 35],
+      "entity_id": 95439578
+    },
+    {
+      "name": "gatekeeping_v3",
+      "region": "heroes3",
+      "position": [82, 126, 0],
+      "entity_id": 95449831
+    },
+    {
+      "name": "gem_beam_placement",
+      "region": "beams_and_basic_heroes",
+      "position": [13, 73, 0],
+      "entity_id": 62938613
+    },
+    {
+      "name": "gem_clg_v4",
+      "region": "beams_and_mirrors",
+      "position": [-13, 76, 0],
+      "entity_id": 115348082
+    },
+    {
+      "name": "gem_pushers",
+      "region": "promesst1_and_2",
+      "position": [57, 85, 0],
+      "entity_id": 115362522
+    },
+    {
+      "name": "gem_slot_on_lily",
+      "region": "flat_things",
+      "position": [82, 26, -21],
+      "entity_id": 95450845
+    },
+    {
+      "name": "gem_transport",
+      "region": "beams_and_basic_heroes",
+      "position": [10, 98, 0],
+      "entity_id": 59769878
+    },
+    {
+      "name": "gem_transport_2",
+      "region": "beams_and_basic_heroes",
+      "position": [10, 99, 0],
+      "entity_id": 95448099
+    },
+    {
+      "name": "gem_trap",
+      "region": "gems",
+      "position": [26, 56, -21],
+      "entity_id": 14682238
+    },
+    {
+      "name": "gem_trap2",
+      "region": "gems",
+      "position": [27, 56, -21],
+      "entity_id": 14682216
+    },
+    {
+      "name": "get_through_alt",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [41, 83, -22],
+      "entity_id": 62937691
+    },
+    {
+      "name": "get_through_depths",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [43, 83, -21],
+      "entity_id": 95454722
+    },
+    {
+      "name": "glass_beach",
+      "region": "beams_and_stones",
+      "position": [48, 28, 0],
+      "entity_id": 90201496
+    },
+    {
+      "name": "goblin_below_intro_same_z",
+      "region": "goblin_rotation",
+      "position": [23, 86, 38],
+      "entity_id": 95443980
+    },
+    {
+      "name": "goblin_express",
+      "region": "heroes_and_water",
+      "position": [131, 133, 0],
+      "entity_id": 59777392
+    },
+    {
+      "name": "goblin_hat_v2",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [132, 86, -25],
+      "entity_id": 111202279
+    },
+    {
+      "name": "goblin_parity",
+      "region": "heroes_and_mirrors",
+      "position": [135, 91, 0],
+      "entity_id": 14681699
+    },
+    {
+      "name": "goblin_parity_3d",
+      "region": "mirrors_in_3d",
+      "position": [121, 56, 34],
+      "entity_id": 95425602
+    },
+    {
+      "name": "goblin_two_rovers_alt",
+      "region": "monsters_and_beams",
+      "position": [50, 108, -21],
+      "entity_id": 115467540
+    },
+    {
+      "name": "going_up_v4",
+      "region": "heroes_in_3d",
+      "position": [135, 106, 36],
+      "entity_id": 90197369
+    },
+    {
+      "name": "green_crystal_rover",
+      "region": "beams_and_mirrors",
+      "position": [6, 50, 0],
+      "entity_id": 90195219
+    },
+    {
+      "name": "green_goblins",
+      "region": "monsters_and_beams",
+      "position": [65, 84, -21],
+      "entity_id": 95450839
+    },
+    {
+      "name": "green_hat",
+      "region": "sky_promesst_misc",
+      "position": [53, 66, 33],
+      "entity_id": 111247536
+    },
+    {
+      "name": "green_metamirror",
+      "region": "beams_and_mirrors",
+      "position": [-22, 21, 0],
+      "entity_id": 95456254
+    },
+    {
+      "name": "green_revolution",
+      "region": "promesst1_and_2",
+      "position": [48, 58, 0],
+      "entity_id": 59769946
+    },
+    {
+      "name": "green_torq_mirror_vs4",
+      "region": "beams_and_mirrors",
+      "position": [160, 44, 0],
+      "entity_id": 95422623
+    },
+    {
+      "name": "greenhouse",
+      "region": "heroes_and_mirrors",
+      "position": [120, 104, 0],
+      "entity_id": 46141083
+    },
+    {
+      "name": "grid_hopping0",
+      "region": "underworld_heroes_and_promesst",
+      "position": [74, 94, -14],
+      "entity_id": 14682364
+    },
+    {
+      "name": "gully_alt",
+      "region": "heroes_and_water",
+      "position": [117, 119, 0],
+      "entity_id": 46146439
+    },
+    {
+      "name": "half_journey_vh",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [-20, 53, -21],
+      "entity_id": 62939950
+    },
+    {
+      "name": "half_tutorial",
+      "region": "promesst3",
+      "position": [5, 72, 0],
+      "entity_id": 62938245
+    },
+    {
+      "name": "hanoi_3",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [103, 86, -21],
+      "entity_id": 95448109
+    },
+    {
+      "name": "hat_chain_vp",
+      "region": "heroes_in_3d",
+      "position": [123, 96, 36],
+      "entity_id": 111241078
+    },
+    {
+      "name": "hat_maker",
+      "region": "double_beam_falling",
+      "position": [44, 28, 38],
+      "entity_id": 95426937
+    },
+    {
+      "name": "hat_tricks_0_v3",
+      "region": "mirrors_in_3d",
+      "position": [118, 60, 34],
+      "entity_id": 115554999
+    },
+    {
+      "name": "height_chooser_v0",
+      "region": "vertical_reflection",
+      "position": [-3, 82, 38],
+      "entity_id": 95425903
+    },
+    {
+      "name": "help_drop",
+      "region": "beams_and_basic_heroes",
+      "position": [-9, 98, 0],
+      "entity_id": 59779445
+    },
+    {
+      "name": "heroes1_1",
+      "region": "heroes1",
+      "position": [80, 82, 0],
+      "entity_id": 14680913
+    },
+    {
+      "name": "heroes1_10_inv_v4_b",
+      "region": "heroes1",
+      "position": [76, 86, 0],
+      "entity_id": 14680983
+    },
+    {
+      "name": "heroes1_11_v2",
+      "region": "heroes1",
+      "position": [75, 90, 0],
+      "entity_id": 14680959
+    },
+    {
+      "name": "heroes1_12_v2_alt",
+      "region": "heroes1",
+      "position": [77, 90, 0],
+      "entity_id": 14680937
+    },
+    {
+      "name": "heroes1_13_v2",
+      "region": "heroes1",
+      "position": [76, 90, 0],
+      "entity_id": 14680915
+    },
+    {
+      "name": "heroes1_15",
+      "region": "heroes1",
+      "position": [78, 90, 0],
+      "entity_id": 14680909
+    },
+    {
+      "name": "heroes1_16_v3",
+      "region": "heroes1",
+      "position": [87, 90, 0],
+      "entity_id": 87045308
+    },
+    {
+      "name": "heroes1_17",
+      "region": "heroes1",
+      "position": [87, 98, 0],
+      "entity_id": 14680923
+    },
+    {
+      "name": "heroes1_18",
+      "region": "heroes1",
+      "position": [73, 95, 0],
+      "entity_id": 14680899
+    },
+    {
+      "name": "heroes1_19_jail",
+      "region": "heroes1",
+      "position": [73, 96, 0],
+      "entity_id": 14680973
+    },
+    {
+      "name": "heroes1_21_v3",
+      "region": "heroes1",
+      "position": [73, 98, 0],
+      "entity_id": 14680895
+    },
+    {
+      "name": "heroes1_2_v2",
+      "region": "heroes1",
+      "position": [80, 83, 0],
+      "entity_id": 14680965
+    },
+    {
+      "name": "heroes1_3",
+      "region": "heroes1",
+      "position": [80, 84, 0],
+      "entity_id": 14680981
+    },
+    {
+      "name": "heroes1_4",
+      "region": "heroes1",
+      "position": [80, 85, 0],
+      "entity_id": 14680953
+    },
+    {
+      "name": "heroes1_4.5",
+      "region": "heroes1",
+      "position": [86, 86, 0],
+      "entity_id": 46141195
+    },
+    {
+      "name": "heroes1_5_v2",
+      "region": "heroes1",
+      "position": [85, 86, 0],
+      "entity_id": 14680975
+    },
+    {
+      "name": "heroes1_6",
+      "region": "heroes1",
+      "position": [83, 86, 0],
+      "entity_id": 14680955
+    },
+    {
+      "name": "heroes1_7.5",
+      "region": "heroes1",
+      "position": [74, 86, 0],
+      "entity_id": 46141197
+    },
+    {
+      "name": "heroes1_7_v2",
+      "region": "heroes1",
+      "position": [84, 86, 0],
+      "entity_id": 14680931
+    },
+    {
+      "name": "heroes1_8_v2",
+      "region": "heroes1",
+      "position": [75, 86, 0],
+      "entity_id": 14680943
+    },
+    {
+      "name": "heroes1_9",
+      "region": "heroes1",
+      "position": [77, 86, 0],
+      "entity_id": 14680921
+    },
+    {
+      "name": "heroes2_10",
+      "region": "heroes2",
+      "position": [76, 114, 0],
+      "entity_id": 14681037
+    },
+    {
+      "name": "heroes2_10.5",
+      "region": "heroes2",
+      "position": [73, 112, 0],
+      "entity_id": 46139414
+    },
+    {
+      "name": "heroes2_10a",
+      "region": "heroes2",
+      "position": [78, 111, 0],
+      "entity_id": 14681031
+    },
+    {
+      "name": "heroes2_10a_intro",
+      "region": "heroes2",
+      "position": [77, 111, 0],
+      "entity_id": 87035489
+    },
+    {
+      "name": "heroes2_11_v2",
+      "region": "heroes2",
+      "position": [72, 112, 0],
+      "entity_id": 115465123
+    },
+    {
+      "name": "heroes2_11_v2_easier",
+      "region": "heroes2",
+      "position": [77, 114, 0],
+      "entity_id": 14681017
+    },
+    {
+      "name": "heroes2_12_v2",
+      "region": "heroes2",
+      "position": [78, 114, 0],
+      "entity_id": 46140584
+    },
+    {
+      "name": "heroes2_13",
+      "region": "heroes2",
+      "position": [81, 113, 0],
+      "entity_id": 14681057
+    },
+    {
+      "name": "heroes2_14",
+      "region": "heroes2",
+      "position": [82, 113, 0],
+      "entity_id": 14681035
+    },
+    {
+      "name": "heroes2_15",
+      "region": "heroes2",
+      "position": [83, 113, 0],
+      "entity_id": 14681015
+    },
+    {
+      "name": "heroes2_16v4",
+      "region": "heroes2",
+      "position": [83, 111, 0],
+      "entity_id": 14681009
+    },
+    {
+      "name": "heroes2_17",
+      "region": "heroes2",
+      "position": [82, 103, 0],
+      "entity_id": 95449498
+    },
+    {
+      "name": "heroes2_17_intro",
+      "region": "heroes2",
+      "position": [81, 103, 0],
+      "entity_id": 87036231
+    },
+    {
+      "name": "heroes2_18",
+      "region": "heroes2",
+      "position": [83, 110, 0],
+      "entity_id": 87036971
+    },
+    {
+      "name": "heroes2_2",
+      "region": "heroes2",
+      "position": [76, 103, 0],
+      "entity_id": 14681059
+    },
+    {
+      "name": "heroes2_20",
+      "region": "heroes2",
+      "position": [87, 106, 0],
+      "entity_id": 14680997
+    },
+    {
+      "name": "heroes2_21b",
+      "region": "heroes2",
+      "position": [87, 111, 0],
+      "entity_id": 14681065
+    },
+    {
+      "name": "heroes2_22_v2",
+      "region": "heroes2",
+      "position": [86, 112, 0],
+      "entity_id": 14681039
+    },
+    {
+      "name": "heroes2_2b",
+      "region": "heroes2",
+      "position": [77, 103, 0],
+      "entity_id": 14681005
+    },
+    {
+      "name": "heroes2_3_v2",
+      "region": "heroes2",
+      "position": [75, 104, 0],
+      "entity_id": 14681067
+    },
+    {
+      "name": "heroes2_3monster",
+      "region": "heroes2",
+      "position": [79, 111, 0],
+      "entity_id": 115465603
+    },
+    {
+      "name": "heroes2_5.5v5",
+      "region": "heroes2",
+      "position": [72, 107, 0],
+      "entity_id": 14681051
+    },
+    {
+      "name": "heroes2_5_altE",
+      "region": "heroes2",
+      "position": [72, 105, 0],
+      "entity_id": 14681075
+    },
+    {
+      "name": "heroes2_5_no_crystal",
+      "region": "heroes2",
+      "position": [72, 106, 0],
+      "entity_id": 16777425
+    },
+    {
+      "name": "heroes2_6_v3",
+      "region": "heroes2",
+      "position": [72, 108, 0],
+      "entity_id": 14681023
+    },
+    {
+      "name": "heroes2_9",
+      "region": "heroes2",
+      "position": [72, 109, 0],
+      "entity_id": 14680995
+    },
+    {
+      "name": "heroes2_reprise",
+      "region": "heroes2",
+      "position": [83, 112, 0],
+      "entity_id": 106965741
+    },
+    {
+      "name": "heroes2_thief_goblin",
+      "region": "heroes2",
+      "position": [76, 104, 0],
+      "entity_id": 115465122
+    },
+    {
+      "name": "heroes3_10",
+      "region": "heroes3",
+      "position": [81, 116, 0],
+      "entity_id": 14681114
+    },
+    {
+      "name": "heroes3_11_v2",
+      "region": "heroes3",
+      "position": [80, 116, 0],
+      "entity_id": 14681098
+    },
+    {
+      "name": "heroes3_13_v2",
+      "region": "heroes3",
+      "position": [78, 118, 0],
+      "entity_id": 14681128
+    },
+    {
+      "name": "heroes3_14_v3",
+      "region": "heroes3",
+      "position": [81, 124, 0],
+      "entity_id": 14681112
+    },
+    {
+      "name": "heroes3_15_v4",
+      "region": "heroes3",
+      "position": [79, 118, 0],
+      "entity_id": 115424499
+    },
+    {
+      "name": "heroes3_16_v4_alt",
+      "region": "heroes3",
+      "position": [81, 125, 0],
+      "entity_id": 14681110
+    },
+    {
+      "name": "heroes3_1_v3",
+      "region": "heroes3",
+      "position": [76, 125, 0],
+      "entity_id": 14681094
+    },
+    {
+      "name": "heroes3_21_condensed",
+      "region": "heroes3",
+      "position": [87, 125, 0],
+      "entity_id": 14681124
+    },
+    {
+      "name": "heroes3_2_v4",
+      "region": "heroes3",
+      "position": [75, 125, 0],
+      "entity_id": 14681138
+    },
+    {
+      "name": "heroes3_3_v2",
+      "region": "heroes3",
+      "position": [74, 125, 0],
+      "entity_id": 14681122
+    },
+    {
+      "name": "heroes3_4",
+      "region": "heroes3",
+      "position": [73, 125, 0],
+      "entity_id": 14681142
+    },
+    {
+      "name": "heroes3_5",
+      "region": "heroes3",
+      "position": [72, 123, 0],
+      "entity_id": 14681126
+    },
+    {
+      "name": "heroes3_6_v3",
+      "region": "heroes3",
+      "position": [72, 121, 0],
+      "entity_id": 14681108
+    },
+    {
+      "name": "heroes3_7_v4",
+      "region": "heroes3",
+      "position": [72, 120, 0],
+      "entity_id": 14681130
+    },
+    {
+      "name": "heroes3_8_thief",
+      "region": "heroes3",
+      "position": [72, 122, 0],
+      "entity_id": 87036602
+    },
+    {
+      "name": "heroes3_8_v3_alt3",
+      "region": "heroes3",
+      "position": [72, 118, 0],
+      "entity_id": 46141244
+    },
+    {
+      "name": "heroes3_8_v4_alt",
+      "region": "heroes3",
+      "position": [72, 119, 0],
+      "entity_id": 14681102
+    },
+    {
+      "name": "heroes3_druid_a",
+      "region": "heroes3",
+      "position": [76, 118, 0],
+      "entity_id": 90203876
+    },
+    {
+      "name": "heroes3_druid_b_v2",
+      "region": "heroes3",
+      "position": [77, 118, 0],
+      "entity_id": 90203878
+    },
+    {
+      "name": "high_endpoint_v2",
+      "region": "sky_promesst_misc",
+      "position": [4, 79, 38],
+      "entity_id": 95447756
+    },
+    {
+      "name": "high_horse",
+      "region": "heroes_in_3d",
+      "position": [55, 95, 35],
+      "entity_id": 95438497
+    },
+    {
+      "name": "high_shelf_v2",
+      "region": "heroes_in_3d",
+      "position": [102, 138, 36],
+      "entity_id": 95434976
+    },
+    {
+      "name": "highway",
+      "region": "mirrors_and_stones",
+      "position": [102, 26, 0],
+      "entity_id": 46137829
+    },
+    {
+      "name": "holes",
+      "region": "heroes_and_mirrors",
+      "position": [118, 112, 0],
+      "entity_id": 59771328
+    },
+    {
+      "name": "hot_swap",
+      "region": "heroes_and_stones",
+      "position": [120, 0, 0],
+      "entity_id": 14681226
+    },
+    {
+      "name": "hover_corner_3",
+      "region": "underworld_skipping_and_promesst",
+      "position": [49, 26, -21],
+      "entity_id": 59779207
+    },
+    {
+      "name": "hover_corner_4",
+      "region": "underworld_skipping_and_promesst",
+      "position": [49, 25, -21],
+      "entity_id": 59779209
+    },
+    {
+      "name": "how_to_train_your_dragon",
+      "region": "underworld_heroes_and_promesst",
+      "position": [83, 104, -18],
+      "entity_id": 95448133
+    },
+    {
+      "name": "hustle_v2",
+      "region": "beams_and_stones",
+      "position": [63, 18, 0],
+      "entity_id": 90201506
+    },
+    {
+      "name": "hyper_jump",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [99, 124, -14],
+      "entity_id": 58720589
+    },
+    {
+      "name": "hyper_jump_2c",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [101, 124, -16],
+      "entity_id": 58720591
+    },
+    {
+      "name": "i_beam_v2",
+      "region": "heroes_in_3d",
+      "position": [111, 117, 36],
+      "entity_id": 46146974
+    },
+    {
+      "name": "ice_climbers",
+      "region": "underworld_heroes_and_promesst",
+      "position": [63, 106, -15],
+      "entity_id": 59769960
+    },
+    {
+      "name": "immobilize",
+      "region": "beams_and_basic_heroes",
+      "position": [24, 136, 0],
+      "entity_id": 46143271
+    },
+    {
+      "name": "implausible_bridge",
+      "region": "vertical_mirrors",
+      "position": [114, 72, 35],
+      "entity_id": 46146784
+    },
+    {
+      "name": "implausible_bridge_2",
+      "region": "vertical_mirrors",
+      "position": [142, 70, 48],
+      "entity_id": 46146786
+    },
+    {
+      "name": "in_a_flash_alt",
+      "region": "lily_rotation",
+      "position": [101, 48, -21],
+      "entity_id": 62916140
+    },
+    {
+      "name": "in_a_flash_alt_back",
+      "region": "lily_rotation",
+      "position": [106, 41, -21],
+      "entity_id": 94378082
+    },
+    {
+      "name": "in_the_way_alt_3",
+      "region": "mirrors_and_stones",
+      "position": [124, 15, 0],
+      "entity_id": 14681193
+    },
+    {
+      "name": "indirect_skip",
+      "region": "heroes_and_stones",
+      "position": [64, 3, 0],
+      "entity_id": 46137845
+    },
+    {
+      "name": "indirect_skip_2",
+      "region": "heroes_and_stones",
+      "position": [64, 2, 0],
+      "entity_id": 46137847
+    },
+    {
+      "name": "indirect_skip_3",
+      "region": "heroes_and_stones",
+      "position": [59, 8, 0],
+      "entity_id": 59768990
+    },
+    {
+      "name": "infinite_crystal_hack_v5",
+      "region": "mirrors_and_stones",
+      "position": [137, 48, 0],
+      "entity_id": 46150301
+    },
+    {
+      "name": "infinite_looping_skipper0_alt",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [97, -1, -21],
+      "entity_id": 59779084
+    },
+    {
+      "name": "infinite_looping_skipper_alt",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [96, -1, -21],
+      "entity_id": 59779086
+    },
+    {
+      "name": "infinite_looping_skipper_far",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [95, -1, -21],
+      "entity_id": 59779088
+    },
+    {
+      "name": "infinite_looping_skipper_mirrored_ikaruga_alt",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [94, -1, -21],
+      "entity_id": 59779090
+    },
+    {
+      "name": "into_the_water_3",
+      "region": "double_beam_falling",
+      "position": [25, 51, 38],
+      "entity_id": 95428809
+    },
+    {
+      "name": "invisible_hand",
+      "region": "beams_and_basic_heroes",
+      "position": [57, 125, 0],
+      "entity_id": 95449841
+    },
+    {
+      "name": "iodine_clock_v2",
+      "region": "heroes_and_mirrors",
+      "position": [117, 92, 0],
+      "entity_id": 59771444
+    },
+    {
+      "name": "island_friends",
+      "region": "heroes_and_stones",
+      "position": [47, 143, 0],
+      "entity_id": 14681272
+    },
+    {
+      "name": "island_hopping",
+      "region": "heroes_and_water",
+      "position": [102, 120, 0],
+      "entity_id": 59769093
+    },
+    {
+      "name": "its_a_tall_order",
+      "region": "sky_promesst_misc",
+      "position": [52, 66, 33],
+      "entity_id": 95438872
+    },
+    {
+      "name": "jenga_assorted",
+      "region": "underworld_heroes_and_promesst",
+      "position": [87, 108, -18],
+      "entity_id": 95445382
+    },
+    {
+      "name": "jenga_easier",
+      "region": "heroes_in_3d",
+      "position": [93, 79, 33],
+      "entity_id": 95438495
+    },
+    {
+      "name": "jenga_shortstack_v2",
+      "region": "heroes_in_3d",
+      "position": [95, 82, 33],
+      "entity_id": 95438493
+    },
+    {
+      "name": "juggalos",
+      "region": "underworld_skipping_and_promesst",
+      "position": [49, 15, -21],
+      "entity_id": 62937401
+    },
+    {
+      "name": "juggle",
+      "region": "vertical_mirrors",
+      "position": [160, 59, 34],
+      "entity_id": 94376056
+    },
+    {
+      "name": "jump_the_fence_v2",
+      "region": "beams_and_basic_heroes",
+      "position": [-1, 104, 0],
+      "entity_id": 46137600
+    },
+    {
+      "name": "jump_to_pillar_v3",
+      "region": "heroes_in_3d",
+      "position": [111, 125, 36],
+      "entity_id": 59776515
+    },
+    {
+      "name": "kick",
+      "region": "underworld_skipping_and_promesst",
+      "position": [64, 55, -21],
+      "entity_id": 62929638
+    },
+    {
+      "name": "killer_wizard",
+      "region": "heroes_and_water",
+      "position": [119, 137, 0],
+      "entity_id": 46139494
+    },
+    {
+      "name": "landmines_v3",
+      "region": "vertical_endpoint",
+      "position": [11, 71, 34],
+      "entity_id": 46146884
+    },
+    {
+      "name": "laser_pointer",
+      "region": "endgame2",
+      "position": [-1, 145, 44],
+      "entity_id": 62957333
+    },
+    {
+      "name": "laser_stop_surprise",
+      "region": "double_beam_falling",
+      "position": [34, 28, 38],
+      "entity_id": 95437058
+    },
+    {
+      "name": "launch_and_collect",
+      "region": "mirrorable_stones",
+      "position": [125, 39, 0],
+      "entity_id": 59769454
+    },
+    {
+      "name": "layered_alt",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [137, 2, -21],
+      "entity_id": 95464092
+    },
+    {
+      "name": "lazy_susan_v2",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [163, 95, -21],
+      "entity_id": 94374509
+    },
+    {
+      "name": "learn_to_catch_v2",
+      "region": "mirrors_in_3d",
+      "position": [98, 73, 37],
+      "entity_id": 115497399
+    },
+    {
+      "name": "learning_double",
+      "region": "beams_and_basic_heroes",
+      "position": [38, 128, 0],
+      "entity_id": 90186404
+    },
+    {
+      "name": "lemonade",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [119, 125, -21],
+      "entity_id": 58720593
+    },
+    {
+      "name": "lemonade_tng_stages_towers_no_float",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [117, 125, -21],
+      "entity_id": 58720595
+    },
+    {
+      "name": "lily_falls_intro_v2",
+      "region": "skipping_in_3d",
+      "position": [80, 53, 31],
+      "entity_id": 46149746
+    },
+    {
+      "name": "lily_pull",
+      "region": "skipping_in_3d",
+      "position": [112, 25, 25],
+      "entity_id": 62916081
+    },
+    {
+      "name": "lily_pull_intro",
+      "region": "skipping_in_3d",
+      "position": [118, 33, 25],
+      "entity_id": 95434640
+    },
+    {
+      "name": "lily_switch_p",
+      "region": "flat_things",
+      "position": [84, 18, -21],
+      "entity_id": 95448482
+    },
+    {
+      "name": "lily_two_cyan",
+      "region": "underworld_skipping_and_promesst",
+      "position": [66, 32, -21],
+      "entity_id": 95426207
+    },
+    {
+      "name": "lilyruga_simpler",
+      "region": "mirrorable_stones",
+      "position": [125, 38, 0],
+      "entity_id": 14681222
+    },
+    {
+      "name": "limited_offsets",
+      "region": "underworld_heroes_and_promesst",
+      "position": [42, 115, -18],
+      "entity_id": 59776537
+    },
+    {
+      "name": "limited_offsets_surprise_v2",
+      "region": "underworld_heroes_and_promesst",
+      "position": [42, 126, -18],
+      "entity_id": 59776539
+    },
+    {
+      "name": "little_faith_alt",
+      "region": "heroes_and_water",
+      "position": [112, 138, 0],
+      "entity_id": 46138309
+    },
+    {
+      "name": "loading_docks_v2",
+      "region": "heroes_in_3d",
+      "position": [55, 97, 35],
+      "entity_id": 95439580
+    },
+    {
+      "name": "lock_picky",
+      "region": "beams_and_basic_heroes",
+      "position": [50, 114, 0],
+      "entity_id": 94374964
+    },
+    {
+      "name": "long_platform_v2",
+      "region": "mirrors_in_3d",
+      "position": [102, 60, 33],
+      "entity_id": 115497467
+    },
+    {
+      "name": "magic_rover",
+      "region": "beams_and_mirrors",
+      "position": [156, 54, 0],
+      "entity_id": 94373742
+    },
+    {
+      "name": "magic_shield",
+      "region": "beams_and_basic_heroes",
+      "position": [49, 133, 0],
+      "entity_id": 90186334
+    },
+    {
+      "name": "magic_square",
+      "region": "beams_and_basic_heroes",
+      "position": [49, 134, 0],
+      "entity_id": 90186274
+    },
+    {
+      "name": "magic_tower",
+      "region": "heroes_in_3d",
+      "position": [111, 111, 27],
+      "entity_id": 94374494
+    },
+    {
+      "name": "magicians_assistant_v2",
+      "region": "heroes_in_3d",
+      "position": [99, 109, 37],
+      "entity_id": 95428448
+    },
+    {
+      "name": "magnitudes_v3",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [161, 106, -21],
+      "entity_id": 115356853
+    },
+    {
+      "name": "make_a_right",
+      "region": "mirrors_in_3d",
+      "position": [93, 66, 31],
+      "entity_id": 115497412
+    },
+    {
+      "name": "make_a_right_simpler",
+      "region": "mirrors_in_3d",
+      "position": [93, 67, 31],
+      "entity_id": 115497411
+    },
+    {
+      "name": "make_it_happen_v6",
+      "region": "mirrorable_stones",
+      "position": [140, 25, 0],
+      "entity_id": 14681703
+    },
+    {
+      "name": "make_oneway",
+      "region": "endgame3",
+      "position": [25, 129, -24],
+      "entity_id": 115478865
+    },
+    {
+      "name": "make_shoreline",
+      "region": "endgame3",
+      "position": [23, 131, -24],
+      "entity_id": 115408890
+    },
+    {
+      "name": "make_sokoban",
+      "region": "endgame3",
+      "position": [23, 132, -24],
+      "entity_id": 115478864
+    },
+    {
+      "name": "make_thief_goblin_maze_v2",
+      "region": "endgame3",
+      "position": [21, 129, -24],
+      "entity_id": 95519319
+    },
+    {
+      "name": "many_falls",
+      "region": "skipping_in_3d",
+      "position": [82, 46, 29],
+      "entity_id": 46149748
+    },
+    {
+      "name": "matching_purple",
+      "region": "beams_and_basic_heroes",
+      "position": [27, 131, 0],
+      "entity_id": 46143275
+    },
+    {
+      "name": "mega_clone_v2",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [137, 71, -19],
+      "entity_id": 94378840
+    },
+    {
+      "name": "mega_merge_v5",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [140, 69, -17],
+      "entity_id": 95462973
+    },
+    {
+      "name": "meta_orange_purple",
+      "region": "beams_and_mirrors",
+      "position": [-11, 12, 0],
+      "entity_id": 111149609
+    },
+    {
+      "name": "meta_orange_purple_2",
+      "region": "beams_and_mirrors",
+      "position": [-11, 11, 0],
+      "entity_id": 111149611
+    },
+    {
+      "name": "metamirror_block_v2",
+      "region": "metamirrors",
+      "position": [155, 73, 0],
+      "entity_id": 46137414
+    },
+    {
+      "name": "metamirror_c_alt",
+      "region": "metamirrors",
+      "position": [160, 70, 0],
+      "entity_id": 46137422
+    },
+    {
+      "name": "metamirror_different_dir_2_alt",
+      "region": "metamirrors",
+      "position": [150, 74, 0],
+      "entity_id": 46137406
+    },
+    {
+      "name": "metamirror_different_dir_3_alt",
+      "region": "metamirrors",
+      "position": [150, 73, 0],
+      "entity_id": 46141374
+    },
+    {
+      "name": "metamirror_different_dir_alt",
+      "region": "metamirrors",
+      "position": [150, 72, 0],
+      "entity_id": 46137404
+    },
+    {
+      "name": "metamirror_same_dir_2_alt_2",
+      "region": "metamirrors",
+      "position": [136, 66, 0],
+      "entity_id": 46137394
+    },
+    {
+      "name": "metamirror_same_dir_3_alt_2",
+      "region": "metamirrors",
+      "position": [137, 66, 0],
+      "entity_id": 46137396
+    },
+    {
+      "name": "metamirror_same_dir_5_alt",
+      "region": "metamirrors",
+      "position": [138, 66, 0],
+      "entity_id": 46137402
+    },
+    {
+      "name": "metamirror_same_dir_v2",
+      "region": "metamirrors",
+      "position": [135, 66, 0],
+      "entity_id": 46137392
+    },
+    {
+      "name": "middle_smash",
+      "region": "beaming_objects",
+      "position": [28, 123, 0],
+      "entity_id": 94372012
+    },
+    {
+      "name": "mini_green_maze",
+      "region": "beams_and_basic_heroes",
+      "position": [41, 135, 0],
+      "entity_id": 90186336
+    },
+    {
+      "name": "mirror_1",
+      "region": "mirror",
+      "position": [94, 68, 0],
+      "entity_id": 14681557
+    },
+    {
+      "name": "mirror_10_alt2",
+      "region": "mirror",
+      "position": [121, 83, 0],
+      "entity_id": 14681527
+    },
+    {
+      "name": "mirror_10_b_v2",
+      "region": "mirror",
+      "position": [100, 79, 0],
+      "entity_id": 59770190
+    },
+    {
+      "name": "mirror_10_d",
+      "region": "mirror",
+      "position": [101, 79, 0],
+      "entity_id": 59770192
+    },
+    {
+      "name": "mirror_11",
+      "region": "mirror",
+      "position": [110, 66, 0],
+      "entity_id": 14681509
+    },
+    {
+      "name": "mirror_12",
+      "region": "mirror",
+      "position": [111, 66, 0],
+      "entity_id": 14681571
+    },
+    {
+      "name": "mirror_13",
+      "region": "mirror",
+      "position": [124, 51, 0],
+      "entity_id": 14681555
+    },
+    {
+      "name": "mirror_14",
+      "region": "mirror",
+      "position": [116, 53, 0],
+      "entity_id": 14681533
+    },
+    {
+      "name": "mirror_15",
+      "region": "mirror",
+      "position": [118, 66, 0],
+      "entity_id": 14681515
+    },
+    {
+      "name": "mirror_17",
+      "region": "mirror",
+      "position": [120, 66, 0],
+      "entity_id": 14681559
+    },
+    {
+      "name": "mirror_18",
+      "region": "mirror",
+      "position": [122, 64, 0],
+      "entity_id": 14681537
+    },
+    {
+      "name": "mirror_180",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [107, 27, -21],
+      "entity_id": 62985654
+    },
+    {
+      "name": "mirror_19",
+      "region": "mirror",
+      "position": [119, 66, 0],
+      "entity_id": 14681517
+    },
+    {
+      "name": "mirror_2",
+      "region": "mirror",
+      "position": [95, 68, 0],
+      "entity_id": 14681531
+    },
+    {
+      "name": "mirror_20",
+      "region": "mirror",
+      "position": [123, 64, 0],
+      "entity_id": 14681579
+    },
+    {
+      "name": "mirror_21",
+      "region": "mirror",
+      "position": [135, 58, 0],
+      "entity_id": 14681563
+    },
+    {
+      "name": "mirror_22_v2",
+      "region": "mirror",
+      "position": [136, 58, 0],
+      "entity_id": 14681545
+    },
+    {
+      "name": "mirror_3",
+      "region": "mirror",
+      "position": [96, 68, 0],
+      "entity_id": 14681513
+    },
+    {
+      "name": "mirror_4",
+      "region": "mirror",
+      "position": [97, 68, 0],
+      "entity_id": 14681575
+    },
+    {
+      "name": "mirror_5",
+      "region": "mirror",
+      "position": [103, 70, 0],
+      "entity_id": 14681561
+    },
+    {
+      "name": "mirror_6_alt",
+      "region": "mirror",
+      "position": [104, 70, 0],
+      "entity_id": 14681543
+    },
+    {
+      "name": "mirror_7",
+      "region": "mirror",
+      "position": [102, 64, 0],
+      "entity_id": 14681523
+    },
+    {
+      "name": "mirror_8_v5",
+      "region": "mirror",
+      "position": [103, 64, 0],
+      "entity_id": 14681585
+    },
+    {
+      "name": "mirror_carry_duo",
+      "region": "mirrors_in_3d",
+      "position": [116, 54, 34],
+      "entity_id": 95425632
+    },
+    {
+      "name": "mirror_clocks",
+      "region": "heroes_and_mirrors",
+      "position": [117, 93, 0],
+      "entity_id": 94372184
+    },
+    {
+      "name": "mirror_crystal_rover",
+      "region": "underworld_heroes_and_promesst",
+      "position": [30, 86, -21],
+      "entity_id": 62938862
+    },
+    {
+      "name": "mirror_dweller",
+      "region": "heroes_and_mirrors",
+      "position": [155, 101, 0],
+      "entity_id": 106967724
+    },
+    {
+      "name": "mirror_factory_v2",
+      "region": "mirror",
+      "position": [124, 60, 0],
+      "entity_id": 95420850
+    },
+    {
+      "name": "mirror_flip_donut",
+      "region": "lily_rotation",
+      "position": [93, 42, -21],
+      "entity_id": 59779423
+    },
+    {
+      "name": "mirror_hallway_v2",
+      "region": "heroes_and_mirrors",
+      "position": [128, 92, 0],
+      "entity_id": 46141045
+    },
+    {
+      "name": "mirror_motion",
+      "region": "mirrors_and_stones",
+      "position": [161, 11, 0],
+      "entity_id": 59778900
+    },
+    {
+      "name": "mirror_non_turner_v3",
+      "region": "beams_and_mirrors",
+      "position": [153, 44, 0],
+      "entity_id": 95422619
+    },
+    {
+      "name": "mirror_pals",
+      "region": "mirror",
+      "position": [126, 76, 0],
+      "entity_id": 62924060
+    },
+    {
+      "name": "mirror_prelude_v2_fix",
+      "region": "endgame2",
+      "position": [-10, 147, 44],
+      "entity_id": 63004137
+    },
+    {
+      "name": "mirror_promesst",
+      "region": "beams_and_mirrors",
+      "position": [-21, 61, 0],
+      "entity_id": 46143295
+    },
+    {
+      "name": "mirror_rover_orange_2",
+      "region": "beams_and_mirrors",
+      "position": [-1, 52, 0],
+      "entity_id": 111264691
+    },
+    {
+      "name": "mirror_sink",
+      "region": "mirror",
+      "position": [124, 64, 0],
+      "entity_id": 14681577
+    },
+    {
+      "name": "mirror_stone_intro",
+      "region": "mirrorable_stones",
+      "position": [122, 30, 0],
+      "entity_id": 46138127
+    },
+    {
+      "name": "mirror_the_unmirrorable_mirror",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [114, 99, -21],
+      "entity_id": 95467235
+    },
+    {
+      "name": "mirror_u",
+      "region": "lily_rotation",
+      "position": [92, 42, -21],
+      "entity_id": 59779421
+    },
+    {
+      "name": "missile_command",
+      "region": "advanced_bard_and_water",
+      "position": [68, 129, -18],
+      "entity_id": 90194422
+    },
+    {
+      "name": "mission_impossible",
+      "region": "vertical_mirrors",
+      "position": [120, 69, 36],
+      "entity_id": 94376044
+    },
+    {
+      "name": "mobile_cover_2",
+      "region": "underworld_skipping_and_promesst",
+      "position": [40, 32, -21],
+      "entity_id": 59779235
+    },
+    {
+      "name": "monkey_in_the_midpoint",
+      "region": "promesst3",
+      "position": [10, 73, 0],
+      "entity_id": 111264684
+    },
+    {
+      "name": "monster_drop",
+      "region": "double_beam_falling",
+      "position": [23, 30, 35],
+      "entity_id": 14681755
+    },
+    {
+      "name": "monster_gate_in_water",
+      "region": "heroes_and_stones",
+      "position": [95, 151, 0],
+      "entity_id": 62985632
+    },
+    {
+      "name": "monster_mover",
+      "region": "heroes_and_water",
+      "position": [121, 134, 0],
+      "entity_id": 46138323
+    },
+    {
+      "name": "monster_promesst_v3",
+      "region": "monsters_and_beams",
+      "position": [37, 99, -21],
+      "entity_id": 59779319
+    },
+    {
+      "name": "monster_spawn",
+      "region": "spawners",
+      "position": [-11, 34, -18],
+      "entity_id": 115574654
+    },
+    {
+      "name": "monster_stack",
+      "region": "heroes_in_3d",
+      "position": [72, 120, 45],
+      "entity_id": 94374022
+    },
+    {
+      "name": "mosh_pit_small",
+      "region": "heroes2",
+      "position": [80, 103, 0],
+      "entity_id": 14680993
+    },
+    {
+      "name": "mountain_music",
+      "region": "heroes_in_3d",
+      "position": [95, 121, 36],
+      "entity_id": 46146722
+    },
+    {
+      "name": "movable_button",
+      "region": "flat_things",
+      "position": [83, 34, -21],
+      "entity_id": 59779411
+    },
+    {
+      "name": "movable_buttons",
+      "region": "flat_things",
+      "position": [78, 31, -19],
+      "entity_id": 59779413
+    },
+    {
+      "name": "moving_a_mirror",
+      "region": "heroes_and_mirrors",
+      "position": [148, 94, 0],
+      "entity_id": 46142161
+    },
+    {
+      "name": "moving_bridge",
+      "region": "mirrors_and_stones",
+      "position": [144, 44, 0],
+      "entity_id": 73401198
+    },
+    {
+      "name": "moving_three_mirrors",
+      "region": "heroes_and_mirrors",
+      "position": [155, 92, 0],
+      "entity_id": 95420590
+    },
+    {
+      "name": "moving_through_mirrors_v3",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [90, 80, -21],
+      "entity_id": 95445376
+    },
+    {
+      "name": "multipurpose",
+      "region": "mirrorable_stones",
+      "position": [150, 27, 0],
+      "entity_id": 59769464
+    },
+    {
+      "name": "multipush_for_me2",
+      "region": "sideways_gates",
+      "position": [58, 109, 0],
+      "entity_id": 46141313
+    },
+    {
+      "name": "mundane_mirror",
+      "region": "mirror",
+      "position": [98, 79, 0],
+      "entity_id": 95448826
+    },
+    {
+      "name": "musical_staircase_v2",
+      "region": "heroes_in_3d",
+      "position": [101, 125, 36],
+      "entity_id": 95438878
+    },
+    {
+      "name": "my_first_stack",
+      "region": "heroes_in_3d",
+      "position": [92, 85, 33],
+      "entity_id": 95438505
+    },
+    {
+      "name": "narrow_passage",
+      "region": "beams_and_stones",
+      "position": [15, 13, 0],
+      "entity_id": 46149678
+    },
+    {
+      "name": "negative_space",
+      "region": "gems",
+      "position": [17, 55, -21],
+      "entity_id": 59770619
+    },
+    {
+      "name": "new_cleric_fly",
+      "region": "heroes_and_water",
+      "position": [112, 137, 0],
+      "entity_id": 46138319
+    },
+    {
+      "name": "new_new_new_slam",
+      "region": "mirrorable_stones",
+      "position": [135, 27, 0],
+      "entity_id": 115354898
+    },
+    {
+      "name": "new_way_mirror_later",
+      "region": "vertical_mirrors",
+      "position": [146, 70, 48],
+      "entity_id": 62945430
+    },
+    {
+      "name": "no_charm",
+      "region": "heroes_in_3d",
+      "position": [114, 137, 36],
+      "entity_id": 95443649
+    },
+    {
+      "name": "no_murder_weapon_0",
+      "region": "monsters_and_beams",
+      "position": [62, 79, -21],
+      "entity_id": 87043767
+    },
+    {
+      "name": "no_murder_weapon_wizard",
+      "region": "monsters_and_beams",
+      "position": [60, 79, -21],
+      "entity_id": 111275378
+    },
+    {
+      "name": "nowhere_to_smash_combo",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [42, 82, -23],
+      "entity_id": 46144263
+    },
+    {
+      "name": "numberlink_alt",
+      "region": "gems",
+      "position": [17, 57, -21],
+      "entity_id": 59770563
+    },
+    {
+      "name": "ocean_blue",
+      "region": "beams_and_stones",
+      "position": [44, 16, 0],
+      "entity_id": 46139240
+    },
+    {
+      "name": "omnimirror_v2",
+      "region": "mirrors_in_3d",
+      "position": [118, 54, 34],
+      "entity_id": 95425600
+    },
+    {
+      "name": "on_command",
+      "region": "heroes_and_water",
+      "position": [118, 129, 0],
+      "entity_id": 59769189
+    },
+    {
+      "name": "on_the_rocks",
+      "region": "skipping_in_3d",
+      "position": [75, 32, 22],
+      "entity_id": 46149756
+    },
+    {
+      "name": "one_bird_two_stones",
+      "region": "heroes_and_stones",
+      "position": [64, 5, 0],
+      "entity_id": 46141300
+    },
+    {
+      "name": "one_fire_v2",
+      "region": "heroes2",
+      "position": [74, 112, 0],
+      "entity_id": 14681029
+    },
+    {
+      "name": "one_floor_down_v2",
+      "region": "vertical_reflection",
+      "position": [-5, 68, 38],
+      "entity_id": 95443997
+    },
+    {
+      "name": "one_of_each",
+      "region": "heroes_and_stones",
+      "position": [72, 146, 0],
+      "entity_id": 59768984
+    },
+    {
+      "name": "one_vs_three",
+      "region": "heroes_and_water",
+      "position": [120, 127, 0],
+      "entity_id": 59769099
+    },
+    {
+      "name": "oneway_beam",
+      "region": "beams_and_basic_heroes",
+      "position": [43, 97, 0],
+      "entity_id": 14681415
+    },
+    {
+      "name": "oneway_dragon_toast",
+      "region": "heroes_and_mirrors",
+      "position": [146, 109, 0],
+      "entity_id": 95468391
+    },
+    {
+      "name": "open_monster",
+      "region": "monsters_and_beams",
+      "position": [36, 96, -21],
+      "entity_id": 92279924
+    },
+    {
+      "name": "orange_beam_deal",
+      "region": "beams_and_basic_heroes",
+      "position": [12, 106, 0],
+      "entity_id": 46137606
+    },
+    {
+      "name": "orange_clm_s",
+      "region": "beams_and_mirrors",
+      "position": [-14, 86, 0],
+      "entity_id": 94373736
+    },
+    {
+      "name": "orange_cross",
+      "region": "double_beam_falling_dropdown",
+      "position": [27, 60, 0],
+      "entity_id": 62977292
+    },
+    {
+      "name": "orange_doubleback",
+      "region": "beams_and_mirrors",
+      "position": [-22, 77, 0],
+      "entity_id": 92275006
+    },
+    {
+      "name": "orange_doubledoubleback",
+      "region": "beams_and_mirrors",
+      "position": [-17, 78, 0],
+      "entity_id": 92275008
+    },
+    {
+      "name": "orange_floaty_reflect_v3",
+      "region": "beams_and_mirrors",
+      "position": [-18, 11, 0],
+      "entity_id": 92275034
+    },
+    {
+      "name": "orange_gem_instant",
+      "region": "gems",
+      "position": [43, 56, -21],
+      "entity_id": 90195802
+    },
+    {
+      "name": "orange_mirror_walk_button",
+      "region": "orange_beam_highway_stones_and_promesst",
+      "position": [153, 22, -21],
+      "entity_id": 115375300
+    },
+    {
+      "name": "orange_predicament",
+      "region": "beams_and_mirrors",
+      "position": [9, 42, 0],
+      "entity_id": 92275010
+    },
+    {
+      "name": "orange_skip_place_v3",
+      "region": "beams_and_stones",
+      "position": [14, 41, 0],
+      "entity_id": 90201777
+    },
+    {
+      "name": "orange_snake",
+      "region": "double_beam_falling",
+      "position": [40, 50, 38],
+      "entity_id": 95447422
+    },
+    {
+      "name": "orange_water_button_vdouble_v2",
+      "region": "orange_beam_highway_stones_and_promesst",
+      "position": [160, 13, -21],
+      "entity_id": 115376116
+    },
+    {
+      "name": "orange_water_button_vfour_alter",
+      "region": "orange_beam_highway_stones_and_promesst",
+      "position": [161, 13, -21],
+      "entity_id": 115375298
+    },
+    {
+      "name": "orange_water_button_vslow",
+      "region": "orange_beam_highway_stones_and_promesst",
+      "position": [159, 13, -21],
+      "entity_id": 115375299
+    },
+    {
+      "name": "orange_wizard_intro",
+      "region": "beams_and_basic_heroes",
+      "position": [39, 128, 0],
+      "entity_id": 90186406
+    },
+    {
+      "name": "ortho",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [58, 11, -21],
+      "entity_id": 58730399
+    },
+    {
+      "name": "ortho2",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [59, 11, -21],
+      "entity_id": 58730475
+    },
+    {
+      "name": "ortho3",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [54, 16, -20],
+      "entity_id": 58730477
+    },
+    {
+      "name": "out_of_range_v4",
+      "region": "heroes_in_3d",
+      "position": [97, 121, 36],
+      "entity_id": 46146724
+    },
+    {
+      "name": "overwrite",
+      "region": "vertical_mirrors",
+      "position": [125, 69, 33],
+      "entity_id": 46146778
+    },
+    {
+      "name": "pachinko",
+      "region": "vertical_mirrors",
+      "position": [151, 116, 34],
+      "entity_id": 94376040
+    },
+    {
+      "name": "pachinko_rescue_w",
+      "region": "vertical_mirrors",
+      "position": [151, 117, 34],
+      "entity_id": 94376042
+    },
+    {
+      "name": "partial_pull",
+      "region": "heroes_and_water",
+      "position": [120, 137, 0],
+      "entity_id": 46138331
+    },
+    {
+      "name": "pass_through_v2_same_z",
+      "region": "goblin_rotation",
+      "position": [23, 101, 38],
+      "entity_id": 62933259
+    },
+    {
+      "name": "pat_on_the_back_v2",
+      "region": "underworld_heroes_and_promesst",
+      "position": [18, 70, -24],
+      "entity_id": 95465636
+    },
+    {
+      "name": "peak_toggle",
+      "region": "endgame2",
+      "position": [-9, 147, 44],
+      "entity_id": 62967828
+    },
+    {
+      "name": "perch_3_rovers",
+      "region": "underworld_heroes_and_promesst",
+      "position": [16, 83, -21],
+      "entity_id": 90194695
+    },
+    {
+      "name": "personal_assistant_v3",
+      "region": "heroes_in_3d",
+      "position": [83, 83, 33],
+      "entity_id": 95425319
+    },
+    {
+      "name": "pigeonhole_squished",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [140, 78, -21],
+      "entity_id": 111202281
+    },
+    {
+      "name": "pillars",
+      "region": "mirrors_in_3d",
+      "position": [102, 61, 33],
+      "entity_id": 115497466
+    },
+    {
+      "name": "pink_platforms",
+      "region": "vertical_reflection",
+      "position": [-8, 74, 38],
+      "entity_id": 95443995
+    },
+    {
+      "name": "place_lily_pushstyle_v6",
+      "region": "endgame2",
+      "position": [-15, 144, 44],
+      "entity_id": 95455105
+    },
+    {
+      "name": "place_promesst_rooms",
+      "region": "endgame2",
+      "position": [-21, 147, 44],
+      "entity_id": 111246295
+    },
+    {
+      "name": "place_slot_4x4_pushstyle",
+      "region": "endgame2",
+      "position": [-19, 147, 44],
+      "entity_id": 95455109
+    },
+    {
+      "name": "place_to_stand",
+      "region": "mirrors_and_stones",
+      "position": [96, 26, 0],
+      "entity_id": 59778898
+    },
+    {
+      "name": "plus_signs_v3",
+      "region": "beams_and_basic_heroes",
+      "position": [0, 98, 0],
+      "entity_id": 90181522
+    },
+    {
+      "name": "pole_vault",
+      "region": "advanced_bard_and_water",
+      "position": [65, 136, -18],
+      "entity_id": 46146962
+    },
+    {
+      "name": "pool_pal_v2",
+      "region": "skipping_in_3d",
+      "position": [91, 46, 27],
+      "entity_id": 46149754
+    },
+    {
+      "name": "portable_stairs",
+      "region": "vertical_mirrors",
+      "position": [118, 65, 34],
+      "entity_id": 59772188
+    },
+    {
+      "name": "prelude_priest_water_goblins_only",
+      "region": "endgame2",
+      "position": [-13, 152, 44],
+      "entity_id": 95455111
+    },
+    {
+      "name": "priest_3d_goblin_pass",
+      "region": "heroes_in_3d",
+      "position": [83, 104, 36],
+      "entity_id": 111202265
+    },
+    {
+      "name": "priest_3d_intro_dragon_v4",
+      "region": "heroes_in_3d",
+      "position": [82, 108, 45],
+      "entity_id": 62945461
+    },
+    {
+      "name": "priest_bottom_v2",
+      "region": "heroes_in_3d",
+      "position": [84, 104, 45],
+      "entity_id": 111202273
+    },
+    {
+      "name": "priest_button_3d_revised",
+      "region": "heroes_in_3d",
+      "position": [82, 109, 36],
+      "entity_id": 87034372
+    },
+    {
+      "name": "priest_descent_simpler",
+      "region": "heroes_in_3d",
+      "position": [83, 102, 36],
+      "entity_id": 111202267
+    },
+    {
+      "name": "priest_traverse_e_fence",
+      "region": "heroes_in_3d",
+      "position": [66, 131, 63],
+      "entity_id": 111202285
+    },
+    {
+      "name": "priest_two_warriors_v3",
+      "region": "heroes_in_3d",
+      "position": [80, 124, 45],
+      "entity_id": 111202277
+    },
+    {
+      "name": "priest_warrior_descent",
+      "region": "heroes_in_3d",
+      "position": [83, 113, 45],
+      "entity_id": 111202271
+    },
+    {
+      "name": "priest_water_back_goblin",
+      "region": "skipping_in_3d",
+      "position": [52, 10, 19],
+      "entity_id": 111237739
+    },
+    {
+      "name": "priest_water_back_place_v3",
+      "region": "skipping_in_3d",
+      "position": [66, -2, 19],
+      "entity_id": 111237741
+    },
+    {
+      "name": "prisoners_dilemma_alt",
+      "region": "heroes_and_stones",
+      "position": [106, 118, 0],
+      "entity_id": 63030405
+    },
+    {
+      "name": "promesst1_streamlined",
+      "region": "promesst1_and_2",
+      "position": [61, 70, 0],
+      "entity_id": 75497730
+    },
+    {
+      "name": "promesst2.5_deeper",
+      "region": "promesst3",
+      "position": [-3, 73, 0],
+      "entity_id": 59769397
+    },
+    {
+      "name": "promesst2_streamlined",
+      "region": "promesst1_and_2",
+      "position": [44, 70, 0],
+      "entity_id": 75497732
+    },
+    {
+      "name": "promesst3_streamlined",
+      "region": "promesst3",
+      "position": [4, 71, 0],
+      "entity_id": 95420502
+    },
+    {
+      "name": "promesst_prelude_pushstyle",
+      "region": "endgame2",
+      "position": [-22, 147, 44],
+      "entity_id": 115512324
+    },
+    {
+      "name": "protrusions",
+      "region": "beams_and_mirrors",
+      "position": [-19, 61, 0],
+      "entity_id": 46149502
+    },
+    {
+      "name": "pugo",
+      "region": "clones",
+      "position": [155, 118, 0],
+      "entity_id": 46137352
+    },
+    {
+      "name": "pull_it_v4",
+      "region": "heroes_and_stones",
+      "position": [85, 2, 0],
+      "entity_id": 46140257
+    },
+    {
+      "name": "pull_line",
+      "region": "clones",
+      "position": [143, 125, 0],
+      "entity_id": 46137373
+    },
+    {
+      "name": "pull_skip_twins_v3",
+      "region": "heroes_and_stones",
+      "position": [138, 144, 0],
+      "entity_id": 111268941
+    },
+    {
+      "name": "pull_teamwork_alt",
+      "region": "heroes_and_stones",
+      "position": [86, 2, 0],
+      "entity_id": 50331702
+    },
+    {
+      "name": "pull_together",
+      "region": "beams_and_basic_heroes",
+      "position": [1, 120, 0],
+      "entity_id": 59770103
+    },
+    {
+      "name": "pulling_near_orange_v2",
+      "region": "beams_and_basic_heroes",
+      "position": [2, 112, 0],
+      "entity_id": 46137596
+    },
+    {
+      "name": "pulling_pedestals",
+      "region": "heroes_in_3d",
+      "position": [83, 97, 36],
+      "entity_id": 59769958
+    },
+    {
+      "name": "purple_beam_intro_v2_alt",
+      "region": "beams_and_stones",
+      "position": [59, 35, 0],
+      "entity_id": 62975844
+    },
+    {
+      "name": "purple_clm_v4",
+      "region": "beams_and_mirrors",
+      "position": [-13, 86, 0],
+      "entity_id": 92275012
+    },
+    {
+      "name": "purple_corner_gem",
+      "region": "beams_and_mirrors",
+      "position": [-13, 77, 0],
+      "entity_id": 111149599
+    },
+    {
+      "name": "purple_haze",
+      "region": "beams_and_basic_heroes",
+      "position": [7, 122, 0],
+      "entity_id": 46149416
+    },
+    {
+      "name": "purple_heart",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [-5, 75, -19],
+      "entity_id": 46146880
+    },
+    {
+      "name": "purple_perpendicular",
+      "region": "beams_and_basic_heroes",
+      "position": [5, 123, 0],
+      "entity_id": 46149418
+    },
+    {
+      "name": "purple_push_pal",
+      "region": "beams_and_basic_heroes",
+      "position": [8, 126, 0],
+      "entity_id": 59770105
+    },
+    {
+      "name": "purple_wall_around_easier_vp",
+      "region": "beams_and_mirrors",
+      "position": [-8, 84, 0],
+      "entity_id": 94373479
+    },
+    {
+      "name": "purple_wizard_maze",
+      "region": "beams_and_basic_heroes",
+      "position": [58, 137, 0],
+      "entity_id": 90186719
+    },
+    {
+      "name": "push_against",
+      "region": "heroes_and_stones",
+      "position": [23, 143, 0],
+      "entity_id": 59769040
+    },
+    {
+      "name": "push_and_pull_zach",
+      "region": "heroes_and_water",
+      "position": [105, 109, 0],
+      "entity_id": 62920245
+    },
+    {
+      "name": "push_down_a_lot_small",
+      "region": "heroes_in_3d",
+      "position": [87, 83, 33],
+      "entity_id": 95425321
+    },
+    {
+      "name": "push_down_chain",
+      "region": "underworld_crossroads",
+      "position": [80, 70, -21],
+      "entity_id": 59769356
+    },
+    {
+      "name": "push_down_v2",
+      "region": "intro_to_3d",
+      "position": [79, 70, 33],
+      "entity_id": 92275293
+    },
+    {
+      "name": "pushback",
+      "region": "beams_and_basic_heroes",
+      "position": [1, 126, 0],
+      "entity_id": 59770101
+    },
+    {
+      "name": "pushing_crystal_near_orange_v2",
+      "region": "beaming_objects",
+      "position": [18, 123, 0],
+      "entity_id": 46137592
+    },
+    {
+      "name": "pushing_near_orange",
+      "region": "beams_and_basic_heroes",
+      "position": [3, 112, 0],
+      "entity_id": 46137594
+    },
+    {
+      "name": "pushing_orange",
+      "region": "beams_and_basic_heroes",
+      "position": [-2, 105, 0],
+      "entity_id": 46137598
+    },
+    {
+      "name": "pushy",
+      "region": "promesst1_and_2",
+      "position": [41, 79, 0],
+      "entity_id": 115362521
+    },
+    {
+      "name": "put_down_roots_v3",
+      "region": "heroes_and_stones",
+      "position": [93, 136, 0],
+      "entity_id": 59769097
+    },
+    {
+      "name": "quad_torch",
+      "region": "heroes_and_mirrors",
+      "position": [134, 85, 0],
+      "entity_id": 59771474
+    },
+    {
+      "name": "quadrants",
+      "region": "heroes_and_water",
+      "position": [105, 113, 0],
+      "entity_id": 50331812
+    },
+    {
+      "name": "quadrants_follow_up",
+      "region": "heroes_and_water",
+      "position": [104, 113, 0],
+      "entity_id": 59769095
+    },
+    {
+      "name": "quadruple_skip",
+      "region": "underworld_heroes_and_promesst",
+      "position": [12, 81, -21],
+      "entity_id": 59779525
+    },
+    {
+      "name": "quick_redirect_v5",
+      "region": "vertical_mirrors",
+      "position": [138, 69, 48],
+      "entity_id": 46146772
+    },
+    {
+      "name": "raft_corners_2_small",
+      "region": "underworld_lilies",
+      "position": [86, 40, -21],
+      "entity_id": 59779102
+    },
+    {
+      "name": "raft_corners_4x4",
+      "region": "underworld_lilies",
+      "position": [88, 40, -21],
+      "entity_id": 59779098
+    },
+    {
+      "name": "raft_corners_alt_3",
+      "region": "underworld_lilies",
+      "position": [85, 48, -21],
+      "entity_id": 59779096
+    },
+    {
+      "name": "reattachment",
+      "region": "heroes_and_mirrors",
+      "position": [111, 113, 0],
+      "entity_id": 95420678
+    },
+    {
+      "name": "recycling",
+      "region": "spawners",
+      "position": [-18, 26, -18],
+      "entity_id": 62915269
+    },
+    {
+      "name": "red_cross",
+      "region": "heroes_and_mirrors",
+      "position": [137, 105, 0],
+      "entity_id": 59771462
+    },
+    {
+      "name": "red_handed",
+      "region": "beams_and_basic_heroes",
+      "position": [49, 102, 0],
+      "entity_id": 46137774
+    },
+    {
+      "name": "red_rooms_v5",
+      "region": "beams_and_mirrors",
+      "position": [-14, 50, 0],
+      "entity_id": 59769352
+    },
+    {
+      "name": "red_yellow_alter_with_intro_v2",
+      "region": "beams_and_mirrors",
+      "position": [-2, 84, 0],
+      "entity_id": 111149601
+    },
+    {
+      "name": "reel_it_in",
+      "region": "mirrorable_stones",
+      "position": [144, 33, 0],
+      "entity_id": 87037709
+    },
+    {
+      "name": "reflect_momentum",
+      "region": "mirrorable_stones",
+      "position": [126, 33, 0],
+      "entity_id": 59769442
+    },
+    {
+      "name": "regular_mirror_v4",
+      "region": "heroes_and_mirrors",
+      "position": [156, 97, 0],
+      "entity_id": 46142153
+    },
+    {
+      "name": "remote_work",
+      "region": "beams_and_mirrors",
+      "position": [156, 53, 0],
+      "entity_id": 95423916
+    },
+    {
+      "name": "removal_v2",
+      "region": "skipping_in_3d",
+      "position": [67, 43, 27],
+      "entity_id": 95426180
+    },
+    {
+      "name": "repel",
+      "region": "vertical_mirrors",
+      "position": [118, 71, 37],
+      "entity_id": 46146752
+    },
+    {
+      "name": "reroute_3",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [121, 27, -21],
+      "entity_id": 115565389
+    },
+    {
+      "name": "reset_mirror",
+      "region": "spawners",
+      "position": [-19, 18, -18],
+      "entity_id": 62915265
+    },
+    {
+      "name": "reset_trio",
+      "region": "spawners",
+      "position": [-15, 41, -17],
+      "entity_id": 95455097
+    },
+    {
+      "name": "retro",
+      "region": "skipping_in_3d",
+      "position": [111, 25, 25],
+      "entity_id": 58723788
+    },
+    {
+      "name": "retro_hooks",
+      "region": "skipping_in_3d",
+      "position": [110, 25, 25],
+      "entity_id": 58723790
+    },
+    {
+      "name": "retvrn0",
+      "region": "underworld_skipping_and_promesst",
+      "position": [34, 14, -21],
+      "entity_id": 111162060
+    },
+    {
+      "name": "ricochet_v2",
+      "region": "mirrorable_stones",
+      "position": [153, 32, 0],
+      "entity_id": 59769515
+    },
+    {
+      "name": "ride_together",
+      "region": "mirrors_and_stones",
+      "position": [157, 17, 0],
+      "entity_id": 59778906
+    },
+    {
+      "name": "right_hand_man",
+      "region": "promesst1_and_2",
+      "position": [38, 83, 0],
+      "entity_id": 95471585
+    },
+    {
+      "name": "river_dictionary_alt_up",
+      "region": "mirrors_and_stones",
+      "position": [104, 15, 0],
+      "entity_id": 46144632
+    },
+    {
+      "name": "river_exploit_v2",
+      "region": "endgame3",
+      "position": [23, 120, -24],
+      "entity_id": 62924042
+    },
+    {
+      "name": "river_maze_clear_tenacious_race_v2",
+      "region": "lily_rotation",
+      "position": [144, 46, -21],
+      "entity_id": 94377317
+    },
+    {
+      "name": "river_plinko_v2_actual",
+      "region": "mirrors_and_stones",
+      "position": [139, 18, 0],
+      "entity_id": 115413365
+    },
+    {
+      "name": "river_push_v4",
+      "region": "mirrors_and_stones",
+      "position": [131, 14, 0],
+      "entity_id": 58721246
+    },
+    {
+      "name": "river_rates_button",
+      "region": "lily_rotation",
+      "position": [146, 46, -21],
+      "entity_id": 94377323
+    },
+    {
+      "name": "river_rates_jagged",
+      "region": "lily_rotation",
+      "position": [144, 37, -21],
+      "entity_id": 94377321
+    },
+    {
+      "name": "river_rotate_beams_gr",
+      "region": "underworld_skipping_and_promesst",
+      "position": [65, 42, -21],
+      "entity_id": 95426205
+    },
+    {
+      "name": "rotating_cavalry_spaced",
+      "region": "monsters_and_beams",
+      "position": [34, 108, -21],
+      "entity_id": 59770015
+    },
+    {
+      "name": "rotator",
+      "region": "skipping_in_3d",
+      "position": [98, 20, 19],
+      "entity_id": 95426188
+    },
+    {
+      "name": "rover_advance_c_v2",
+      "region": "beams_and_stones",
+      "position": [34, 37, 0],
+      "entity_id": 90201765
+    },
+    {
+      "name": "rover_impulse_v2",
+      "region": "beams_and_stones",
+      "position": [40, 42, 0],
+      "entity_id": 90201763
+    },
+    {
+      "name": "rover_shift_p",
+      "region": "beams_and_stones",
+      "position": [34, 38, 0],
+      "entity_id": 90201767
+    },
+    {
+      "name": "rover_water_purple_sequel_v3",
+      "region": "beams_and_mirrors",
+      "position": [-17, 56, 0],
+      "entity_id": 95424700
+    },
+    {
+      "name": "rover_water_purple_v9",
+      "region": "beams_and_mirrors",
+      "position": [-12, 60, 0],
+      "entity_id": 95422625
+    },
+    {
+      "name": "rowboat",
+      "region": "advanced_bard_and_water",
+      "position": [61, 116, -18],
+      "entity_id": 111159822
+    },
+    {
+      "name": "rowboat_wizard_v2",
+      "region": "advanced_bard_and_water",
+      "position": [66, 120, -18],
+      "entity_id": 95440633
+    },
+    {
+      "name": "rsmash",
+      "region": "beams_and_stones",
+      "position": [59, 16, 0],
+      "entity_id": 90203609
+    },
+    {
+      "name": "rubble_chain",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [45, 84, -22],
+      "entity_id": 95454718
+    },
+    {
+      "name": "run_the_clock_alt",
+      "region": "mirrorable_stones",
+      "position": [152, 32, 0],
+      "entity_id": 59769458
+    },
+    {
+      "name": "safe_returns",
+      "region": "beams_and_basic_heroes",
+      "position": [33, 134, 0],
+      "entity_id": 90186282
+    },
+    {
+      "name": "safety_gloves",
+      "region": "beaming_objects",
+      "position": [18, 124, 0],
+      "entity_id": 46138758
+    },
+    {
+      "name": "save_for_later",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [42, 83, -19],
+      "entity_id": 95454728
+    },
+    {
+      "name": "security_checkpoints_v2",
+      "region": "beams_and_stones",
+      "position": [41, 18, 0],
+      "entity_id": 59769728
+    },
+    {
+      "name": "see_no_evil",
+      "region": "endgame2",
+      "position": [-17, 152, 44],
+      "entity_id": 62967825
+    },
+    {
+      "name": "see_through",
+      "region": "beams_and_basic_heroes",
+      "position": [49, 138, 0],
+      "entity_id": 90186308
+    },
+    {
+      "name": "seeing_red",
+      "region": "vertical_reflection",
+      "position": [-18, 67, 34],
+      "entity_id": 95443989
+    },
+    {
+      "name": "self_teleporting",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [118, 108, -21],
+      "entity_id": 14682352
+    },
+    {
+      "name": "sender_simplified_v2",
+      "region": "vertical_endpoint",
+      "position": [8, 70, 30],
+      "entity_id": 111162359
+    },
+    {
+      "name": "short_ride_option_b",
+      "region": "mirrors_and_stones",
+      "position": [104, 26, 0],
+      "entity_id": 46138415
+    },
+    {
+      "name": "shower",
+      "region": "vertical_endpoint",
+      "position": [11, 72, 34],
+      "entity_id": 95443984
+    },
+    {
+      "name": "shunt2_alt",
+      "region": "beams_and_basic_heroes",
+      "position": [-9, 91, 0],
+      "entity_id": 87034742
+    },
+    {
+      "name": "sick_270_small",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [137, -1, -21],
+      "entity_id": 111268945
+    },
+    {
+      "name": "side_kick",
+      "region": "sideways_gates",
+      "position": [57, 109, 0],
+      "entity_id": 46142414
+    },
+    {
+      "name": "side_slide_intro_v2",
+      "region": "sideways_gates",
+      "position": [65, 113, 0],
+      "entity_id": 46141309
+    },
+    {
+      "name": "side_sub_back",
+      "region": "double_beam_falling",
+      "position": [50, 52, 38],
+      "entity_id": 95437781
+    },
+    {
+      "name": "side_sub_v2",
+      "region": "double_beam_falling",
+      "position": [50, 54, 38],
+      "entity_id": 95437779
+    },
+    {
+      "name": "sidestone_zach_1",
+      "region": "mirrorable_stones",
+      "position": [113, 38, 0],
+      "entity_id": 14681262
+    },
+    {
+      "name": "sidestone_zach_2",
+      "region": "mirrorable_stones",
+      "position": [114, 38, 0],
+      "entity_id": 14681248
+    },
+    {
+      "name": "sidestone_zach_2_end2",
+      "region": "endgame2",
+      "position": [-7, 143, 44],
+      "entity_id": 115421417
+    },
+    {
+      "name": "sidestone_zach_3",
+      "region": "mirrorable_stones",
+      "position": [115, 38, 0],
+      "entity_id": 14681621
+    },
+    {
+      "name": "sidestone_zach_4",
+      "region": "mirrorable_stones",
+      "position": [116, 38, 0],
+      "entity_id": 14681216
+    },
+    {
+      "name": "sidetrack",
+      "region": "beams_and_mirrors",
+      "position": [-8, 85, 0],
+      "entity_id": 92275014
+    },
+    {
+      "name": "simple_trap",
+      "region": "beams_and_basic_heroes",
+      "position": [2, 127, 0],
+      "entity_id": 46140035
+    },
+    {
+      "name": "simplify_skipping",
+      "region": "endgame3",
+      "position": [19, 109, -24],
+      "entity_id": 115520760
+    },
+    {
+      "name": "simplify_wizard",
+      "region": "endgame3",
+      "position": [18, 109, -24],
+      "entity_id": 115520807
+    },
+    {
+      "name": "simultaneous_x",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [159, 77, -21],
+      "entity_id": 46137702
+    },
+    {
+      "name": "simultaneous_x_surprise",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [158, 77, -21],
+      "entity_id": 95466042
+    },
+    {
+      "name": "single_out",
+      "region": "heroes_in_3d",
+      "position": [104, 88, 33],
+      "entity_id": 95438487
+    },
+    {
+      "name": "sink_together",
+      "region": "mirrors_and_stones",
+      "position": [124, 16, 0],
+      "entity_id": 87044915
+    },
+    {
+      "name": "sister_staircase_harder",
+      "region": "intro_to_3d",
+      "position": [79, 68, 33],
+      "entity_id": 95425313
+    },
+    {
+      "name": "skip_or_sink_r",
+      "region": "beams_and_stones",
+      "position": [8, 29, 0],
+      "entity_id": 59769726
+    },
+    {
+      "name": "skip_orange_block_c",
+      "region": "beams_and_stones",
+      "position": [55, 20, 0],
+      "entity_id": 90201494
+    },
+    {
+      "name": "skip_orange_maze_v3",
+      "region": "beams_and_stones",
+      "position": [14, 42, 0],
+      "entity_id": 90201775
+    },
+    {
+      "name": "skip_orange_wall_v3",
+      "region": "beams_and_stones",
+      "position": [14, 40, 0],
+      "entity_id": 90201779
+    },
+    {
+      "name": "skip_purple_drop_alt",
+      "region": "underworld_skipping_and_promesst",
+      "position": [48, 31, -21],
+      "entity_id": 59779197
+    },
+    {
+      "name": "skip_stack_1",
+      "region": "skipping_in_3d",
+      "position": [75, 15, 19],
+      "entity_id": 95426193
+    },
+    {
+      "name": "skip_stack_2",
+      "region": "skipping_in_3d",
+      "position": [76, 13, 19],
+      "entity_id": 95426195
+    },
+    {
+      "name": "skip_stack_3",
+      "region": "skipping_in_3d",
+      "position": [85, 12, 19],
+      "entity_id": 95426197
+    },
+    {
+      "name": "skip_wand_v6",
+      "region": "beams_and_stones",
+      "position": [12, 26, 0],
+      "entity_id": 90201761
+    },
+    {
+      "name": "skipping_cyan_precise_c_v3",
+      "region": "beams_and_stones",
+      "position": [23, 35, 0],
+      "entity_id": 90201504
+    },
+    {
+      "name": "skipping_near_beams_v2",
+      "region": "beams_and_stones",
+      "position": [68, 27, 0],
+      "entity_id": 46140812
+    },
+    {
+      "name": "skipping_pals",
+      "region": "skipping_stones",
+      "position": [82, 33, 0],
+      "entity_id": 59770151
+    },
+    {
+      "name": "skipping_promesst",
+      "region": "beams_and_stones",
+      "position": [48, 42, 0],
+      "entity_id": 95423657
+    },
+    {
+      "name": "skipping_shores_v3",
+      "region": "skipping_stones",
+      "position": [77, 9, 0],
+      "entity_id": 90204156
+    },
+    {
+      "name": "skipping_stones",
+      "region": "skipping_stones",
+      "position": [80, 54, 0],
+      "entity_id": 1049988
+    },
+    {
+      "name": "skipping_with_dragon",
+      "region": "heroes_and_stones",
+      "position": [124, 1, 0],
+      "entity_id": 14681220
+    },
+    {
+      "name": "skipping_wrapping_v3",
+      "region": "beams_and_stones",
+      "position": [45, 38, 0],
+      "entity_id": 59769774
+    },
+    {
+      "name": "sky_double_intro0",
+      "region": "double_beam_falling",
+      "position": [34, 55, 38],
+      "entity_id": 111154243
+    },
+    {
+      "name": "sky_double_intro1",
+      "region": "double_beam_falling",
+      "position": [34, 56, 38],
+      "entity_id": 111154245
+    },
+    {
+      "name": "sky_druid_kill",
+      "region": "heroes_in_3d",
+      "position": [54, 110, 34],
+      "entity_id": 106957227
+    },
+    {
+      "name": "sky_druid_kill_tall_2_goblins",
+      "region": "heroes_in_3d",
+      "position": [55, 110, 34],
+      "entity_id": 95438140
+    },
+    {
+      "name": "sky_druid_maze",
+      "region": "heroes_in_3d",
+      "position": [64, 109, 34],
+      "entity_id": 106955797
+    },
+    {
+      "name": "sky_druid_one",
+      "region": "heroes_in_3d",
+      "position": [64, 110, 34],
+      "entity_id": 92279057
+    },
+    {
+      "name": "sky_druid_tree_ex",
+      "region": "heroes_in_3d",
+      "position": [54, 111, 36],
+      "entity_id": 95438142
+    },
+    {
+      "name": "skybridge",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [65, 23, -21],
+      "entity_id": 62916136
+    },
+    {
+      "name": "slide_rows",
+      "region": "beams_and_basic_heroes",
+      "position": [7, 132, 0],
+      "entity_id": 46137644
+    },
+    {
+      "name": "slot_machine_v2",
+      "region": "heroes_and_stones",
+      "position": [24, 143, 0],
+      "entity_id": 59769038
+    },
+    {
+      "name": "smartbomb_combo_v3",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [42, 88, -23],
+      "entity_id": 14682356
+    },
+    {
+      "name": "smash_grid_4",
+      "region": "beams_and_basic_heroes",
+      "position": [29, 84, 0],
+      "entity_id": 63011501
+    },
+    {
+      "name": "smash_grid_kill",
+      "region": "beams_and_basic_heroes",
+      "position": [22, 79, 0],
+      "entity_id": 115448155
+    },
+    {
+      "name": "smash_midskip_simpler4",
+      "region": "underworld_skipping_and_promesst",
+      "position": [27, 24, -21],
+      "entity_id": 95446403
+    },
+    {
+      "name": "smash_or_dash_vs2",
+      "region": "beams_and_mirrors",
+      "position": [-17, 44, 0],
+      "entity_id": 95422613
+    },
+    {
+      "name": "snipperclips_0_square",
+      "region": "beams_and_basic_heroes",
+      "position": [9, 84, 0],
+      "entity_id": 14681330
+    },
+    {
+      "name": "snipperclips_diagonal",
+      "region": "beams_and_basic_heroes",
+      "position": [11, 77, 0],
+      "entity_id": 115354524
+    },
+    {
+      "name": "snipperclips_square",
+      "region": "beams_and_basic_heroes",
+      "position": [11, 79, 0],
+      "entity_id": 14681320
+    },
+    {
+      "name": "sokobridge_v4",
+      "region": "elevators",
+      "position": [46, 71, 34],
+      "entity_id": 46149768
+    },
+    {
+      "name": "sombreros",
+      "region": "flat_things",
+      "position": [76, 17, -20],
+      "entity_id": 95450849
+    },
+    {
+      "name": "sp_crystal_tuto",
+      "region": "beams_and_stones",
+      "position": [56, 38, 0],
+      "entity_id": 59769724
+    },
+    {
+      "name": "special_move",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [99, 95, -21],
+      "entity_id": 94375378
+    },
+    {
+      "name": "spin_doctors_v3",
+      "region": "skipping_in_3d",
+      "position": [97, 20, 19],
+      "entity_id": 95432571
+    },
+    {
+      "name": "spin_heroes",
+      "region": "skipping_in_3d",
+      "position": [105, 15, 19],
+      "entity_id": 95426184
+    },
+    {
+      "name": "spray_and_pray",
+      "region": "skipping_in_3d",
+      "position": [93, 15, 19],
+      "entity_id": 95426186
+    },
+    {
+      "name": "sprint_skip0",
+      "region": "heroes_and_stones",
+      "position": [73, 3, 0],
+      "entity_id": 46141302
+    },
+    {
+      "name": "square_dance",
+      "region": "mirrors_and_stones",
+      "position": [140, 40, 0],
+      "entity_id": 46150297
+    },
+    {
+      "name": "stack_prelude_pushstyle",
+      "region": "endgame2",
+      "position": [-2, 147, 44],
+      "entity_id": 115477870
+    },
+    {
+      "name": "stasis_v2",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [122, 78, -21],
+      "entity_id": 62916168
+    },
+    {
+      "name": "stay_lit",
+      "region": "strength",
+      "position": [50, 81, 35],
+      "entity_id": 95444017
+    },
+    {
+      "name": "sticky",
+      "region": "heroes_in_3d",
+      "position": [101, 124, 36],
+      "entity_id": 95434974
+    },
+    {
+      "name": "stone_economy",
+      "region": "endgame2",
+      "position": [-23, 142, 44],
+      "entity_id": 62939952
+    },
+    {
+      "name": "stone_rescue_v3",
+      "region": "lily_highway_heroes_and_stones",
+      "position": [20, 6, -21],
+      "entity_id": 95453630
+    },
+    {
+      "name": "stone_stopper3_v2",
+      "region": "heroes_and_stones",
+      "position": [123, 9, 0],
+      "entity_id": 14682388
+    },
+    {
+      "name": "stone_stopper5",
+      "region": "heroes_and_stones",
+      "position": [123, 8, 0],
+      "entity_id": 14682392
+    },
+    {
+      "name": "stone_stopper_intro",
+      "region": "heroes_and_stones",
+      "position": [121, 9, 0],
+      "entity_id": 46140103
+    },
+    {
+      "name": "stones_below_v3",
+      "region": "heroes_in_3d",
+      "position": [119, 129, 36],
+      "entity_id": 59776527
+    },
+    {
+      "name": "stones_not_crystals",
+      "region": "heroes_and_stones",
+      "position": [63, 147, 0],
+      "entity_id": 59768874
+    },
+    {
+      "name": "stones_prelude",
+      "region": "endgame2",
+      "position": [-15, 142, 44],
+      "entity_id": 62915281
+    },
+    {
+      "name": "stonewalled",
+      "region": "beams_and_stones",
+      "position": [57, 38, 0],
+      "entity_id": 63033060
+    },
+    {
+      "name": "stopper_topper_v2",
+      "region": "heroes_in_3d",
+      "position": [54, 112, 36],
+      "entity_id": 95438880
+    },
+    {
+      "name": "strong_monsters_v2",
+      "region": "strength",
+      "position": [47, 84, 34],
+      "entity_id": 87032803
+    },
+    {
+      "name": "stuck_up_v2",
+      "region": "heroes_in_3d",
+      "position": [61, 123, 46],
+      "entity_id": 59779521
+    },
+    {
+      "name": "submarine",
+      "region": "beams_and_stones",
+      "position": [28, 39, 0],
+      "entity_id": 90201769
+    },
+    {
+      "name": "submarine_far_away",
+      "region": "beams_and_stones",
+      "position": [28, 40, 0],
+      "entity_id": 90201771
+    },
+    {
+      "name": "sunk_cost_2_v3",
+      "region": "skipping_in_3d",
+      "position": [90, 47, 27],
+      "entity_id": 46149760
+    },
+    {
+      "name": "surfing_lesson_alt",
+      "region": "heroes_and_water",
+      "position": [135, 133, 0],
+      "entity_id": 115379497
+    },
+    {
+      "name": "surrounded",
+      "region": "heroes_and_water",
+      "position": [100, 113, 0],
+      "entity_id": 46138368
+    },
+    {
+      "name": "suspend_block_v2",
+      "region": "vertical_reflection",
+      "position": [-17, 74, 47],
+      "entity_id": 111162062
+    },
+    {
+      "name": "suspend_directions_v2",
+      "region": "vertical_reflection",
+      "position": [-16, 68, 49],
+      "entity_id": 46146902
+    },
+    {
+      "name": "suspend_heterogeneous",
+      "region": "vertical_reflection",
+      "position": [-16, 67, 49],
+      "entity_id": 46146900
+    },
+    {
+      "name": "suspend_intro",
+      "region": "vertical_reflection",
+      "position": [-6, 71, 49],
+      "entity_id": 46146888
+    },
+    {
+      "name": "suspend_swapper_hard",
+      "region": "vertical_reflection",
+      "position": [-16, 69, 49],
+      "entity_id": 46146904
+    },
+    {
+      "name": "swap_and_spin",
+      "region": "heroes_and_artifacts",
+      "position": [16, 96, 0],
+      "entity_id": 46139212
+    },
+    {
+      "name": "swap_seats",
+      "region": "beams_and_stones",
+      "position": [26, 12, 0],
+      "entity_id": 46149688
+    },
+    {
+      "name": "swapwiz_harder",
+      "region": "lily_highway_heroes_and_stones",
+      "position": [79, 1, -21],
+      "entity_id": 14681214
+    },
+    {
+      "name": "synchronized_swimmers",
+      "region": "heroes_and_water",
+      "position": [125, 128, 0],
+      "entity_id": 46138321
+    },
+    {
+      "name": "taking_the_lift",
+      "region": "elevators",
+      "position": [21, 70, 38],
+      "entity_id": 46149770
+    },
+    {
+      "name": "tall_stack",
+      "region": "vertical_mirrors",
+      "position": [133, 68, 48],
+      "entity_id": 94376046
+    },
+    {
+      "name": "tandem",
+      "region": "vertical_mirrors",
+      "position": [129, 58, 39],
+      "entity_id": 58723673
+    },
+    {
+      "name": "target_practice_gem",
+      "region": "promesst1_and_2",
+      "position": [49, 87, 0],
+      "entity_id": 115362524
+    },
+    {
+      "name": "team_building_exercise",
+      "region": "heroes_and_water",
+      "position": [119, 130, 0],
+      "entity_id": 46138327
+    },
+    {
+      "name": "tempered_glass_red",
+      "region": "beams_and_mirrors",
+      "position": [-15, 50, 0],
+      "entity_id": 87035114
+    },
+    {
+      "name": "thats_my_ride",
+      "region": "mirrors_and_stones",
+      "position": [95, 26, 0],
+      "entity_id": 14681171
+    },
+    {
+      "name": "the_line_must_be_drawn_HERE",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [118, 120, -21],
+      "entity_id": 58720581
+    },
+    {
+      "name": "the_long_way",
+      "region": "mirrors_and_stones",
+      "position": [163, 11, 0],
+      "entity_id": 59778904
+    },
+    {
+      "name": "the_sky_is_falling_v2",
+      "region": "double_beam_falling",
+      "position": [20, 29, 34],
+      "entity_id": 14681751
+    },
+    {
+      "name": "the_spiral",
+      "region": "beams_and_mirrors",
+      "position": [-18, 15, 0],
+      "entity_id": 111149607
+    },
+    {
+      "name": "the_swappers",
+      "region": "heroes_and_mirrors",
+      "position": [140, 91, 0],
+      "entity_id": 14681689
+    },
+    {
+      "name": "the_waterfall_v4",
+      "region": "skipping_in_3d",
+      "position": [52, -2, 19],
+      "entity_id": 111237737
+    },
+    {
+      "name": "there_and_back",
+      "region": "mirrors_and_stones",
+      "position": [118, 16, 0],
+      "entity_id": 14681187
+    },
+    {
+      "name": "thief_dragger_v2",
+      "region": "monsters_and_beams",
+      "position": [38, 96, -21],
+      "entity_id": 59779321
+    },
+    {
+      "name": "thief_stack",
+      "region": "heroes_in_3d",
+      "position": [84, 97, 36],
+      "entity_id": 46146714
+    },
+    {
+      "name": "thief_through",
+      "region": "beams_and_basic_heroes",
+      "position": [15, 107, 0],
+      "entity_id": 62922818
+    },
+    {
+      "name": "thief_wand",
+      "region": "heroes_and_artifacts",
+      "position": [30, 95, 0],
+      "entity_id": 46139192
+    },
+    {
+      "name": "thin_ice_rooms",
+      "region": "double_beam_falling",
+      "position": [17, 30, 38],
+      "entity_id": 14681769
+    },
+    {
+      "name": "three_artifacts_v3",
+      "region": "orange_beam_highway_mirrors_and_promesst",
+      "position": [161, 86, -21],
+      "entity_id": 46137704
+    },
+    {
+      "name": "three_birds_push",
+      "region": "endgame2",
+      "position": [-15, 143, 44],
+      "entity_id": 95455107
+    },
+    {
+      "name": "through_intro",
+      "region": "beams_and_basic_heroes",
+      "position": [30, 107, 0],
+      "entity_id": 62922834
+    },
+    {
+      "name": "through_maze_v2",
+      "region": "beaming_objects",
+      "position": [28, 121, 0],
+      "entity_id": 46138762
+    },
+    {
+      "name": "through_push",
+      "region": "beams_and_basic_heroes",
+      "position": [30, 106, 0],
+      "entity_id": 62922804
+    },
+    {
+      "name": "through_sokoban",
+      "region": "beams_and_basic_heroes",
+      "position": [25, 103, 0],
+      "entity_id": 62922802
+    },
+    {
+      "name": "through_the_table_e",
+      "region": "double_beam_falling",
+      "position": [30, 32, 37],
+      "entity_id": 59779632
+    },
+    {
+      "name": "through_the_table_f",
+      "region": "double_beam_falling",
+      "position": [30, 28, 37],
+      "entity_id": 14681785
+    },
+    {
+      "name": "through_way",
+      "region": "beams_and_stones",
+      "position": [55, 38, 0],
+      "entity_id": 46146380
+    },
+    {
+      "name": "tiger_lily_v2",
+      "region": "skipping_in_3d",
+      "position": [70, 45, 27],
+      "entity_id": 59779435
+    },
+    {
+      "name": "time_tutorial",
+      "region": "skipping_stones",
+      "position": [78, 35, 0],
+      "entity_id": 46149837
+    },
+    {
+      "name": "tippy_intro",
+      "region": "heroes_in_3d",
+      "position": [90, 126, 36],
+      "entity_id": 59776352
+    },
+    {
+      "name": "tippy_towers_1",
+      "region": "heroes_in_3d",
+      "position": [96, 132, 36],
+      "entity_id": 59776354
+    },
+    {
+      "name": "tippy_towers_4",
+      "region": "heroes_in_3d",
+      "position": [96, 131, 36],
+      "entity_id": 59776356
+    },
+    {
+      "name": "to_kill_a_goblin",
+      "region": "vertical_mirrors",
+      "position": [133, 69, 48],
+      "entity_id": 46146760
+    },
+    {
+      "name": "toggler00",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [5, 71, -22],
+      "entity_id": 46146874
+    },
+    {
+      "name": "top_green_purple_v3",
+      "region": "beams_and_mirrors",
+      "position": [-8, 36, 0],
+      "entity_id": 94373744
+    },
+    {
+      "name": "torc_blocked",
+      "region": "beaming_objects",
+      "position": [35, 117, 0],
+      "entity_id": 115363776
+    },
+    {
+      "name": "torc_blocked_easier",
+      "region": "beaming_objects",
+      "position": [34, 117, 0],
+      "entity_id": 115363775
+    },
+    {
+      "name": "torcoban_2",
+      "region": "promesst1_and_2",
+      "position": [36, 57, 0],
+      "entity_id": 115362525
+    },
+    {
+      "name": "torus_bard",
+      "region": "underworld_heroes_and_promesst",
+      "position": [78, 95, -14],
+      "entity_id": 95451531
+    },
+    {
+      "name": "torus_blocks_alt_v4",
+      "region": "underworld_heroes_and_promesst",
+      "position": [81, 91, -14],
+      "entity_id": 14682374
+    },
+    {
+      "name": "torus_goblins",
+      "region": "underworld_heroes_and_promesst",
+      "position": [73, 86, -21],
+      "entity_id": 95448121
+    },
+    {
+      "name": "torus_mirrors",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [118, 69, -21],
+      "entity_id": 95448127
+    },
+    {
+      "name": "trader_descend",
+      "region": "mirrors_in_3d",
+      "position": [96, 67, 30],
+      "entity_id": 115497410
+    },
+    {
+      "name": "treadmill",
+      "region": "spawners",
+      "position": [-15, 29, -18],
+      "entity_id": 95455099
+    },
+    {
+      "name": "trick_kills",
+      "region": "heroes_and_mirrors",
+      "position": [153, 82, 0],
+      "entity_id": 94372444
+    },
+    {
+      "name": "trick_landing",
+      "region": "elevators",
+      "position": [25, 64, 34],
+      "entity_id": 46149776
+    },
+    {
+      "name": "trick_shot",
+      "region": "heroes_and_stones",
+      "position": [20, 143, 0],
+      "entity_id": 59769046
+    },
+    {
+      "name": "tricky_endpoint",
+      "region": "underworld_skipping_and_promesst",
+      "position": [35, 14, -21],
+      "entity_id": 59769734
+    },
+    {
+      "name": "tricky_swappers_v3",
+      "region": "heroes_and_mirrors",
+      "position": [139, 91, 0],
+      "entity_id": 95421116
+    },
+    {
+      "name": "triple_gate",
+      "region": "mirrors_in_3d",
+      "position": [99, 52, 30],
+      "entity_id": 115497471
+    },
+    {
+      "name": "triple_skip",
+      "region": "underworld_heroes_and_promesst",
+      "position": [13, 81, -21],
+      "entity_id": 59779523
+    },
+    {
+      "name": "trust_falls",
+      "region": "mirrors_in_3d",
+      "position": [98, 72, 37],
+      "entity_id": 115497398
+    },
+    {
+      "name": "tug_boat",
+      "region": "heroes_and_water",
+      "position": [118, 131, 0],
+      "entity_id": 59769187
+    },
+    {
+      "name": "turn_control_v2",
+      "region": "skipping_in_3d",
+      "position": [95, 17, 19],
+      "entity_id": 59779531
+    },
+    {
+      "name": "two_bounce_v2",
+      "region": "mirrors_and_stones",
+      "position": [155, 23, 0],
+      "entity_id": 115347698
+    },
+    {
+      "name": "two_dragon_rooms",
+      "region": "heroes_and_mirrors",
+      "position": [133, 85, 0],
+      "entity_id": 14681671
+    },
+    {
+      "name": "two_for_one",
+      "region": "heroes_and_mirrors",
+      "position": [113, 92, 0],
+      "entity_id": 95421204
+    },
+    {
+      "name": "two_half_togglers",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [1, 71, -22],
+      "entity_id": 111270134
+    },
+    {
+      "name": "two_metamirrors",
+      "region": "metamirrors",
+      "position": [160, 64, 0],
+      "entity_id": 46137408
+    },
+    {
+      "name": "two_step",
+      "region": "mirrors_and_stones",
+      "position": [140, 44, 0],
+      "entity_id": 46150295
+    },
+    {
+      "name": "two_through_alt_2",
+      "region": "beams_and_basic_heroes",
+      "position": [33, 130, 0],
+      "entity_id": 90186376
+    },
+    {
+      "name": "unblock_block_alt",
+      "region": "mirrors_and_stones",
+      "position": [117, 16, 0],
+      "entity_id": 14681203
+    },
+    {
+      "name": "under_pressure",
+      "region": "strength",
+      "position": [44, 84, 33],
+      "entity_id": 95444019
+    },
+    {
+      "name": "untrap",
+      "region": "beams_and_basic_heroes",
+      "position": [2, 126, 0],
+      "entity_id": 59770061
+    },
+    {
+      "name": "use_and_remove",
+      "region": "mirrors_and_stones",
+      "position": [136, 48, 0],
+      "entity_id": 46150299
+    },
+    {
+      "name": "useful_stone",
+      "region": "heroes_and_stones",
+      "position": [21, 143, 0],
+      "entity_id": 59769044
+    },
+    {
+      "name": "vacuum",
+      "region": "vertical_reflection",
+      "position": [-17, 73, 34],
+      "entity_id": 95443991
+    },
+    {
+      "name": "vert_mirror_intro",
+      "region": "vertical_mirrors",
+      "position": [111, 69, 33],
+      "entity_id": 46146750
+    },
+    {
+      "name": "vertical_promesst_v2",
+      "region": "vertical_promesst",
+      "position": [59, 65, 34],
+      "entity_id": 95435661
+    },
+    {
+      "name": "vertical_unclone_3",
+      "region": "vertical_mirrors",
+      "position": [142, 117, 37],
+      "entity_id": 46146762
+    },
+    {
+      "name": "victory_lap",
+      "region": "heroes3",
+      "position": [80, 78, 0],
+      "entity_id": 14681140
+    },
+    {
+      "name": "volcano_v3",
+      "region": "vertical_mirrors",
+      "position": [161, 96, 34],
+      "entity_id": 95440966
+    },
+    {
+      "name": "walk_into_fire",
+      "region": "heroes_and_stones",
+      "position": [124, 0, 0],
+      "entity_id": 59768994
+    },
+    {
+      "name": "walk_it_over",
+      "region": "mirror",
+      "position": [126, 77, 0],
+      "entity_id": 95464094
+    },
+    {
+      "name": "walk_the_plank",
+      "region": "heroes_and_mirrors",
+      "position": [145, 112, 0],
+      "entity_id": 59771466
+    },
+    {
+      "name": "wall_sneak",
+      "region": "beams_and_basic_heroes",
+      "position": [16, 107, 0],
+      "entity_id": 62922832
+    },
+    {
+      "name": "wand_reintro",
+      "region": "underworld_heroes_and_promesst",
+      "position": [42, 69, -21],
+      "entity_id": 46141986
+    },
+    {
+      "name": "wasteland",
+      "region": "underworld_heroes_and_promesst",
+      "position": [79, 91, -14],
+      "entity_id": 95453277
+    },
+    {
+      "name": "water_bender_v3",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [114, 37, -21],
+      "entity_id": 115464642
+    },
+    {
+      "name": "watergate",
+      "region": "heroes_and_stones",
+      "position": [71, 5, 0],
+      "entity_id": 59768992
+    },
+    {
+      "name": "weaklings_bard_v2",
+      "region": "heroes_in_3d",
+      "position": [64, 108, 34],
+      "entity_id": 95438144
+    },
+    {
+      "name": "who_you_gonna_call",
+      "region": "endgame2",
+      "position": [-22, 5, 44],
+      "entity_id": 115467060
+    },
+    {
+      "name": "wide_ocean",
+      "region": "mirrorable_stones",
+      "position": [152, 27, 0],
+      "entity_id": 59769460
+    },
+    {
+      "name": "wider_ocean",
+      "region": "mirrorable_stones",
+      "position": [140, 36, 0],
+      "entity_id": 59769456
+    },
+    {
+      "name": "wizard_and_druid_alt",
+      "region": "heroes3",
+      "position": [78, 117, 0],
+      "entity_id": 63038256
+    },
+    {
+      "name": "wizard_and_druid_alt_5",
+      "region": "heroes3",
+      "position": [79, 117, 0],
+      "entity_id": 14681144
+    },
+    {
+      "name": "wizard_finesse_1",
+      "region": "beams_and_basic_heroes",
+      "position": [57, 133, 0],
+      "entity_id": 90186697
+    },
+    {
+      "name": "wizard_finesse_2",
+      "region": "beams_and_basic_heroes",
+      "position": [58, 133, 0],
+      "entity_id": 90186725
+    },
+    {
+      "name": "wizard_finesse_3",
+      "region": "beams_and_basic_heroes",
+      "position": [59, 133, 0],
+      "entity_id": 90186693
+    },
+    {
+      "name": "wizard_finesse_4",
+      "region": "beams_and_basic_heroes",
+      "position": [60, 133, 0],
+      "entity_id": 90186685
+    },
+    {
+      "name": "wizard_jailbreak_v2",
+      "region": "endgame3",
+      "position": [23, 118, -24],
+      "entity_id": 95585313
+    },
+    {
+      "name": "wizard_mirror_intro",
+      "region": "heroes_and_mirrors",
+      "position": [162, 93, 0],
+      "entity_id": 46142151
+    },
+    {
+      "name": "wizard_with_a_capital_w",
+      "region": "heroes_and_stones",
+      "position": [44, 152, 0],
+      "entity_id": 46137837
+    },
+    {
+      "name": "wizard_with_a_capital_w_2_v2",
+      "region": "heroes_and_stones",
+      "position": [36, 146, 0],
+      "entity_id": 46137839
+    },
+    {
+      "name": "wizard_with_a_gun",
+      "region": "heroes_and_artifacts",
+      "position": [16, 94, 0],
+      "entity_id": 46139196
+    },
+    {
+      "name": "wolf_boat_carry",
+      "region": "vertical_mirrors",
+      "position": [151, 51, 34],
+      "entity_id": 95425913
+    },
+    {
+      "name": "worlds_collide_alt",
+      "region": "worlds_collide",
+      "position": [-15, 69, 0],
+      "entity_id": 46143392
+    },
+    {
+      "name": "worlds_collide_heroes_and_mirrors_v3",
+      "region": "worlds_collide",
+      "position": [104, 93, 0],
+      "entity_id": 58720652
+    },
+    {
+      "name": "worlds_collide_heroes_and_promesst_v4",
+      "region": "worlds_collide",
+      "position": [56, 93, 0],
+      "entity_id": 58720650
+    },
+    {
+      "name": "worlds_collide_heroes_and_stones",
+      "region": "worlds_collide",
+      "position": [80, 147, 0],
+      "entity_id": 58720648
+    },
+    {
+      "name": "worlds_collide_mirrors_and_stones_v2",
+      "region": "worlds_collide",
+      "position": [104, 45, 0],
+      "entity_id": 58720656
+    },
+    {
+      "name": "worlds_collide_ps",
+      "region": "worlds_collide",
+      "position": [56, 45, 0],
+      "entity_id": 58720654
+    },
+    {
+      "name": "wrap_music",
+      "region": "lily_highway_heroes_and_stones",
+      "position": [21, 6, -21],
+      "entity_id": 95453638
+    },
+    {
+      "name": "wrap_music_2",
+      "region": "lily_highway_heroes_and_stones",
+      "position": [22, 6, -21],
+      "entity_id": 95453634
+    },
+    {
+      "name": "wrapping_magic_mirror_2",
+      "region": "underworld_mirrors_and_promesst",
+      "position": [110, 56, -12],
+      "entity_id": 94377335
+    },
+    {
+      "name": "wrapping_mirror0",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [116, 120, -21],
+      "entity_id": 58720577
+    },
+    {
+      "name": "wrapping_mirror0_relatively_prime",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [117, 120, -21],
+      "entity_id": 58720579
+    },
+    {
+      "name": "wrapping_mirror_alt",
+      "region": "underworld_heroes_and_mirrors",
+      "position": [92, 107, -18],
+      "entity_id": 58720583
+    },
+    {
+      "name": "wrapping_mirror_red_v4",
+      "region": "beams_and_mirrors",
+      "position": [-13, 50, 0],
+      "entity_id": 95422609
+    },
+    {
+      "name": "wrong_reset",
+      "region": "spawners",
+      "position": [-17, 21, -18],
+      "entity_id": 62915267
+    },
+    {
+      "name": "yars_revenge_setup_v3",
+      "region": "lily_highway_mirrors_and_stones",
+      "position": [141, 7, -21],
+      "entity_id": 62985653
+    },
+    {
+      "name": "zach_lilies_v3",
+      "region": "underworld_lilies",
+      "position": [76, 58, -21],
+      "entity_id": 115386144
+    },
+    {
+      "name": "zachtronics",
+      "region": "zachtronics",
+      "position": [4, 47, -21],
+      "entity_id": 62916337
+    },
+    {
+      "name": "zachtronics_identity",
+      "region": "zachtronics",
+      "position": [4, 54, -21],
+      "entity_id": 62916331
+    },
+    {
+      "name": "zachtronics_or",
+      "region": "zachtronics",
+      "position": [4, 53, -21],
+      "entity_id": 62916333
+    },
+    {
+      "name": "zachtronics_xor",
+      "region": "zachtronics",
+      "position": [4, 52, -21],
+      "entity_id": 62916335
+    },
+    {
+      "name": "zap_bridge",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [69, 16, -21],
+      "entity_id": 59779104
+    },
+    {
+      "name": "zap_bridge_perp",
+      "region": "lily_highway_stones_and_promesst",
+      "position": [69, 15, -21],
+      "entity_id": 90191880
+    },
+    {
+      "name": "zig_zag",
+      "region": "mirrorable_stones",
+      "position": [154, 32, 0],
+      "entity_id": 59769452
+    },
+    {
+      "name": "zombie_graves_v3",
+      "region": "heroes_in_3d",
+      "position": [78, 97, 36],
+      "entity_id": 59779614
+    }
+  ]
+}

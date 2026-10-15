@@ -29,6 +29,7 @@ Game_Position_Reader :: struct {
     selection_version:     u64;
     resolutions:           u64;
     error:                 string;
+    retryable:             bool;
 }
 
 game_position_reader_close :: (reader: *Game_Position_Reader) {
@@ -116,8 +117,20 @@ game_position_reader_resolve :: (reader: *Game_Position_Reader, manager: u64, ob
 // allow_resolve=false never opens a process, scans code, allocates or searches
 // entity types. It rejects changes to the original scene, identities or selection.
 game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := true) -> Game_Position_Sample {
+    // Only fresh, read-only acquisition may retry a torn snapshot. Checks during
+    // a write never retry or accept a different selected set.
     result: Game_Position_Sample;
-    reader.error = "Could not validate the current character selection. Try again.";
+    for attempt: 0..2 {
+        result = game_position_reader_sample_once(reader, allow_resolve);
+        if result.valid || !allow_resolve || !reader.retryable break;
+    }
+    return result;
+}
+
+game_position_reader_sample_once :: (reader: *Game_Position_Reader, allow_resolve: bool) -> Game_Position_Sample {
+    result: Game_Position_Sample;
+    reader.retryable = false;
+    reader.error     = "Could not validate the current character selection. Try again.";
     memory := reader.memory;
     if !memory.handle || !game_manager_locator_current(memory, reader.locator) return result;
     manager: u64;
@@ -151,7 +164,8 @@ game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := 
             if allow_resolve reader.player = .{};
             return result;
         }
-        if reader.selection_initialized && (guy.observed_id != guy.entity_id || guy.observed_status != guy.status) {
+        if reader.selection_initialized && (guy.observed_id != guy.entity_id ||
+           (guy.observed_status & guy.selection.active_mask) != (guy.status & guy.selection.active_mask)) {
             if !allow_resolve return result;
             selection_changed = true;
         }
@@ -166,11 +180,19 @@ game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := 
     // through sampling must not combine the old and new controlled groups.
     after_manager: u64;
     after_objects: Game_Entity_List;
+    reader.error = "The scene entity list changed while reading character selection. Try again.";
     if !process_read_memory(memory.handle, reader.locator.slot, *after_manager, 8) || after_manager != manager ||
        !process_read_memory(memory.handle, manager + 0x370, *after_objects, size_of(Game_Entity_List)) ||
        after_objects.count != objects.count || after_objects.data != objects.data ||
-       !process_read_memory(memory.handle, objects.data, reader.scratch.data, objects.count * 8) return result;
-    for entity: reader.scratch if entity != reader.objects[it_index] return result;
+       !process_read_memory(memory.handle, objects.data, reader.scratch.data, objects.count * 8) {
+        reader.retryable = true;
+        return result;
+    }
+    for entity: reader.scratch if entity != reader.objects[it_index] {
+        reader.retryable = true;
+        return result;
+    }
+    reader.error = "Character identity or ACTIVE selection changed while reading. Try again.";
     for i: 0..reader.guy_count-1 {
         guy := *reader.guys[i];
         owner, type: u64;
@@ -180,7 +202,10 @@ game_position_reader_sample :: (reader: *Game_Position_Reader, allow_resolve := 
            !process_read_memory(memory.handle, guy.entity + 0x108, *type, 8) || type != guy.selection.type ||
            !process_read_memory(memory.handle, guy.entity + 0x100, *id, 4) || id != guy.observed_id ||
            !process_read_memory(memory.handle, guy.entity + guy.selection.status_offset, *status, 2) ||
-           status != guy.observed_status return result;
+           (status & guy.selection.active_mask) != (guy.observed_status & guy.selection.active_mask) {
+            reader.retryable = true;
+            return result;
+        }
     }
     if !game_manager_locator_current(memory, reader.locator) ||
        !process_read_memory(memory.handle, reader.locator.slot, *after_manager, 8) || after_manager != manager return result;

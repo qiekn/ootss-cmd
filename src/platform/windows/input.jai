@@ -117,6 +117,11 @@ send_key_event :: (scan: u16, key_up := false, extended := false) -> (success: b
     return success, error;
 }
 
+// Allow activation/settling waits to share playback's focus and cancellation checks.
+send_wait_for_input :: (milliseconds: s32, target: Windows.HWND, poll: () -> bool = null) -> string {
+    return send_wait(milliseconds, target, poll);
+}
+
 // A complete press/release cycle also supports rebound and extended game keys.
 send_key_cycle :: (scan: u16, extended := false, hold_ms: s32 = DEFAULT_HOLD, interval_ms: s32 = DEFUALT_INTERVAL,
                    target_window: Windows.HWND = null, poll: () -> bool = null,

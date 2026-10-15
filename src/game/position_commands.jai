@@ -72,13 +72,23 @@ command_switch :: (state: *Console_State, arguments: string) {
     state.pending_action       = .SWITCH_LEVEL;
 }
 
-console_prepare_switch :: (state: *Console_State, filename := "data/marker.json") {
+console_prepare_switch :: (state: *Console_State, filename := LEVEL_CATALOG_FILE,
+                           read_scene: Game_Level_Query = game_read_scene) {
     catalog: Solutions_Database;
     defer solutions_free(*catalog);
     error := level_catalog_load(*catalog, filename);
     if error.count { console_write(state, error, .ERROR); return; }
-    index := solution_find_name(*catalog, state.pending_switch_level, ignore_case = true);
-    if index < 0 { console_write(state, tprint("Unknown level entrance: %.", state.pending_switch_level), .ERROR); return; }
+    index: s64;
+    index, error = level_catalog_find(*catalog, state.pending_switch_level);
+    if error.count { console_write(state, error, .ERROR); return; }
+    scene: string;
+    scene, error = read_scene();
+    defer free(scene);
+    if error.count { console_write(state, error, .ERROR); return; }
+    if !equal_nocase(scene, "overworld") {
+        console_write(state, "Return to the overworld before using switch.", .ERROR);
+        return;
+    }
     state.pending_position          = catalog.entries[index].position;
     state.pending_position_relative = false;
     state.pending_position_take     = true;
@@ -299,37 +309,61 @@ console_change_game_position :: (state: *Console_State, requested: Game_Position
         if error.count { console_write(state, error, .ERROR); return false; }
     }
     defer if take_after send_input_end();
-    destination: Game_Position;
-    player:      Game_Player_Location;
-    changed:     bool;
-    locator:     *Game_Manager_Locator;
+    if take_after {
+        // Activate first so a resumed game cannot overwrite a teleport with its
+        // pre-activation movement state. Never refocus shortcut-triggered input.
+        if !already_in_game && !overlay_focus_game_for_input(game, poll = console_poll_send) {
+            console_write(state, "Could not focus the game. Position was not changed.", .ERROR);
+            return false;
+        }
+        error = send_wait_for_input(100, game, console_poll_send);
+        if error.count || process_window_pid(game) != pid {
+            console_write(state, "Switch cancelled before teleport. Position was not changed.", .ERROR);
+            return false;
+        }
+    }
+    destination:    Game_Position;
+    player:         Game_Player_Location;
+    changed:        bool;
+    locator:        *Game_Manager_Locator;
+    switch_locator: Game_Manager_Locator;
     if from_game locator = *noclip.locator;
+    else if take_after locator = *switch_locator;
     error, changed = game_write_position_to(memory, requested, relative, instant = true,
                                              written_position = *destination, written_player = *player,
                                              required_scene   = ifx take_after then "overworld" else "", locator = locator);
     if changed editor_on_game_position_changed();
     if error.count { console_write(state, error, .ERROR); return false; }
-    if !already_in_game {
+    if !already_in_game && !take_after {
         if !overlay_focus_game_for_input(game, poll = console_poll_send) {
             console_write(state, tprint("Teleported to %, but the game did not gain focus.", game_position_text(destination)), .ERROR);
             return false;
         }
     }
     if take_after {
-        current: Game_Position;
-        if process_window_pid(game) != pid || !game_player_location_current(memory, player) ||
-           !process_read_memory(memory.handle, player.entity, *current, size_of(Game_Position)) ||
-           !game_position_valid(current) || !solution_position_equal(current, destination) {
-            console_write(state, "Teleported, but the player or position changed before TakeOrDrop. No key was sent.", .ERROR);
-            return false;
-        }
-        result := send_key_cycle(take.scan, take.extended, target_window = game, poll = console_poll_send);
+        result := game_switch_take(memory, locator.*, player, destination, take, game, pid, console_poll_send);
         if !result.success {
-            console_write(state, tprint("Teleported to %. TakeOrDrop failed: %", game_position_text(destination), result.error), .ERROR);
+            console_write(state, tprint("Teleported to %. TakeOrDrop: % %", game_position_text(destination), result.error,
+                                        ifx !result.sent_keys then "No key was sent." else ""), .ERROR);
             return false;
         }
     }
     if report_success console_write(state, tprint("Teleported to %.%", game_position_text(destination),
                                                   ifx take_after then " Sent TakeOrDrop." else ""));
     return true;
+}
+
+game_switch_take :: (memory: Process_Memory, locator: Game_Manager_Locator, player: Game_Player_Location, destination: Game_Position,
+                     take: Game_Key, game: Win.HWND, pid: u32, poll: () -> bool = null,
+                     emit: (scan: u16, key_up: bool, extended: bool) -> (bool, string) = send_key_event,
+                     wait: (milliseconds: s32, target: Win.HWND, poll: () -> bool) -> string = send_wait_for_input) -> Send_Result {
+    result: Send_Result;
+    // Give native entrance/interaction updates time after the position write.
+    // Confirm the target directly; do not repeat write-time selection sampling.
+    result.error = wait(100, game, poll);
+    if result.error.count return result;
+    if pid && process_window_pid(game) != pid { result.error = "The target game changed."; return result; }
+    result.error = game_switch_position_ready(memory, locator, player, destination);
+    if result.error.count return result;
+    return send_key_cycle(take.scan, take.extended, target_window = game, poll = poll, emit = emit, wait = wait);
 }

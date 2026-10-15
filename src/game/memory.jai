@@ -54,6 +54,14 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         if error.count return error, false;
         if locator locator.* = resolved;
     }
+    scene:      Game_Scene_Location;
+    scene_name: string;
+    defer free(scene_name);
+    if required_scene.count {
+        scene_name, error = game_read_scene_from(memory, *resolved, *scene);
+        if error.count return error, false;
+        if !equal_nocase(scene_name, required_scene) return "Return to the overworld before using switch.", false;
+    }
     reader: Game_Position_Reader;
     defer game_position_reader_close(*reader);
     reader.memory  = memory;
@@ -68,12 +76,7 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
             return "The position changed before correction. Nothing was written.", false;
         }
     }
-    if required_scene.count {
-        scene, scene_error := game_player_scene_name(memory, sample.player);
-        defer free(scene);
-        if scene_error.count return scene_error, false;
-        if scene != required_scene return "Return to the overworld before using switch.", false;
-    }
+    if required_scene.count && sample.player.manager != scene.manager return "The scene changed before teleport. Nothing was written.", false;
     // Freeze the whole selected set before writing. Absolute placement translates
     // it relative to the actual lexicographically first controlled character.
     delta: [3] float64;
@@ -113,7 +116,8 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         target_index += 1;
     }
     changed: bool;
-    error, changed = game_commit_positions(*reader, sample, targets, instant);
+    error, changed = game_commit_positions(*reader, sample, targets, instant,
+                                           ifx required_scene.count then *scene else null, scene_name);
     if error.count {
         if changed error = tprint("% Controlled characters may have been partially moved.", error);
         return error, changed;
@@ -121,6 +125,31 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
     if written_position written_position.* = anchor_destination;
     if written_player written_player.* = sample.player;
     return "", changed;
+}
+
+game_switch_position_ready :: (memory: Process_Memory, locator: Game_Manager_Locator, player: Game_Player_Location,
+                               destination: Game_Position) -> string {
+    // The write has already validated the whole controlled set. A key press
+    // must not require an unchanged world entity list or transient ACTIVE flags.
+    if locator.slot != player.slot return "The scene locator changed after teleport.";
+    scene: Game_Scene_Location;
+    name, error := game_read_scene_from(memory, *locator, *scene);
+    defer free(name);
+    if error.count return error;
+    if !equal_nocase(name, "overworld") || scene.manager != player.manager return "The scene changed after teleport.";
+    entity_id: u32;
+    if !game_entity_is_player(memory, player.entity, player.manager) ||
+       !process_read_memory(memory.handle, player.entity + 0x100, *entity_id, 4) || entity_id != player.entity_id {
+        return "The teleported character's identity changed.";
+    }
+    current: Game_Position;
+    if !process_read_memory(memory.handle, player.entity, *current, size_of(Game_Position)) ||
+       !game_position_valid(current) return "Could not read the teleported character's position.";
+    if !solution_position_equal(current, destination) {
+        return tprint("The game moved the character from % to % after teleport.", game_position_text(destination), game_position_text(current));
+    }
+    if !game_scene_location_current(memory, scene, name) return "The scene changed after teleport.";
+    return "";
 }
 
 game_position_text :: (position: Game_Position) -> string {

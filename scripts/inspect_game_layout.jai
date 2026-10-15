@@ -1,7 +1,7 @@
 #!/usr/bin/env jai
 
 // Read-only diagnostics; no game input or writes.
-// jai -quiet scripts/inspect_game_layout.jai -import_dir ../modules - [--discover]
+// jai -quiet scripts/inspect_game_layout.jai -import_dir ../modules - [--discover|--positions]
 #run {
     set_build_options_dc(.{do_output = false});
     error := inspect();
@@ -15,12 +15,17 @@ inspect :: () -> string {
     memory, error := App.process_open_memory(window, App.GAME_EXECUTABLE);
     if error.count return error;
     defer App.process_close_memory(*memory);
+    arguments := get_build_options().compile_time_command_line;
+    if arguments.count == 1 && arguments[0] == "--positions" {
+        inspect_position_samples(memory);
+        return "";
+    }
     code, rva, code_error := App.process_read_module_code(memory);
     if code_error.count return code_error;
     defer free(code.data);
     print("Module size=0x%, text RVA=0x%, bytes=%\n", hex(memory.module.size), hex(rva), code.count);
     args := get_build_options().compile_time_command_line;
-    if args.count > 1 || (args.count == 1 && args[0] != "--discover") return "Expected no arguments or --discover.";
+    if args.count > 1 || (args.count == 1 && args[0] != "--discover") return "Expected no arguments, --discover or --positions.";
     discover := args.count == 1;
     if discover inspect_roots(memory, code, rva);
     scene, scene_error := App.game_read_scene_from(memory);
@@ -64,6 +69,38 @@ inspect :: () -> string {
 }
 
 hex :: (value: $T) -> string { return tprint("%", formatInt(value, base=16)); }
+
+inspect_position_samples :: (memory: App.Process_Memory) {
+    reader: App.Game_Position_Reader;
+    defer App.game_position_reader_close(*reader);
+    error := App.game_position_reader_init(*reader, memory);
+    if error.count { print("%\n", error); return; }
+    for attempt: 0..11 {
+        started := seconds_since_init();
+        sample  := App.game_position_reader_sample(*reader);
+        manager: u64;
+        objects: App.Game_Entity_List;
+        App.process_read_memory(memory.handle, reader.locator.slot, *manager, 8);
+        App.process_read_memory(memory.handle, manager + 0x370, *objects, 16);
+        list_changes, flag_changes, active_changes: s64;
+        for object, index: reader.objects {
+            actual: u64;
+            if !App.process_read_memory(memory.handle, objects.data + cast(u64) index * 8, *actual, 8) || actual != object list_changes += 1;
+        }
+        for i: 0..reader.guy_count - 1 {
+            guy := reader.guys[i];
+            status: u16;
+            if App.process_read_memory(memory.handle, guy.entity + guy.selection.status_offset, *status, 2) {
+                if status != guy.observed_status flag_changes += 1;
+                if (status & guy.selection.active_mask) != (guy.observed_status & guy.selection.active_mask) active_changes += 1;
+            }
+        }
+        print("Sample %: valid=%, ms=%, position=%, Guys=%, objects=%/%, list_changes=%, flags=%/%, error=%\n",
+              attempt, sample.valid, (seconds_since_init() - started) * 1000, sample.position, reader.guy_count,
+              reader.objects.count, objects.count, list_changes, flag_changes, active_changes, reader.error);
+        sleep_milliseconds(20);
+    }
+}
 
 inspect_roots :: (memory: App.Process_Memory, code: [] u8, code_rva: u64) {
     dos: [64] u8;

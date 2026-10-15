@@ -105,27 +105,6 @@ solutions_load :: (db: *Solutions_Database, filename := SOLUTIONS_FILE,
     return "";
 }
 
-// Entrance lookup must not depend on user-renamed scripts or custom input records.
-level_catalog_load :: (db: *Solutions_Database, filename := "data/marker.json") -> string {
-    solutions_free(db);
-    success, markers := Json.json_parse_file(filename, Marker_Collection);
-    defer markers_free(*markers);
-    if !success || markers.type != "FeatureCollection" return tprint("Could not parse % as a FeatureCollection.", filename);
-    for feature: markers.features {
-        if feature.properties.type != "level" || feature.geometry.type != "Point" continue;
-        if feature.geometry.coordinates.count < 2 || !feature.properties.name.count {
-            return "A level entrance is missing its coordinates or name.";
-        }
-        position: Game_Position = .[feature.geometry.coordinates[0], feature.geometry.coordinates[1], 0];
-        if !game_position_valid(position) return tprint("Invalid entrance coordinates for %.", feature.properties.name);
-        if solution_find_name(db, feature.properties.name, ignore_case = true) >= 0 {
-            return tprint("Duplicate level entrance: %.", feature.properties.name);
-        }
-        array_add(*db.entries, .{name = copy_string(feature.properties.name),
-                                area = copy_string(feature.properties.area), position = position});
-    }
-    return "";
-}
 
 solutions_write :: (db: *Solutions_Database, filename := SOLUTIONS_FILE) -> string {
     // Write and close a sibling file first; a failed save must not truncate the user's solutions.

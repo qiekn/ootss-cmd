@@ -40,6 +40,7 @@ Json  :: #import "Json";
 #load "game/capture_image.jai";
 #load "game/capture.jai";
 #load "game/level.jai";
+#load "game/level_catalog.jai";
 #load "game/position_reader.jai";
 #load "game/position_selection.jai";
 #load "game/position_layout.jai";

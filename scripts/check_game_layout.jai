@@ -5,8 +5,9 @@
 #run {
     set_build_options_dc(.{do_output = false});
     check_signatures();
+    check_switch_catalog();
     for filename: get_build_options().compile_time_command_line check_image(filename);
-    print("PASS: % isolated scene/camera layout checks; no game writes or input.\n", checks);
+    print("PASS: % isolated scene/camera/switch checks; no game writes or input.\n", checks);
 }
 
 checks: s64;
@@ -37,6 +38,25 @@ check_signatures :: () {
     put(image, 0x194, cast(u32) 0x1000);
     put(image, 0x1ac, cast(u32) 0x60000020);
     memory: App.Process_Memory = .{handle=Win.GetCurrentProcess(), module=.{base=cast(u64) image.data,size=cast(u64) image.count}};
+    install(image, 0x1010, 0x3000, App.GAME_MANAGER_SIGNATURE);
+    put(image, 0x3000, cast(u64)(image.data + 0x3100));
+    for name: string.["mirror_21", "menu", "overworld"] {
+        put(image, 0x3100, App.Game_Entity_List.{count = cast(u64) name.count, data = cast(u64)(image.data + 0x3200)});
+        for byte: name image[0x3200 + it_index] = byte;
+        scene: App.Game_Scene_Location;
+        actual, error := App.game_read_scene_from(memory, location = *scene);
+        defer free(actual);
+        check(!error.count && actual == name, "Read a scene without requiring a Guy.");
+        check(App.game_scene_location_current(memory, scene, actual), "Validate the exact scene snapshot.");
+        if name != "overworld" {
+            error, changed := App.game_write_position_to(memory, .[80, 74, 33], instant = true, required_scene = "overworld");
+            check(!changed && error == "Return to the overworld before using switch.", "Reject small levels/menu before looking for a player or writing.");
+        }
+        image[0x3200] ^= 1;
+        check(!App.game_scene_location_current(memory, scene, actual), "Reject in-place scene-name changes with the same manager.");
+        image[0x3200] ^= 1;
+    }
+    for byte: App.GAME_MANAGER_SIGNATURE image[0x1010 + it_index] = 0;
     for signature: ([] u8).[App.GAME_MANAGER_SIGNATURE, App.GAME_MANAGER_RETAIL_SIGNATURE] {
         for slot_rva: s64.[0x3000, 0x700] {
             install(image, 0x1010, slot_rva, signature);
@@ -112,8 +132,108 @@ check_image :: (filename: string) {
     check(rejected_error.count > 0, "Reject inconsistent render and update field offsets.");
 }
 
+switch_scene:       string;
+switch_scene_reads: s64;
+
+read_switch_scene :: () -> (string, string) {
+    switch_scene_reads += 1;
+    if !switch_scene.count return "", "Scene unavailable.";
+    return copy_string(switch_scene), "";
+}
+
+check_switch_catalog :: () {
+    directory := tprint("%/../.build", #filepath);
+    check(make_directory_if_it_does_not_exist(directory, true), "Create the isolated fixture directory.");
+    filename := tprint("%/switch-%.json", directory, Win.GetCurrentProcessId());
+    defer file_delete(filename);
+    record := "{\"name\":\"high_entry\",\"region\":\"intro_to_3d\",\"position\":[-12.5,74,33],\"entity_id\":42}";
+    source := tprint("{\"source\":{\"package\":\"levels.package\",\"scene\":\"overworld\",\"sha256\":\"%\"},\"levels\":[%]}",
+                     "ad584f4b038a59669314be8cecc022442c094e8500969889d1c885a656d116d8", record);
+    database: App.Solutions_Database;
+    defer App.solutions_free(*database);
+    check(write_entire_file(filename, source), "Write a catalog fixture.");
+    error := App.level_catalog_load(*database, filename);
+    check(!error.count && database.entries.count == 1, "Load an entrance from the package catalog.");
+    index, lookup_error := App.level_catalog_find(*database, "HIGH_ENTRY");
+    check(!lookup_error.count && index == 0 && database.entries[0].position[2] == 33 &&
+          database.entries[0].position[0] == -12.5, "Case-insensitive lookup preserves negative/fractional coordinates and height.");
+    for mutation: string.["", "{}", replace(source, record, "")] {
+        check(write_entire_file(filename, mutation), "Write a malformed fixture.");
+        error = App.level_catalog_load(*database, filename);
+        check(error.count > 0 && database.entries.count == 1 && database.entries[0].name == "high_entry",
+              "Failed loads preserve the owned snapshot.");
+    }
+    for coordinate: string.["null", "[]", "[1,2]", "[1,2,3,4]", "[null,2,3]", "[\"1\",2,3]", "[1000000.01,2,3]", "[1e999,2,3]"] {
+        check(write_entire_file(filename, replace(source, "[-12.5,74,33]", coordinate)), "Write invalid coordinates.");
+        error = App.level_catalog_load(*database, filename);
+        check(error.count > 0, "Reject missing, wrong-type, nonfinite and out-of-range coordinates.");
+    }
+    for pair: [2] string.[.["\"name\":\"high_entry\"", "\"name\":\"../bad\""],
+                          .["\"region\":\"intro_to_3d\"", "\"region\":\"\""],
+                          .["\"entity_id\":42", "\"entity_id\":-1"],
+                          .["\"entity_id\":42", "\"entity_id\":42.5"],
+                          .["\"entity_id\":42", "\"entity_id\":4294967296"],
+                          .["\"scene\":\"overworld\"", "\"scene\":\"mirror_21\""]] {
+        check(write_entire_file(filename, replace(source, pair[0], pair[1])), "Write invalid catalog metadata.");
+        check(App.level_catalog_load(*database, filename).count > 0, "Reject invalid names, scene and IDs.");
+    }
+    second := replace(replace(record, "high_entry", "other_entry"), ":42", ":43");
+    shared := replace(source, record, tprint("%,%", record, second));
+    check(write_entire_file(filename, shared), "Write distinct names sharing one coordinate.");
+    check(!App.level_catalog_load(*database, filename).count && database.entries.count == 2, "Keep distinct levels at shared coordinates.");
+    check(write_entire_file(filename, replace(shared, "other_entry", "HIGH_ENTRY")), "Write two entrances for one name.");
+    check(!App.level_catalog_load(*database, filename).count, "Retain multiple source entrances.");
+    index, lookup_error = App.level_catalog_find(*database, "high_entry");
+    check(index < 0 && lookup_error.count > 0, "Reject ambiguous destination names.");
+    check(write_entire_file(filename, replace(shared, ":43", ":42")), "Write duplicate source IDs.");
+    check(App.level_catalog_load(*database, filename).count > 0, "Reject duplicate source IDs.");
+    check(write_entire_file(filename, source), "Restore the valid fixture.");
+    for name: string.["overworld", "OVERWORLD", "mirror_21", "menu", ""] {
+        state: App.Console_State;
+        defer App.console_deinit(*state);
+        switch_scene = name;
+        App.console_execute_command(*state, "SwItCh HIGH_ENTRY");
+        check(state.pending_action == .SWITCH_LEVEL, "Dispatch mixed-case switch.");
+        App.console_prepare_switch(*state, filename, read_switch_scene);
+        accepted := equal_nocase(name, "overworld");
+        check(state.pending_position_change == accepted, "Only overworld queues teleport.");
+        if accepted check(state.pending_position[2] == 33 && state.pending_position_take, "Queue full height and existing TakeOrDrop behavior.");
+        check(!state.pending_send.count, "Preparation injects no keys.");
+    }
+    {
+        alias_state: App.Console_State;
+        defer App.console_deinit(*alias_state);
+        check(!App.console_config_parse(*alias_state.config, "go = switch;").count, "Parse the user's go alias.");
+        App.console_execute_command(*alias_state, "go HIGH_ENTRY");
+        switch_scene = "overworld";
+        App.console_prepare_switch(*alias_state, filename, read_switch_scene);
+        check(alias_state.pending_position_change && alias_state.pending_position[2] == 33,
+              "go <level> uses the same validated switch path.");
+    }
+    for arguments: string.["", "high_entry extra"] {
+        state: App.Console_State;
+        defer App.console_deinit(*state);
+        App.command_switch(*state, arguments);
+        check(state.pending_action == .NONE, "Reject invalid argument counts.");
+    }
+    state: App.Console_State;
+    defer App.console_deinit(*state);
+    switch_scene_reads = 0;
+    App.command_switch(*state, "unknown");
+    App.console_prepare_switch(*state, filename, read_switch_scene);
+    check(!state.pending_position_change && !switch_scene_reads, "Unknown names do not access game memory.");
+    App.console_set_input(*state, "switch hi");
+    App.console_complete(*state, .["high_entry"], .["custom_only"], .[]);
+    check(trim(App.console_input(*state)) == "switch high_entry", "Complete catalog entrances.");
+    error = App.level_catalog_load(*database, tprint("%/../data/level-catalog.json", #filepath));
+    check(!error.count && database.entries.count > 0, "Load the generated runtime catalog.");
+    print("Runtime catalog: % validated entrances.\n", database.entries.count);
+}
+
 #import "Basic";
 #import "Compiler";
 #import "File";
+#import "File_Utilities";
+#import "String";
 Win :: #import "Windows";
 App :: #import,file "../src/main.jai";
