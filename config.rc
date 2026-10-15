@@ -1,11 +1,10 @@
-# Saved changes reload automatically; no restart is needed for runtime settings.
-# Invalid or temporarily unavailable files leave the last valid settings active.
+# This file will be hot-reloaded.
 
 # Set to false to hide the startup jblow wave gif.
 show_startup_blow = false;
 
-# Subtitle dialogue font size = game client height / this value (1-1000).
-# Smaller values make larger text. Console resizing does not change the size.
+# Smaller values make larger text.
+# e.g. 10 means 10 lines of text to full fill window height.
 subtitle_font_size = 40;
 
 # HUD switches and top-to-bottom order.
@@ -14,7 +13,7 @@ hud_enabled            = true;
 hud_show_notifications = true;
 hud_hide_on_focus_loss = true;
 
-# Top-left HUD items (item order as blow)
+# Top-left HUD items
 hud_show_level_name    = true;
 hud_show_position      = false;
 # hud_text               = "\nLet's complete this game firstly\nand then play it twice!";
