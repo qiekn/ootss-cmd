@@ -309,8 +309,8 @@ check_view_movement :: () {
           App.freecam.session.position[2] == 30, "Topdown centers above the actual selected anchor while retaining altitude.");
     error, changed = App.game_write_position_to(fixture.memory, .[1, 0, 0], relative = true, instant = true,
                                                 locator = *locator, view_relative = true, camera_layout = *layout);
-    check(!error.count && changed && fixture.entities[0].position[0] == 10,
-          "Noclip-style movement still works while the native camera is frozen.");
+    check(!error.count && changed && fixture.entities[0].position[0] == 9 && fixture.entities[0].position[1] == 21,
+          "Noclip-style movement follows the aligned topdown view while the camera is frozen.");
     pose, pose_error := App.game_camera_read_session(*App.freecam.session);
     check(!pose_error.count && App.game_camera_pose_unchanged(*App.freecam.session, pose),
           "Moving the player leaves the locked camera untouched.");
@@ -318,10 +318,10 @@ check_view_movement :: () {
     put(manager_bytes, 0x618, float.[0, 0, 0, 0]);
     error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true,
                                                 locator = *locator, view_relative = true, camera_layout = *layout);
-    check(error.count > 0 && !changed && fixture.entities[0].position[0] == 10,
+    check(error.count > 0 && !changed && fixture.entities[0].position[0] == 9 && fixture.entities[0].position[1] == 21,
           "An invalid camera never falls back to guessed coordinates or partially moves a player.");
     error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true, locator = *locator);
-    check(!error.count && changed && fixture.entities[0].position[1] == 21,
+    check(!error.count && changed && fixture.entities[0].position[1] == 22,
           "Explicit world offsets work independently of camera availability.");
     // A valid camera belonging to another manager must not direct these players.
     other_bytes: [] u8 = .{data = cast(*u8) *fixture.managers[1], count = size_of(Fixture_Manager)};
@@ -336,7 +336,7 @@ check_view_movement :: () {
     check(!error.count, "The other scene's synthetic camera is independently valid.");
     error, changed = App.game_write_position_to(fixture.memory, .[0, 1, 0], relative = true, instant = true,
                                                 locator = *locator, view_relative = true, camera_layout = *layout);
-    check(error.count > 0 && !changed && fixture.entities[0].position[1] == 21,
+    check(error.count > 0 && !changed && fixture.entities[0].position[1] == 22,
           "Camera and player scene mismatch rejects movement before any write.");
 }
 

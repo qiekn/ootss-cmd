@@ -32,6 +32,11 @@ fog_session_open :: (session: *Fog_Session, window: Win.HWND, writable := true) 
     address       := memory.module.base + rva + cast(u64) offset;
     upload_offset := fog_find_upload(code,offset);
     if upload_offset<0 return "Fog layout: nearby parameter upload is missing or ambiguous.";
+    // The uploaded Fog_Voxelization_Params and the flag's stack slot must agree:
+    // the flag displacement sits exactly at the struct's 0x184 field offset.
+    stack_disp  := (cast(*u32)(code.data+offset+7)).*;
+    upload_disp := (cast(*u32)(code.data+upload_offset+4)).*;
+    if upload_disp + 0x184 != stack_disp return "Fog layout: stack and upload displacements disagree.";
     session.* = .{memory=memory, instruction=address, metadata=metadata,
                   upload = memory.module.base+rva+cast(u64)upload_offset, writable=writable};
     for byte: session.code session.code[it_index]=code[offset+it_index];
@@ -131,25 +136,30 @@ fog_restore_protection :: (session: *Fog_Session) -> bool {
 fog_instruction_matches :: (bytes: [] u8) -> bool {
     if bytes.count != FOG_INSTRUCTION.count return false;
     for byte: FOG_INSTRUCTION {
+        if byte < 0 continue; // A stack displacement, checked below.
         if it_index == FOG_IMMEDIATE { if bytes[it_index] > 1 return false; }
-        else if it_index>=19 && it_index<=22 continue; // A compiler-selected temporary stack slot.
         else if bytes[it_index] != byte return false;
     }
-    stack := (cast(*u32)(bytes.data+19)).*;
-    if stack<0x20 || stack>0x4000 || stack%8!=0 return false;
-    return true;
+    stack  := (cast(*u32)(bytes.data+7)).*;
+    slot   := (cast(*u32)(bytes.data+19)).*;
+    mirror := (cast(*u32)(bytes.data+36)).*;
+    if stack<0x20 || stack>0x4000 || stack%4!=0 return false; // A dword store keeps 4-byte alignment.
+    if slot<0x20 || slot>0x4000 || slot%8!=0 return false;    // The pointer slot keeps 8-byte alignment.
+    return mirror == stack + 8;
 }
 
+// The fixed first bytes of FOG_INSTRUCTION drive the pre-scan.
+FOG_INSTRUCTION_FIRST: u8 = 0xf3;
 fog_find_instruction :: (code: [] u8) -> s64 {
     found: s64 = -1;
     if code.count < FOG_INSTRUCTION.count return -1;
     source: string = .{data=code.data, count=code.count};
     cursor: s64;
     while cursor <= code.count - FOG_INSTRUCTION.count {
-        i := find_index_from_left(source, FOG_INSTRUCTION[0], cursor);
+        i := find_index_from_left(source, FOG_INSTRUCTION_FIRST, cursor);
         if i < 0 || i > code.count - FOG_INSTRUCTION.count break;
         cursor = i + 1;
-        if code[i+1] != FOG_INSTRUCTION[1] || code[i+2] != FOG_INSTRUCTION[2] continue;
+        if code[i+1] != 0x0f || code[i+2] != 0x5d continue;
         if !fog_instruction_matches(.{data=code.data+i, count=FOG_INSTRUCTION.count}) continue;
         if found >= 0 return -1;
         found = i;
@@ -160,18 +170,18 @@ fog_find_instruction :: (code: [] u8) -> s64 {
 fog_upload_matches :: (bytes: [] u8) -> bool {
     if bytes.count != FOG_UPLOAD.count return false;
     for byte: FOG_UPLOAD {
-        // RIP-relative addresses vary with linking.
-        if (it_index >= 26 && it_index <= 29) || (it_index >= 33 && it_index <= 36) continue;
+        if byte < 0 continue; // The stack displacement and RIP-relative addresses vary.
         if bytes[it_index] != byte return false;
     }
-    return true;
+    disp := (cast(*u32)(bytes.data+4)).*;
+    return disp >= 0x20 && disp <= 0x4000 && disp%8 == 0;
 }
 
 fog_find_upload :: (code: [] u8, instruction: s64) -> s64 {
     if instruction<0 || code.count<FOG_UPLOAD.count || instruction>code.count-FOG_UPLOAD.count return -1;
     found: s64=-1;
     for at: instruction..min(code.count-FOG_UPLOAD.count,instruction+0x4000) {
-        if code[at]!=FOG_UPLOAD[0] || code[at+1]!=FOG_UPLOAD[1] continue;
+        if code[at]!=0x48 || code[at+1]!=0x8d continue; // FOG_UPLOAD's fixed first bytes.
         if !fog_upload_matches(.{data=code.data+at,count=FOG_UPLOAD.count}) continue;
         if found>=0 return -1;
         found = at;
@@ -243,13 +253,16 @@ Fog_Member       :: struct {
 }
 #assert(size_of(Fog_Type) == 32);
 #assert(size_of(Fog_Member) == 64);
-FOG_IMMEDIATE   :: 11;
-FOG_INSTRUCTION :: u8.[0xf3,0x0f,0x5d,0xc1, 0xc7,0x84,0x24,0x84,0x07,0,0, 1,0,0,0,
-    0x48,0x8b,0x94,0x24,0x20,0x01,0,0, 0xf3,0x0f,0x10,0x8a,0x3c,0x03,0,0,
-    0xf3,0x0f,0x11,0x8c,0x24,0x8c,0x07,0,0];
-FOG_UPLOAD :: u8.[0x48,0x8d,0x84,0x24,0,0x06,0,0, 0x48,0x89,0x44,0x24,0x20,
+FOG_IMMEDIATE :: 11;
+// Local stack displacements are linker- and build-dependent: the 2026-10 game
+// update moved the whole block by -0x20 (e.g. 0x784 -> 0x764). -1 entries mark
+// displacements; fog_instruction_matches validates them and their relations.
+FOG_INSTRUCTION :: s16.[0xf3,0x0f,0x5d,0xc1, 0xc7,0x84,0x24,-1,-1,-1,-1, 1,0,0,0,
+    0x48,0x8b,0x94,0x24,-1,-1,-1,-1, 0xf3,0x0f,0x10,0x8a,0x3c,0x03,0,0,
+    0xf3,0x0f,0x11,0x8c,0x24,-1,-1,-1,-1];
+FOG_UPLOAD :: s16.[0x48,0x8d,0x84,0x24,-1,-1,-1,-1, 0x48,0x89,0x44,0x24,0x20,
     0xc6,0x44,0x24,0x30,0, 0xc6,0x44,0x24,0x28,0,
-    0x48,0x8d,0x0d,0,0,0,0, 0x48,0x8d,0x15,0,0,0,0,
+    0x48,0x8d,0x0d,-1,-1,-1,-1, 0x48,0x8d,0x15,-1,-1,-1,-1,
     0x45,0x31,0xc0, 0x41,0xb9,0xe0,0x01,0,0, 0xe8];
 
 #import "Basic";

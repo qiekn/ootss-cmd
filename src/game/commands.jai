@@ -36,15 +36,21 @@ console_submission_origin_matches :: (submission: Console_Submission, visible: b
     return visible && foreground == window;
 }
 
+// A hidden quick input captured its game before Windows finished activating it.
+// Commands queued from that window must tolerate the overlay or a null
+// foreground until the captured game owns focus or the deadline ends.
+console_submission_focus_pending :: (state: *Console_State, foreground: Win.HWND, game: Win.HWND, pid: u32, now: float64) -> bool {
+    return state.submission.quick && !overlay.visible && console_submission_target_matches(state.submission, game, pid) &&
+           (foreground == overlay.window || !foreground) && now < state.submission.focus_deadline;
+}
+
 console_submission_ready :: (state: *Console_State, sends_input := true) -> (ready: bool, waiting: bool) {
     if overlay.quit_requested || overlay.show_requested || overlay.quick_requested || overlay.toggle_requested ||
        process_console_should_exit() || tray_has_request() return false, false;
     game       := find_game_window();
     pid        := process_window_pid(game);
     foreground := Win.GetForegroundWindow();
-    if state.submission.quick && !overlay.visible &&
-       console_submission_target_matches(state.submission, game, pid) &&
-       (foreground == overlay.window || !foreground) && seconds_since_init() < state.submission.focus_deadline {
+    if console_submission_focus_pending(state, foreground, game, pid, seconds_since_init()) {
         return false, true; // Window activation can finish on the next game message.
     }
     if !console_submission_origin_matches(state.submission, overlay.visible, foreground, overlay.window, game, pid) {

@@ -5,8 +5,10 @@
     set_build_options_dc(.{do_output = false});
     check_lock();
     check_commands();
+    check_focus_transition();
     check_ground_directions();
     check_topdown();
+    check_freecam_topdown();
     print("PASS: % camera lock/view movement checks; no game writes or input.\n", checks);
 }
 
@@ -116,6 +118,43 @@ check_commands :: () {
     }
 }
 
+check_focus_transition :: () {
+    // Quick input hides the overlay before Windows finishes activating the
+    // game; the freecam session must survive that transition.
+    game  := cast(Win.HWND) 1;
+    other := cast(Win.HWND) 2;
+    App.freecam = .{enabled = true, game = game, pid = 7};
+    defer App.freecam = .{};
+    state: App.Console_State;
+    defer App.console_deinit(*state);
+    previous_visible := App.overlay.visible;
+    previous_window  := App.overlay.window;
+    previous_editor  := App.editor_window.handle;
+    defer App.overlay.visible      = previous_visible;
+    defer App.overlay.window       = previous_window;
+    defer App.editor_window.handle = previous_editor;
+    App.overlay.visible      = false;
+    App.overlay.window       = cast(Win.HWND) 3;
+    App.editor_window.handle = cast(Win.HWND) 4;
+    now := seconds_since_init();
+    check(!App.freecam_focus_lost(*state,game, now), "The game's own focus never counts as a loss.");
+    check(!App.freecam_focus_lost(*state,null, now), "A null foreground starts the grace period instead of stopping.");
+    check(!App.freecam_focus_lost(*state,other, now + App.FREECAM_FOCUS_GRACE * 0.5), "A brief transition stays within the grace period.");
+    check(App.freecam_focus_lost(*state,other, now + App.FREECAM_FOCUS_GRACE + 0.01), "A persistent foreign foreground stops the session.");
+    state.submission = .{quick = true, game = game, pid = 7, focus_deadline = now + 1};
+    check(!App.console_submission_focus_pending(*state, game, game, 7, now), "An activated game is not a pending transition.");
+    check(App.console_submission_focus_pending(*state, null, game, 7, now), "A null foreground waits inside the activation deadline.");
+    check(!App.console_submission_focus_pending(*state, other, game, 7, now), "An unrelated window is not an activation wait.");
+    check(!App.freecam_focus_lost(*state,null, now + 0.9), "A pending submission keeps a null foreground acceptable past the grace.");
+    state.submission.focus_deadline = now;
+    check(!App.console_submission_focus_pending(*state, null, game, 7, now), "An expired deadline ends the activation wait.");
+    check(App.freecam_focus_lost(*state,null, now + 0.9), "After the deadline the same foreground loss stops the session.");
+    state.submission          = .{};
+    App.freecam.focus_lost_at = 0;
+    check(!App.freecam_focus_lost(*state,App.overlay.window, now), "The console window remains acceptable.");
+    check(!App.freecam_focus_lost(*state,App.editor_window.handle, now), "Editor focus remains acceptable.");
+}
+
 check_ground_directions :: () {
     // Quarter-turn views, including steep overhead and horizontal views, keep
     // a one-unit movement on the nearest screen-aligned world grid axis.
@@ -174,6 +213,26 @@ check_topdown :: () {
     check(error.count > 0, "Reject a topdown pose beyond the coordinate limit.");
     position, error = App.game_camera_topdown_position(.[1000001, 0, 20], .[0, 0, 0]);
     check(error.count > 0, "Reject invalid initial camera coordinates.");
+}
+
+check_freecam_topdown :: () {
+    // The interactive topdown keeps the view's horizontal facing, snapped to the
+    // nearest quarter turn, and looks straight down.
+    for turn: 0..3 {
+        yaw := PI64 / 2 + cast(float64) turn * PI64 / 2;
+        for offset: float64.[-0.1, 0.1] {
+            orientation := App.freecam_topdown_orientation(App.game_camera_orientation(yaw + offset, -0.3));
+            expected    := App.game_camera_orientation(yaw, -PI64 / 2);
+            aligned     := true;
+            for value: orientation {
+                // A negated quaternion is the same rotation; accept both covers.
+                if abs(value - expected[it_index]) > 0.0001 && abs(value + expected[it_index]) > 0.0001 aligned = false;
+            }
+            check(aligned, "Topdown keeps the nearest quarter-turn yaw.");
+            _, pitch := App.game_camera_angles(orientation);
+            check(abs(pitch + PI64 / 2) < 0.001, "Topdown faces straight down.");
+        }
+    }
 }
 
 #import "Basic";

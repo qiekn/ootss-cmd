@@ -2,9 +2,13 @@ Freecam_Mode       :: enum { MOUSE; PAN; TOPDOWN; }
 Freecam_Speed      :: enum { NORMAL; FAST; SLOW; }
 Camera_Lock_Action :: enum { NONE; LOCK; UNLOCK; }
 
+// Seconds a foreign foreground may last before the session stops. Transitions
+// through null windows after quick input hides do not count as focus loss.
+FREECAM_FOCUS_GRACE :: 0.5;
+
 FREECAM_MOUSE_HINT   :: "Okay, now you can fly. [Fly Guide] W/S/A/D/Q/E, Hold Shift to speed up, Ctrl to slow down. other options: -pan -topdown";
-FREECAM_PAN_HINT     :: "Fixed orientation, WSAD to North/South/West/East";
-FREECAM_TOPDOWN_HINT :: "Fixed topdown, WSAD to North/South/West/East";
+FREECAM_PAN_HINT     :: "Fixed orientation, WSAD follows the screen directions";
+FREECAM_TOPDOWN_HINT :: "Aligned top-down, WSAD follows the screen directions";
 
 freecam_mode_name :: (mode: Freecam_Mode) -> string {
     if mode == .TOPDOWN return "Top-down";
@@ -28,6 +32,7 @@ Freecam_State :: struct {
     down, consumed, moving, tapped:                     [6] bool;
     yaw, pitch:                                         float64; // Mouse-look angles in radians; every turn rebuilds the orientation from them.
     ready_at, last_frame, retry_at:                     float64;
+    focus_lost_at:                                      float64;
 }
 
 freecam: Freecam_State;
@@ -82,9 +87,18 @@ freecam_frame_delta :: (now: float64, speed: float64) -> Game_Position {
     for i: 0..5 if freecam.moving[i] || freecam.tapped[i] axes[i] = 1;
     for *key: freecam.tapped key.* = false; // A tap between frames still contributes once.
     distance := cast(float)(elapsed * speed);
-    // Axes follow "WSADQE". Every mode uses Q down and E up.
-    if freecam.mode != .MOUSE return game_camera_pan(axes[3] - axes[2], axes[0] - axes[1], axes[5] - axes[4], distance);
-    return game_camera_movement(freecam.session.orientation, axes[0] - axes[1], axes[3] - axes[2], axes[5] - axes[4], distance);
+    // Axes follow "WSADQE". Every mode uses Q down and E up. Pan and topdown
+    // translate along the frozen view's screen directions, snapped to the
+    // nearest grid axes, so movement agrees with what the view shows.
+    up    := axes[0] - axes[1];
+    right := axes[3] - axes[2];
+    lift  := axes[5] - axes[4];
+    if freecam.mode != .MOUSE {
+        view, view_error := game_camera_ground_move(freecam.session.orientation, .[right, up, 0], grid = true);
+        if view_error.count return .[0, 0, 0];
+        return game_camera_pan(view[0], view[1], lift, distance);
+    }
+    return game_camera_movement(freecam.session.orientation, up, right, lift, distance);
 }
 
 // Mouse counts turn the view: right turns right and down looks down. Pitch stops
@@ -190,8 +204,17 @@ freecam_center_topdown :: () -> (error: string, changed: bool) {
     current := game_position_reader_sample(*reader, allow_resolve = false);
     if !game_position_sample_same_player(sample, current) return "The controlled player changed before centering the camera.", false;
     changed: bool;
-    error, changed = game_camera_move(*freecam.session, position, GAME_CAMERA_TOPDOWN, absolute = true);
+    orientation := freecam_topdown_orientation(freecam.session.orientation);
+    error, changed = game_camera_move(*freecam.session, position, orientation, absolute = true);
     return error, changed;
+}
+
+// Look straight down while keeping the view's horizontal facing, snapped to the
+// nearest quarter turn so the level stays axis-aligned on screen. Capture keeps
+// the fixed north-up pose for map tiles.
+freecam_topdown_orientation :: (orientation: [4] float) -> [4] float {
+    yaw, _ := game_camera_angles(orientation);
+    return game_camera_orientation(floor(yaw / (PI64 / 2) + 0.5) * (PI64 / 2), -PI64 / 2);
 }
 
 freecam_finish_stop :: (state: *Console_State) {
@@ -334,12 +357,13 @@ freecam_start :: (game: Win.HWND, mode: Freecam_Mode) -> string {
             return mouse_error;
         }
     }
-    freecam.mode     = mode;
-    freecam.locked   = false;
-    freecam.game     = game;
-    freecam.pid      = pid;
-    freecam.enabled  = true;
-    freecam.ready_at = seconds_since_init() + 0.08;
+    freecam.mode          = mode;
+    freecam.locked        = false;
+    freecam.game          = game;
+    freecam.pid           = pid;
+    freecam.enabled       = true;
+    freecam.ready_at      = seconds_since_init() + 0.08;
+    freecam.focus_lost_at = 0;
     freecam_clear_motion();
     for vk: "WSADQE" freecam.down[it_index] = Win.GetAsyncKeyState(cast(s32) vk) < 0;
     noclip_clear_motion();
@@ -348,6 +372,20 @@ freecam_start :: (game: Win.HWND, mode: Freecam_Mode) -> string {
         editor.recording = false;
     }
     return "";
+}
+
+// A focus transition can pass through null or an unrelated window while the
+// game finishes activating; quick input hides the overlay before Windows
+// switches focus. A pending quick submission owns that deadline, and every
+// other loss must persist for the grace period before the session stops.
+freecam_focus_lost :: (state: *Console_State, foreground: Win.HWND, now: float64) -> bool {
+    if foreground && (foreground == freecam.game || foreground == overlay.window || foreground == editor_window.handle) {
+        freecam.focus_lost_at = 0;
+        return false;
+    }
+    if console_submission_focus_pending(state, foreground, freecam.game, freecam.pid, now) return false;
+    if !freecam.focus_lost_at freecam.focus_lost_at = now;
+    return now - freecam.focus_lost_at >= FREECAM_FOCUS_GRACE;
 }
 
 freecam_update :: (state: *Console_State, now: float64) {
@@ -361,9 +399,17 @@ freecam_update :: (state: *Console_State, now: float64) {
     if !freecam.enabled return;
     foreground := Win.GetForegroundWindow();
     if !freecam.game || process_window_pid(freecam.game) != freecam.pid ||
-       overlay.game != freecam.game || overlay.quit_requested || process_console_should_exit() ||
-       (foreground != freecam.game && foreground != overlay.window && foreground != editor_window.handle) {
+       overlay.game != freecam.game || overlay.quit_requested || process_console_should_exit() {
         freecam_stop(state);
+        return;
+    }
+    if freecam_focus_lost(state, foreground, now) {
+        freecam_stop(state);
+        return;
+    }
+    if foreground != freecam.game && foreground != overlay.window && foreground != editor_window.handle {
+        // A focus transition is still in flight; no camera work until it settles.
+        freecam_clear_motion();
         return;
     }
     if !game_camera_identity_current(freecam.session.memory, freecam.session.layout, freecam.session.original) {
