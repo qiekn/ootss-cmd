@@ -65,4 +65,11 @@ map o = "show subtitles";
 
 For more, see [console.jai](./src/ui/console.jai) `CONSOLE_COMMANDS` , or use `help` command.
 
-Here is a [Document](docs/document.md). But AI-Generated, So don't read it.
+Here is a [Document](docs/document.md). But AI-Generated.
+
+## References
+
+**Solutions**
+
+- https://sinkingstar.wikitactics.com/
+- https://joric.github.io/ootss/
