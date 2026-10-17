@@ -151,19 +151,23 @@ timeline_advance :: (timeline: *Solution_Timeline, direction: s64) {
     }
 }
 
-// A physical Z removes one game action and its trailing switches/waits, keeping the future.
-timeline_apply_game_undo :: (timeline: *Solution_Timeline) -> bool {
+// A physical Z rewinds one game action and its trailing switches/waits.
+// Outside recording the recorded cells are kept and only the playhead moves back;
+// while recording the undone action is removed so the recording matches the game's undo history.
+timeline_apply_game_undo :: (timeline: *Solution_Timeline, erase := false) -> bool {
     position := timeline.playhead;
     while position > 0 {
         position -= 1;
         if timeline.keys[position] == #char "!" return false; // Restart cleared the game's undo history.
         if !timeline_key_is_undoable(timeline.keys[position]) continue;
-        removed := timeline.playhead - position;
-        caret   := timeline.caret - max(0, min(removed, timeline.caret - position));
-        anchor  := timeline.anchor - max(0, min(removed, timeline.anchor - position));
-        if !timeline_erase(timeline, position, timeline.playhead) return false;
-        timeline.caret  = caret;
-        timeline.anchor = anchor;
+        if erase {
+            removed := timeline.playhead - position;
+            caret   := timeline.caret  - max(0, min(removed, timeline.caret - position));
+            anchor  := timeline.anchor - max(0, min(removed, timeline.anchor - position));
+            if !timeline_erase(timeline, position, timeline.playhead) return false;
+            timeline.caret  = caret;
+            timeline.anchor = anchor;
+        } else timeline_advance(timeline, position - timeline.playhead);
         return true;
     }
     return false; // There is no known game action to undo in this session.

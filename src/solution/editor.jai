@@ -487,9 +487,10 @@ editor_on_game_key :: (vk: u32, shift := false) {
     symbol := game_symbol_for_vk(*editor.keymap, vk);
     if !symbol && vk != editor.keymap.undo.vk && vk != editor.keymap.restart.vk return;
     if vk == editor.keymap.undo.vk {
+        clear_undone := editor.recording;
         editor_timer_cancel();
         editor_pause();
-        timeline_apply_game_undo(*editor.timeline);
+        timeline_apply_game_undo(*editor.timeline, erase = clear_undone);
         editor_view_reset();
         editor.transport.target = editor.timeline.playhead;
         return;
