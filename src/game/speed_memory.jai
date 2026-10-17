@@ -37,7 +37,9 @@ game_speed_layout_from_code :: (code: [] u8, base: u64) -> (layout: Game_Speed_L
     if at == -2 || gated == -2 || (at >= 0 && gated >= 0) return layout,"Ambiguous time multiplier evidence.";
     gap: s64;
     if gated >= 0 { at = gated; gap = 30; }
-    init := game_camera_find_code(code, s16.[0x0f,0x28,0x05,-1,-1,-1,-1,0x0f,0x11,0x05,-1,-1,-1,-1,
+    // The 2026-10-17 evening build copies the 1x defaults with an aligned
+    // movaps store; only this form is supported.
+    init := game_camera_find_code(code, s16.[0x0f,0x28,0x05,-1,-1,-1,-1,0x0f,0x29,0x05,-1,-1,-1,-1,
         0x4c,0x8d,0xa4,0x24,-1,-1,-1,-1]);
     if at < 0 || init < 0 return layout,"Unsupported game build: time multiplier evidence is missing or ambiguous.";
     layout.multiplier  = game_speed_rip(code,base,at,4,8);
