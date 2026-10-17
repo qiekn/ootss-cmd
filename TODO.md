@@ -1,3 +1,13 @@
+# Fix
+
+## solutioin player default key delay
+
+Currently 250ms for each key. Even switch a character takes 250ms. These causes we can't finish `worlds_collde_heroes_and_stones`. We need to fix it.
+
+## solution player support sprint
+
+In OotSS, when you press `Ctrl`, it slows time and also enable sprint. Some level like Bard and stones, we need use sprint or quick input (less than 250ms) to move cristals before stone arrive. Anyway, there is still lots of things to do with solution player.
+
 # New Command
 
 ## hint
