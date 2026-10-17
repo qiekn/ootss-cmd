@@ -21,7 +21,7 @@ jai first.jai
 jai first.jai -optimized   # 可简写为 -o
 ```
 
-给其他人使用时，打包整个 `bin/` 目录即可。
+给其他人使用时，打包整个 `bin/` 目录即可。运行中的旧程序需要退出后再启动新程序。
 
 ### 启动与退出
 
@@ -63,8 +63,16 @@ jai first.jai -optimized   # 可简写为 -o
 
 ## 配置文件 config.rc
 
-程序启动时读取可执行文件所在目录下的 `config.rc`（优化版为 `bin/config.rc`），修改后重启生效。
+程序启动时读取可执行文件所在目录下的 `config.rc`（优化版为 `bin/config.rc`），保存后自动重载，不需要重启。
 配置只定义选项、别名和快捷键，加载时不执行命令；格式错误会报告行号并保留原配置。
+
+默认一直监听 `config.rc`：空闲时只检查文件变更通知，不读取或解析配置；不监听子目录。连续保存会合并，并在两次读取内容一致后应用，通常约需 0.3 秒；支持编辑器通过临时文件重命名替换的保存方式。
+
+配置必须整份有效才会替换旧设置。文件暂时缺失、被占用或解析失败时会短暂重试，最终失败则在终端保留错误信息和行号（语法错误），继续使用上一份有效配置；修正并保存后会再次尝试。清空配置文件会恢复默认值。重载不会执行配置中的命令，也不会改变输入草稿、历史、临时 alias、当前字幕或编辑器进度。
+
+别名、快捷键和 freecam 参数在重载后生效。快捷键旧队列会清空，已按下按键的释放仍按原来的拦截状态处理。`game_path` 更新后，后续字幕查询使用新目录，已加载字体会刷新；新目录缺少字体时终端和已打开字幕保留原字体并记录提示。当前字幕文本保留到下一次查询。`show_startup_blow` 只影响下次启动，不会重新播放或关闭当前图片。
+
+配置重载检查：`jai -quiet scripts/check_config_reload.jai -import_dir ../modules`。检查在 `.build/` 中使用独立配置文件，不改动个人配置或游戏状态。
 
 ```ini
 game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star Demo";
@@ -97,8 +105,27 @@ map o = "show subtitles";
 | `freecam_sensitivity` | `0.1` | 每个鼠标计数转动的度数 |
 | `freecam_shift_multiplier` | `4` | 按住 Shift 时的速度倍率 |
 | `freecam_ctrl_multiplier` | `0.25` | 按住 Ctrl 时的速度倍率 |
+| `subtitle_font_size` | `30` | 中英文字幕对白字号，按「游戏窗口客户区高度 ÷ 配置值」计算，取整且最小 1 像素；范围 1–1000，越小字越大。说话人和注释按比例使用较小字号 |
+| `hud_enabled` | `true` | 左上角 HUD 总开关 |
+| `hud_show_level_name` | `true` | 显示当前关卡名 |
+| `hud_show_position` | `false` | 显示玩家坐标 |
+| `hud_show_notifications` | `true` | 显示通知 |
+| `hud_hide_on_focus_loss` | `true` | 失焦时隐藏左上角信息；不隐藏通知 |
+| `speed_fast` | `2` | `send` / `play` 的 `-fast` 别名取值 |
+| `speed_superfast` | `4` | `-superfast` / `-rabbit` 取值 |
+| `speed_slow` | `0.5` | `-slow` 取值 |
+| `speed_superslow` | `0.25` | `-superslow` / `-turtle` 取值 |
+| `time_stop_alt_probability` | `1/3` | 时停使用 alt 音效的概率，0–1 |
+| `time_stop_no_audio` | `false` | 时停禁用音频和台词 |
 
-四个 `freecam_` 选项都必须是正数。
+四个 `freecam_` 选项和四个 `speed_` 选项都必须是正数；`speed_` 预设不得超过 4，`subtitle_font_size` 范围为 1–1000，`time_stop_alt_probability` 范围为 0–1。
+
+### HUD
+
+HUD 用 `hud_enabled` 控制总开关，`hud_show_level_name`、`hud_show_position`、`hud_show_notifications` 分别控制关卡名、坐标和通知。
+每条 `hud_text = "custom text";` 新增一行自定义文字，可以重复写多条，`hud_text = "";` 保留一个空行；信息行按各项在文件中的先后顺序排列，把坐标配置移到关卡名配置上方即可先显示坐标。
+引号中的文字支持 `\n` 换行，例如 `hud_text = "First line\n\nSecond line";` 会在两段之间留一行空白；开头、结尾的换行会保留，`\\n` 显示字面上的 `\n`。
+`hud_hide_on_focus_loss` 只控制左上角信息，失焦不会隐藏通知；终端打开、截图及 HUD 总开关仍按原规则隐藏两处面板。详细规则见 [HUD 配置](map-capture.md#hud)。
 
 ### 别名
 
@@ -232,6 +259,12 @@ undo 100 -fast -delay 20ms
 发送一次 R 键重置关卡，使用 75 ms 周期。
 编辑器开启时也可执行：R 键发送后时间线退回起点，整段解法保留为未来指令。
 
+### speed
+
+`speed 1.25` 设置游戏基础时间倍率，`speed 0` 暂停、`speed 1` 恢复正常，也支持 `up` / `down` / `reset`。
+游戏前台且编辑器关闭时，`[` / `]` 按 `0.25、0.5、1、1.25、1.5、1.75、2、3、4` 切换；命令支持范围内任意倍率，例如 `speed 3.5`。
+原生快慢键仍会叠乘，细节见[游戏时间倍率](map-capture.md#游戏时间倍率)。
+
 ### show level
 
 显示当前关卡的资源名，例如 `quadrants_follow_up`；在大地图中显示 `Overworld`。
@@ -294,15 +327,15 @@ move -view 1 0   # 沿屏幕右方最接近的网格方向移动一格
 switch mirror_21
 ```
 
-从 `data/marker.json` 查找关卡入口，先瞬移到入口坐标，再发送 `User.keymap` 中的 `TakeOrDrop` 键（默认 V）。
-关卡名不区分大小写，支持 Tab 补全。已在小关中时需先返回大地图。
+从 `data/level-catalog.json` 查找关卡入口，先瞬移到入口坐标，再发送 `User.keymap` 中的 `TakeOrDrop` 键（默认 V）。
+关卡名不区分大小写，支持 Tab 补全。已在小关中时需先返回大地图。目录由 `scripts/generate_level_catalog.jai` 从游戏 `levels.package` 生成，详见[入口数据文档](level-catalog.md)。
 
 ### noclip
 
 `noclip` 切换穿行模式，`noclip enable` / `noclip disable` 显式开关。
 开启后在游戏前台按物理 W/S/A/D，分别让受控整组沿屏幕上、下、左、右最接近的网格方向移动一格，不发送方向键。每步使用当前相机朝向，与 `move -view` 共用方向换算；北朝上的视角仍对应 Y +1、Y -1、X -1、X +1。
 
-- 轻点一次移动一格，长按按 150 ms 间隔重复；忽略 Windows 自动重复和程序注入的按键。
+- 轻点一次移动一格，长按按 150 ms 间隔重复；按住 Shift 加速至 2 倍（间隔 75 ms），松开后恢复原速。忽略 Windows 自动重复和程序注入的按键。
 - 离开游戏焦点会清空待执行移动；控制台、编辑器文字输入和带修饰键的快捷键不受影响。
 - 只在本次运行中生效，不修改游戏碰撞代码。
 
@@ -432,6 +465,27 @@ close editor            # 关闭，有未保存修改时确认
 
 新编辑器默认 1×。Step 使用基准 250 ms 并跟随游戏基础倍率；Undo 保持原 250 ms，反向拖动保持原 10 ms。正向拖动与滚轮使用绝对 Rabbit 4×；停止操作后恢复原倍率，尚未完成的目标按原倍率继续。`jump` 使用绝对 16×；向前面的步骤跳转会先重置再重放，结束时同样恢复。播放、拖动和跳转期间，右上角显示实际游戏倍率；停止后回到所选播放档位。独立的 `send` / `do` 仍使用上文的命令参数。
 
+## 时停（游戏内按 P）
+
+游戏中按 `P` 立即显示 `Jotaro Kujo: “Star Platinum: The World!”` 并播放时停音效，播完后暂停，再单独显示 `Speed 0x`；再按 `P` 立即显示 `Jotaro Kujo: “And time resumes.”` 并播放配对恢复音效，保持暂停直到音效结束，再恢复原倍率并单独显示 `Speed <原倍率>x`。
+
+- 每次开始有 1/3 概率使用 alt 音效，由 `time_stop_alt_probability` 控制（0–1，默认 1/3；0 始终使用普通版本，1 始终使用 alt）。更改概率只影响下次选音，当前停止/恢复仍保持配对。
+- `time_stop_no_audio = true;` 禁用音频和台词，按 P 立即暂停、再次按下立即恢复，只显示 `Speed 0x` / `Speed <原倍率>x`；播放期间启用此选项会停止音频并立即完成当前暂停或恢复。
+- 连续按键会先停止旧音轨，再播放新音轨；停止音效期间再按 P 会取消即将发生的暂停，恢复音效期间再按 P 会取消本次恢复并保留最初的倍率。
+- 离开游戏会取消尚未完成的时停；退出助手会恢复其控制的速度。自定义 P 映射优先。删除配置项恢复默认值；无效概率或布尔值会使整份新配置被拒绝，保留旧设置。
+
+## 大地图拍摄
+
+大地图拍摄默认先在游戏中按 Q，再手动运行 `./scripts/capture_map.jai`：从 `(80,69,80)` 向外拍摄，每张只保存中心 9 × 9 个世界格子，相机间隔 9 格，外围画面丢弃；`crop_world_size` 在脚本顶部配置。当前全图为 550 张，需要更新并重启助手后重新拍摄。
+
+拍摄中暂停模拟时间，结束或暂停后恢复之前的倍率。最终输出 `map/map.jpg`，默认质量 92、最大边长 32768；分块仍是无损 PNG。只想将已有截图按原计划重新导出为大图，可运行：
+
+```powershell
+jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
+```
+
+完整说明见[俯视相机与拍摄](map-capture.md)。
+
 ## 数据文件
 
 程序目录下的 `data/`：
@@ -444,6 +498,9 @@ close editor            # 关闭，有未保存修改时确认
 | `level-catalog.json` | 关卡名、区域和入口坐标，供编辑器和 `switch` 使用 |
 | `subtitles.json` | 关卡名到字幕 ID 的映射，由 `scripts/generate_subtitles.jai` 生成 |
 
+- `solutions.json` / `custom_inputs.json` 只保存 `name`、`note`、`solution`；`play` / `do`、Tab 补全和编辑器只读写这两个文件，不读取或回退到 TXT。名称不区分大小写，重复名称或无效 JSON 会报错；允许空解法。入口位置和区域由 `level-catalog.json` 提供，不写入解法；旧 JSON 的 `position`、`area` 在读取时忽略，下次保存时移除。
+- 等待写作 `_秒数_`（如 `_3.5_`），时长精确到毫秒；旧 `_` 每个按 0.25 秒处理，`____` 可合并为 `_1_`；`scripts/merge_solution_waits.jai` 可批量合并两个 JSON 中相邻的等待，保留其他按键及 `note`。
+
 保存时先写临时文件再替换目标文件；保存失败会保留原数据和编辑内容供重试。
 
 ## 开发参考
@@ -451,3 +508,5 @@ close editor            # 关闭，有未保存修改时确认
 - 命令表在 `src/ui/console.jai`；按键发送在 `src/game/commands.jai` 和 `src/platform/windows/input.jai`；编辑器在 `src/solution/`。
 - `src/platform/windows/overlay.jai` 中的 `OVERLAY_HEIGHT_PERCENT` 和 `OVERLAY_OPACITY` 控制终端高度比例和不透明度；配色和字幕角色名颜色在 `src/ui/console_theme.jai`。
 - 内存地址定位、读写实现和游戏更新后的适配步骤见 [game-memory.md](game-memory.md)。
+- 代码风格检查使用 `jai -quiet scripts/format_style.jai`，添加 `- --write` 可应用成组声明/赋值对齐和 main 公共依赖的去重。范围为 `first.jai`、`src/`、`scripts/`；独立模块保留自己的依赖，第三方模块不参与。
+- 其他文档：[俯视相机、HUD 与大地图拍摄](map-capture.md)、[离线关卡格式](custom_levels.md)、[自动提取关卡名、区域和入口坐标](level-catalog.md)。
