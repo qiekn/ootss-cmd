@@ -110,16 +110,33 @@ check_controls :: () {
     up_x := 2*(q[0]*q[2]+q[1]*q[3]);
     up_y := 2*(q[1]*q[2]-q[0]*q[3]);
     check(up_x==0 && up_y==1,"Screen up is world north.");
+    // Pan and topdown translate along the frozen view's screen directions;
+    // press each direction at north-up and at a half-turn view.
     for mode:App.Freecam_Mode.[.PAN,.TOPDOWN] {
         for key:0..5 {
-            App.freecam      = .{};
-            App.freecam.mode = mode;
+            App.freecam                     = .{};
+            App.freecam.mode                = mode;
+            App.freecam.session.orientation = App.GAME_CAMERA_TOPDOWN;
             App.freecam.tapped[key]=true;
             delta := App.freecam_frame_delta(1,120);
             axis  := ifx key<2 then 1 else ifx key<4 then 0 else 2;
             sign  := ifx key==0 || key==3 || key==5 then 1 else -1;
-            for i:0..2 check(delta[i]==cast(float)(ifx i==axis then sign else 0),"Panning keys use the correct world axis.");
+            for i:0..2 check(delta[i]==cast(float)(ifx i==axis then sign else 0),"Panning keys follow the screen axes at north-up.");
         }
+    }
+    for mode:App.Freecam_Mode.[.PAN,.TOPDOWN] {
+        App.freecam                     = .{};
+        App.freecam.mode                = mode;
+        App.freecam.session.orientation = App.game_camera_orientation(PI64,-PI64/2);
+        App.freecam.tapped[0]=true;
+        delta := App.freecam_frame_delta(1,120);
+        check(delta[0]==-1 && delta[1]==0 && delta[2]==0,"At a half-turn view, W moves world -X.");
+        App.freecam                     = .{};
+        App.freecam.mode                = mode;
+        App.freecam.session.orientation = App.game_camera_orientation(PI64,-PI64/2);
+        App.freecam.tapped[3]=true;
+        delta = App.freecam_frame_delta(1,120);
+        check(delta[0]==0 && delta[1]==1 && delta[2]==0,"At a half-turn view, D moves world +Y.");
     }
     App.freecam = .{};
     for args:string.["-topdown","enable -TOPDOWN","-topdown enable","-pan"] {
