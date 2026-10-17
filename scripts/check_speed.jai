@@ -29,8 +29,8 @@ check_commands :: () {
     check(!error.count && request==.RESET,"Reset is case insensitive.");
     steps := float64.[0.25,0.5,1,1.25,1.5,1.75,2,3,4];
     for value:steps {
-        check(App.speed_step(value,true)==steps[min(it_index+1,steps.count-1)],"Bracket up follows the requested presets.");
-        check(App.speed_step(value,false)==steps[max(it_index-1,0)],"Bracket down follows the requested presets.");
+        check(App.speed_step(value,true )== steps[min(it_index+1,steps.count-1)],"Bracket up follows the requested presets.");
+        check(App.speed_step(value,false)== steps[max(it_index-1,0)],"Bracket down follows the requested presets.");
     }
     check(App.speed_step(3.5,false)==3 && App.speed_step(3.5,true)==4,"Custom 3.5x steps to the nearest preset in either direction.");
     check(App.speed_step(0,false)==0 && App.speed_step(0,true)==0.25,"Pause stays paused on down and resumes at 0.25x on up.");
@@ -83,7 +83,7 @@ check_memory :: () {
     chain := u8.[0xf2,0x0f,0x59,0x05,0,0,0,0,0xf2,0x0f,0x59,0x05,0,0,0,0,
         0xf2,0x0f,0x5a,0xc0,0xf3,0x0f,0x11,0x05,0,0,0,0,0xf3,0x0f,0x5a,0xc0,
         0xf2,0x0f,0x58,0x05,0,0,0,0,0xf2,0x0f,0x11,0x05,0,0,0,0];
-    initial := u8.[0x0f,0x28,0x05,0,0,0,0,0x0f,0x11,0x05,0,0,0,0,0x4c,0x8d,0xa4,0x24,0,0,0,0];
+    initial := u8.[0x0f,0x28,0x05,0,0,0,0,0x0f,0x29,0x05,0,0,0,0,0x4c,0x8d,0xa4,0x24,0,0,0,0];
     memcpy(bytes.data+32,chain.data,chain.count);
     memcpy(bytes.data+128,initial.data,initial.count);
     put(bytes,36,cast(s32)(520-40)); put(bytes,44,cast(s32)(512-48));
@@ -104,6 +104,15 @@ check_memory :: () {
     ignored,bad = App.game_speed_layout_from_code(bytes,base);
     check(bad.count>0,"Reject ambiguous time update chains.");
     memset(bytes.data+256,0,48);
+    // The superseded movups initialization form must no longer be accepted.
+    bytes[136] = 0x11;
+    layout,error = App.game_speed_layout_from_code(bytes,base);
+    check(error.count>0,"Reject the superseded movups initialization form.");
+    bytes[136] = 0x29;
+    memcpy(bytes.data+320,bytes.data+128,22);
+    ignored,bad = App.game_speed_layout_from_code(bytes,base);
+    check(bad.count>0,"Reject duplicate initialization evidence.");
+    memset(bytes.data+320,0,22);
     put(bytes,520,cast(float64)1.25);
     session: App.Game_Speed_Session=.{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=1.25,last=1.25,writable=true};
     check(!App.game_speed_set(*session,0).count && (cast(*float64)(bytes.data+520)).*==0,"Pause an isolated time multiplier.");
