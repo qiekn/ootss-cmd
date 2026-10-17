@@ -141,12 +141,12 @@ command_mark :: (state: *Console_State, arguments: string) {
     state.pending_marker_current = count < 3;
 }
 
-command_add_markers :: (state: *Console_State, arguments: string) {
+command_add_marker :: (state: *Console_State, arguments: string) {
     cursor: s64;
     subject         := console_next_argument(arguments, *cursor);
     position, error := console_parse_coordinates(slice(arguments, cursor, arguments.count - cursor), "xyz", 3);
-    if !equal_nocase(subject, "markers") || error.count {
-        console_write(state, "Usage: add markers <x> <y> <z>", .ERROR);
+    if !equal_nocase(subject, "marker") || error.count {
+        console_write(state, "Usage: add marker <x> <y> <z>", .ERROR);
         return;
     }
     if !console_queue_marker_action(state, .MARK_POSITION) return;
@@ -154,17 +154,12 @@ command_add_markers :: (state: *Console_State, arguments: string) {
     state.pending_marker_current = false;
 }
 
-command_list_markers :: (state: *Console_State, arguments: string) {
-    if !equal_nocase(trim(arguments), "markers") { console_write(state, "Usage: list markers", .ERROR); return; }
-    console_queue_marker_action(state, .LIST_MARKERS);
-}
-
-command_remove_markers :: (state: *Console_State, arguments: string) {
+command_remove_marker :: (state: *Console_State, arguments: string) {
     cursor: s64;
     subject := console_next_argument(arguments, *cursor);
     name    := console_next_argument(arguments, *cursor);
-    if !equal_nocase(subject, "markers") || !name.count || console_next_argument(arguments, *cursor).count {
-        console_write(state, "Usage: remove markers <name>", .ERROR);
+    if !equal_nocase(subject, "marker") || !name.count || console_next_argument(arguments, *cursor).count {
+        console_write(state, "Usage: remove marker <name>", .ERROR);
         return;
     }
     console_queue_marker_action(state, .REMOVE_MARKER, name);

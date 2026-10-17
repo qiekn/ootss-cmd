@@ -138,9 +138,8 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "move",          run = command_move             },
     .{name = "move_xy",       run = command_move_xy          },
     .{name = "mark",          run = command_mark             },
-    .{name = "list",          run = command_list_markers     },
-    .{name = "remove",        run = command_remove_markers   },
-    .{name = "add",           run = command_add_markers      },
+    .{name = "remove",        run = command_remove_marker    },
+    .{name = "add",           run = command_add_marker       },
     .{name = "rename",        run = command_rename_marker    },
     .{name = "back",          run = command_back             },
     .{name = "tp",            run = command_back             },
@@ -265,9 +264,10 @@ command_show :: (console: *Console_State, arguments: string) {
     if equal_nocase(subject, "position") && !rest.count console.pending_action = .SHOW_POSITION;
     else if equal_nocase(subject, "level") && !rest.count console.pending_action = .SHOW_LEVEL;
     else if equal_nocase(subject, "camera") && !rest.count console.pending_action = .SHOW_CAMERA;
+    else if equal_nocase(subject, "markers") && !rest.count console_queue_marker_action(console, .LIST_MARKERS);
     else if equal_nocase(subject, "subtitles") command_show_subtitles(console, rest);
     else console_write(console,
-                       "Usage: show camera, show level, show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
+                       "Usage: show camera, show level, show markers, show position, or show subtitles [level_name] [-comment] [-en|-cn|-sc] [-no_character|-nosayer]", .ERROR);
 }
 
 command_set :: (console: *Console_State, arguments: string) {
@@ -624,9 +624,9 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "                         Omitted name uses a-z, wrapping after z and overwriting a.",
        "                         Example: mark home  or  mark 80 79 0",
        "                         Markers are saved in data/markers.json (name and position).",
-       "add markers <x> <y> <z>  Save to the next a-z register, like mark x y z.",
-       "list markers             List saved marker names and positions.",
-       "remove markers <name>    Remove a saved position.",
+       "add marker <x> <y> <z>   Save to the next a-z register, like mark x y z.",
+       "show markers             List saved marker names and positions.",
+       "remove marker <name>     Remove a saved position.",
        "rename <name> <new_name> Rename a marker; keep its coordinates.",
        "reset marker registers   Clear a-z and start at a; keep custom marker names.",
        "",

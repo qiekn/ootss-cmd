@@ -49,9 +49,9 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
     if equal_nocase(command, "set") && !subject.count return .SET, start, end;
     if equal_nocase(command, "move") && !subject.count return .MOVE_AXIS, start, end;
     if equal_nocase(command, "switch") && !subject.count return .SWITCH, start, end;
-    if equal_nocase(command, "list") || equal_nocase(command, "add") || equal_nocase(command, "remove") {
+    if equal_nocase(command, "add") || equal_nocase(command, "remove") {
         if !subject.count return .MARKERS, start, end;
-        if equal_nocase(command, "remove") && equal_nocase(subject, "markers") &&
+        if equal_nocase(command, "remove") && equal_nocase(subject, "marker") &&
            !console_next_argument(before, *position).count return .MARKER_NAME, start, end;
     }
     if (equal_nocase(command, "mark") || equal_nocase(command, "back") || equal_nocase(command, "tp") || equal_nocase(command, "rename")) &&
@@ -127,7 +127,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
         case .TEMP_ALIAS;
             for alias: console.temporary_aliases console_completion_add(state, prefix, alias.name);
         case .SHOW;
-            for name: string.["level", "position", "subtitles", "camera"] console_completion_add(state, prefix, name);
+            for name: string.["level", "markers", "position", "subtitles", "camera"] console_completion_add(state, prefix, name);
         case .SET;
             console_completion_add(state, prefix, "position");
             console_completion_add(state, prefix, "camera");
@@ -136,7 +136,7 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
         case .SWITCH;
             for name: levels console_completion_add(state, prefix, name);
         case .MARKERS;
-            console_completion_add(state, prefix, "markers");
+            console_completion_add(state, prefix, "marker");
         case .MARKER_NAME;
             for name: markers console_completion_add(state, prefix, name);
         case .RESET;

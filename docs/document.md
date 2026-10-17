@@ -276,9 +276,9 @@ move -view 1 0   # 沿屏幕右方最接近的网格方向移动一格
 | --- | --- |
 | `mark home` | 把当前位置保存为 home |
 | `mark home 80 79 0` | 保存指定坐标；同名标记会更新 |
-| `mark` / `mark 80 79 0` / `add markers 80 79 0` | 保存到下一个自动寄存器，按 a → b → … → z → a 循环覆盖 |
-| `list markers` | 列出标记名称和坐标 |
-| `remove markers home` | 删除指定标记 |
+| `mark` / `mark 80 79 0` / `add marker 80 79 0` | 保存到下一个自动寄存器，按 a → b → … → z → a 循环覆盖 |
+| `show markers` | 列出标记名称和坐标 |
+| `remove marker home` | 删除指定标记 |
 | `rename home start` | 重命名；目标名称已存在时拒绝覆盖 |
 | `back start` / `tp start` | 把受控整组平移到该标记，方式同 `set position` |
 | `reset marker registers` | 清空 a–z 并从 a 重新开始，保留其他名称 |
