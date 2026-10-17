@@ -29,14 +29,12 @@ UNDO_DEFAULT_\  DELAY  :: 10;
 UNDO_FAST_\     DELAY  :: 1; // @TODO maybe 1ms doesn't work QwQ.
 RESET_DEFAULT_\ DELAY  :: 75;
 
-Send_Time_Mode            :: enum { NORMAL; FAST; SLOW; }
 Console_Subtitle_Language :: enum { BOTH; ENGLISH; CHINESE; }
 
 Console_Send_Arguments :: struct {
     source:    string;
-    delay_ms:  s32;
+    speed:     float64;
     alternate: bool;
-    time_mode: Send_Time_Mode;
 }
 
 Console_Line :: struct {
@@ -69,7 +67,7 @@ Console_State :: struct {
     submission:                                    Console_Submission;
     pending_send_hold_ms:                          s32 = DEFAULT_HOLD;
     pending_send_interval_ms:                      s32 = DEFUALT_INTERVAL;
-    pending_send_time_mode:                        Send_Time_Mode;
+    pending_send_speed:                             float64;
     pending_send_interruptible:                    bool;
     pending_reset:                                 bool;
     pending_action:                                Console_Action;
@@ -210,13 +208,13 @@ command_send_alt :: (console: *Console_State, arguments: string) {
 }
 
 command_play :: (console: *Console_State, arguments: string) {
-    request, error := console_parse_send_arguments(arguments, alternate = true);
+    request, error := console_parse_send_arguments(arguments, true, *console.config);
     defer free(request.source);
     if error.count { console_write(console, error, .ERROR); return; }
     position: s64;
     name := console_next_argument(request.source, *position);
     if console_next_argument(request.source, *position).count {
-        console_write(console, "Usage: play|do [name] [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>]", .ERROR);
+        console_write(console, "Usage: play|do [name] [-speed <N>|-fast|-superfast|-rabbit|-slow|-superslow|-turtle]", .ERROR);
         return;
     }
     if console.pending_send.count || console.pending_position_change || console.pending_freecam_change || console.pending_fog_change || console.pending_speed_change ||
@@ -465,51 +463,38 @@ console_send_speed_option :: (argument: string) -> bool {
     return false;
 }
 
-console_parse_send_arguments :: (commands: string, alternate: bool, default_delay_ms: s32 = DEFAULT_DELAY)
+console_parse_send_arguments :: (commands: string, alternate: bool, config: *Console_Config)
                                  -> (request: Console_Send_Arguments, error: string) {
     source: [..] u8;
     defer array_free(source);
     position: s64;
-    delay_ms: s32 = -1;
+    speed: float64;
     has_speed := false;
-    time_mode: Send_Time_Mode;
     while position < commands.count {
         argument := console_next_argument(commands, *position);
         if !argument.count break;
         if equal_nocase(argument, "-rabbit") argument = "-superfast";
         if equal_nocase(argument, "-turtle") argument = "-superslow";
-        if equal_nocase(argument, "-fast") || equal_nocase(argument, "-superfast") ||
-           equal_nocase(argument, "-slow") || equal_nocase(argument, "-superslow") {
+        value: float64;
+        if      equal_nocase(argument, "-fast")      value = config.speed_fast;
+        else if equal_nocase(argument, "-superfast") value = config.speed_superfast;
+        else if equal_nocase(argument, "-slow")      value = config.speed_slow;
+        else if equal_nocase(argument, "-superslow") value = config.speed_superslow;
+        else if equal_nocase(argument, "-speed") {
+            parse_error: string;
+            value, parse_error = console_parse_speed_value(console_next_argument(commands, *position));
+            if parse_error.count return .{}, parse_error;
+        } else value = 0;
+        if value > 0 {
             if has_speed {
-                return .{}, "Choose only one speed: -fast, -superfast/-rabbit, -slow, or -superslow/-turtle.";
+                return .{}, "Choose only one speed: -speed, -fast, -superfast/-rabbit, -slow, or -superslow/-turtle.";
             }
             has_speed = true;
-            if equal_nocase(argument, "-fast") default_delay_ms = SEND_FAST_DELAY;
-            if equal_nocase(argument, "-slow") default_delay_ms = SEND_SLOW_DELAY;
-            if equal_nocase(argument, "-superfast") {
-                default_delay_ms = SEND_SUPERFAST_DELAY;
-                time_mode        = .FAST;
-            }
-            if equal_nocase(argument, "-superslow") {
-                default_delay_ms = SEND_SUPERSLOW_DELAY;
-                time_mode        = .SLOW;
-            }
+            speed     = value;
             continue;
         }
         if equal_nocase(argument, "--udlr") {
             alternate = true;
-            continue;
-        }
-        if equal_nocase(argument, "-delay") {
-            if delay_ms >= 0 {
-                return .{}, "Specify -delay only once.";
-            }
-            value := console_next_argument(commands, *position);
-            error: string;
-            delay_ms, error = console_parse_delay(value);
-            if error.count {
-                return .{}, error;
-            }
             continue;
         }
         if argument[0] == #char "-" return .{}, tprint("Unknown send option: %", argument);
@@ -519,21 +504,27 @@ console_parse_send_arguments :: (commands: string, alternate: bool, default_dela
         for c: argument array_add(*source, c);
     }
 
-    if delay_ms < 0 delay_ms = default_delay_ms;
     return .{source = copy_string(.{data = source.data, count = source.count}),
-             delay_ms = delay_ms, alternate = alternate, time_mode = time_mode}, "";
+             speed = speed, alternate = alternate}, "";
+}
+
+console_parse_speed_value :: (text: string) -> (value: float64, error: string) {
+    value, success, remainder := string_to_float64(text);
+    if !success || remainder.count || !is_finite(value) || value <= 0 || value > GAME_SPEED_PRESET_MAX
+        return 0, "Speed must be greater than 0 and at most 4 (examples: -speed 2, -speed 1.5).";
+    return value, "";
 }
 
 console_queue_send :: (console: *Console_State, commands: string, alternate: bool,
                        default_delay_ms: s32 = DEFAULT_DELAY, interrupt_on_input := true) {
-    request, error := console_parse_send_arguments(commands, alternate, default_delay_ms);
+    request, error := console_parse_send_arguments(commands, alternate, *console.config);
     defer free(request.source);
     if error.count { console_write(console, error, .ERROR); return; }
-    console_queue_send_source(console, request.source, request, interrupt_on_input);
+    console_queue_send_source(console, request.source, request, interrupt_on_input, delay_ms = default_delay_ms);
 }
 
 console_queue_send_source :: (console: *Console_State, source: string, request: Console_Send_Arguments,
-                              interrupt_on_input := true) {
+                              interrupt_on_input := true, delay_ms: s32 = DEFAULT_DELAY) {
     waits: [..] s32;
     defer array_free(waits);
     expanded, error := expand_send(source, request.alternate, *waits);
@@ -543,8 +534,8 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
         return;
     }
     if !expanded.count {
-        usage := ifx request.alternate then "Usage: send_alt [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>] <moves>"
-                               else "Usage: send [-fast|-superfast|-rabbit|-slow|-superslow|-turtle] [-delay <ms>] <keys>";
+        usage := ifx request.alternate then "Usage: send_alt [-speed <N>|-fast|-superfast|-rabbit|-slow|-superslow|-turtle] <moves>"
+                               else "Usage: send [-speed <N>|-fast|-superfast|-rabbit|-slow|-superslow|-turtle] <keys>";
         console_write(console, usage, .ERROR);
         return;
     }
@@ -562,9 +553,9 @@ console_queue_send_source :: (console: *Console_State, source: string, request: 
     empty_waits: [..] s32;
     waits                              = empty_waits;
     console.pending_reset              = false;
-    console.pending_send_hold_ms       = send_hold_for_delay(request.delay_ms);
-    console.pending_send_interval_ms   = request.delay_ms - console.pending_send_hold_ms;
-    console.pending_send_time_mode     = request.time_mode;
+    console.pending_send_hold_ms       = send_hold_for_delay(delay_ms);
+    console.pending_send_interval_ms   = delay_ms - console.pending_send_hold_ms;
+    console.pending_send_speed         = request.speed;
     console.pending_send_interruptible = interrupt_on_input;
 }
 
@@ -673,20 +664,21 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "",
        "Options for send, send_alt, play, and do:",
        "",
-       "    -delay <ms>              Set the complete per-key cycle in milliseconds.",
-tprint("    -fast                    Use a % ms cycle.", SEND_FAST_DELAY),
-tprint("    -slow                    Use a % ms cycle.", SEND_SLOW_DELAY),
-tprint("    -superfast, -rabbit      Use % ms and hold the game's fast-time key.", SEND_SUPERFAST_DELAY),
-tprint("    -superslow, -turtle      Use % ms and hold the game's slow-time key.", SEND_SUPERSLOW_DELAY),
+       "    -speed <N>               Multiply the game speed by N during playback",
+       "                             (0 < N <= 4); the original speed is restored after.",
+       "    -fast                    Alias for -speed (config speed_fast; default 2).",
+       "    -slow                    Alias for -speed (config speed_slow; default 0.5).",
+       "    -superfast, -rabbit      Alias for -speed (config speed_superfast; default 4).",
+       "    -superslow, -turtle      Alias for -speed (config speed_superslow; default 0.25).",
        "",
        "    w3:    repeats w three times;",
        "    w 3 s: move up and change to character 3, then move down",
        "    (ad)3: repeats a group: adadad.",
        "    _3.5_ waits 3.5 base seconds; _ defaults to 0.25 seconds.",
-       "    Key cycles follow game speed; waits follow both -delay / 250 and game speed.",
+       "    Key cycles and waits follow the game speed; -speed temporarily scales it.",
        "",
        "    Command names and options are case-insensitive.",
-       "    Choose one speed preset. -delay overrides its interval;",
+       "    Choose at most one speed option;",
        "    Any player input will interrupt send, send_alt, play, and do.",
        "",
        "Keyboard Shortcuts:",

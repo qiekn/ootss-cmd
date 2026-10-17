@@ -1,10 +1,6 @@
 // GPT generates this file at 2026-09-11 06:13
 
 DEFAULT_\         DELAY :: 250; // milliseconds
-SEND_FAST_\       DELAY :: 175;
-SEND_SLOW_\       DELAY :: 500;
-SEND_SUPERFAST_\  DELAY :: 75;
-SEND_SUPERSLOW_\  DELAY :: 750;
 DEFAULT_HOLD     :: 50;
 DEFUALT_INTERVAL :: DEFAULT_DELAY - DEFAULT_HOLD;
 

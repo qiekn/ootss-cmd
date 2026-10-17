@@ -134,13 +134,13 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
     defer array_free(waits);
     hold_ms       := console.pending_send_hold_ms;
     interval_ms   := console.pending_send_interval_ms;
-    time_mode     := console.pending_send_time_mode;
+    speed         := console.pending_send_speed;
     interruptible := console.pending_send_interruptible;
     console.pending_send               = "";
     console.pending_reset              = false;
     console.pending_send_hold_ms       = DEFAULT_HOLD;
     console.pending_send_interval_ms   = DEFUALT_INTERVAL;
-    console.pending_send_time_mode     = .NORMAL;
+    console.pending_send_speed         = 0;
     console.pending_send_interruptible = false;
     defer free(commands);
     if !can_start {
@@ -158,15 +158,6 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
         return 0;
     }
 
-    modifier: Game_Key;
-    if time_mode != .NORMAL {
-        keymap: Game_Keymap;
-        action         := ifx time_mode == .FAST then "HoldForFastTime" else "HoldForSlowTime";
-        message, ready := game_keymap_load(*keymap, only_action = action);
-        if message.count console_write(console, message, ifx ready then .INFO else .ERROR);
-        if !ready return 0;
-        modifier = ifx time_mode == .FAST then keymap.fast else keymap.slow;
-    }
     if interruptible {
         error := send_input_begin(game);
         if error.count { console_write(console, error, .ERROR); return 0; }
@@ -188,8 +179,19 @@ console_run_pending_send :: (console: *Console_State) -> s64 {
 
     // Give the game a short moment to process activation before its first key press.
     if !console.submission.shortcut sleep_milliseconds(100);
-    result := send_sequence(commands, hold_ms, interval_ms, target_window = game, poll = console_poll_send,
-                            modifier_scan = modifier.scan, modifier_extended = modifier.extended, waits = waits,
+    // -speed temporarily scales the game's base speed, like the editor presets.
+    override: Game_Speed_Session;
+    defer {
+        close_error := game_speed_close(*override);
+        if close_error.count console_write(console, close_error, .ERROR);
+    }
+    if speed > 0 {
+        error := game_speed_open(*override, game);
+        if error.count { console_write(console, error, .ERROR); return 0; }
+        error = game_speed_set(*override, min(speed * override.original, GAME_SPEED_MAX));
+        if error.count { console_write(console, error, .ERROR); return 0; }
+    }
+    result := send_sequence(commands, hold_ms, interval_ms, target_window = game, poll = console_poll_send, waits = waits,
                             adapt_speed   = interruptible, automatic_hold = true);
     if !result.success && result.error == "Send cancelled." && send_input_interrupted() {
         result.error = "Stopped by player input.";

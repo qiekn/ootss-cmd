@@ -253,7 +253,7 @@ main :: () {
             console.pending_send               = "";
             console.pending_send_hold_ms       = DEFAULT_HOLD;
             console.pending_send_interval_ms   = DEFUALT_INTERVAL;
-            console.pending_send_time_mode     = .NORMAL;
+            console.pending_send_speed         = 0;
             console.pending_send_interruptible = false;
         }
         reset_requested := console.pending_reset;

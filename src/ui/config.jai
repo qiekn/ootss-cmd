@@ -60,6 +60,10 @@ Console_Config :: struct {
     freecam_ctrl_multiplier:   float64 = 0.25; // Speed scale while Ctrl is held.
     time_stop_alt_probability: float64 = 1.0 / 3.0;
     time_stop_no_audio:        bool;
+    speed_fast:                float64 = 2;
+    speed_superfast:           float64 = 4;
+    speed_slow:                float64 = 0.5;
+    speed_superslow:           float64 = 0.25;
     aliases:                   [..] Console_Alias;
     shortcuts:                 [..] Command_Shortcut;
 }
@@ -222,6 +226,10 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
         return "";
     }
     if equal_nocase(name, "time_stop_no_audio") return console_config_bool(name, command, *config.time_stop_no_audio);
+    if equal_nocase(name, "speed_fast") return console_config_number("speed_fast", command, *config.speed_fast, GAME_SPEED_PRESET_MAX);
+    if equal_nocase(name, "speed_superfast") return console_config_number("speed_superfast", command, *config.speed_superfast, GAME_SPEED_PRESET_MAX);
+    if equal_nocase(name, "speed_slow") return console_config_number("speed_slow", command, *config.speed_slow, GAME_SPEED_PRESET_MAX);
+    if equal_nocase(name, "speed_superslow") return console_config_number("speed_superslow", command, *config.speed_superslow, GAME_SPEED_PRESET_MAX);
     if equal_nocase(name, "hud_enabled") return console_config_bool(name, command, *config.hud.enabled);
     if equal_nocase(name, "hud_hide_on_focus_loss") return console_config_bool(name, command, *config.hud.hide_on_focus_loss);
     if equal_nocase(name, "hud_show_level_name") {

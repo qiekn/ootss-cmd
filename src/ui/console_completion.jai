@@ -83,7 +83,7 @@ console_completion_context :: (console: *Console_State) -> (kind: Console_Comple
         while position < before.count {
             argument := console_next_argument(before, *position);
             if !argument.count break;
-            if equal_nocase(argument, "-delay") {
+            if equal_nocase(argument, "-speed") {
                 if !console_next_argument(before, *position).count return .NONE, start, end;
             } else if !console_send_speed_option(argument) && !equal_nocase(argument, "--udlr") {
                 has_name = true;
@@ -173,19 +173,17 @@ console_complete :: (console: *Console_State, levels: [] string, customs: [] str
             rest, alias_error := console_expand_aliases(console, tprint("% %", slice(input, 0, start), slice(input, end, input.count - end)));
             defer free(rest);
             if alias_error.count return;
-            position:                     s64;
-            speed_present, delay_present: bool;
+            position:      s64;
+            speed_present: bool;
             while position < rest.count {
                 argument := console_next_argument(rest, *position);
-                if console_send_speed_option(argument) speed_present = true;
-                if equal_nocase(argument, "-delay") delay_present = true;
+                if console_send_speed_option(argument) || equal_nocase(argument, "-speed") speed_present = true;
             }
             if !speed_present {
-                for option: string.["-fast", "-superfast", "-rabbit", "-slow", "-superslow", "-turtle"] {
+                for option: string.["-speed", "-fast", "-superfast", "-rabbit", "-slow", "-superslow", "-turtle"] {
                     console_completion_add(state, prefix, option);
                 }
             }
-            if !delay_present console_completion_add(state, prefix, "-delay");
         case .SUBTITLES; #through;
         case .SUBTITLE_OPTION;
             if kind == .SUBTITLES for name: subtitle_levels console_completion_add(state, prefix, name);
