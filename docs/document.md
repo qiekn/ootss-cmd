@@ -328,8 +328,8 @@ move -view 1 0   # 沿屏幕右方最接近的网格方向移动一格
 switch mirror_21
 ```
 
-从 `data/level-catalog.json` 查找关卡入口，先瞬移到入口坐标，再发送 `User.keymap` 中的 `TakeOrDrop` 键（默认 V）。
-关卡名不区分大小写，支持 Tab 补全。已在小关中时需先返回大地图。目录由 `scripts/generate_level_catalog.jai` 从游戏 `levels.package` 生成，详见[入口数据文档](level-catalog.md)。
+从 `data/level_catelog.json` 查找关卡入口，先瞬移到入口坐标，再发送 `User.keymap` 中的 `TakeOrDrop` 键（默认 V）。
+关卡名不区分大小写，支持 Tab 补全。已在小关中时需先返回大地图。目录由 `scripts/generate_level_catalog.jai` 从游戏 `levels.package` 生成，详见[入口数据文档](level-catelog.md)。
 
 ### noclip
 
@@ -496,10 +496,10 @@ jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-si
 | `solutions.json` | 关卡解法数组，每条仅 `name`、`note`、`solution`；编辑器保存保留其他记录和备注 |
 | `custom_inputs.json` | `open editor` 保存的自定义输入，格式同上，按名称区分 |
 | `markers.json` | 位置标记和下一个自动寄存器 `next_register` |
-| `level-catalog.json` | 关卡名、区域和入口坐标，供编辑器和 `switch` 使用 |
+| `level_catelog.json` | 关卡名、区域和入口坐标，供编辑器和 `switch` 使用 |
 | `subtitles.json` | 关卡名到字幕 ID 的映射，由 `scripts/generate_subtitles.jai` 生成 |
 
-- `solutions.json` / `custom_inputs.json` 只保存 `name`、`note`、`solution`；`play` / `do`、Tab 补全和编辑器只读写这两个文件，不读取或回退到 TXT。名称不区分大小写，重复名称或无效 JSON 会报错；允许空解法。入口位置和区域由 `level-catalog.json` 提供，不写入解法；旧 JSON 的 `position`、`area` 在读取时忽略，下次保存时移除。
+- `solutions.json` / `custom_inputs.json` 只保存 `name`、`note`、`solution`；`play` / `do`、Tab 补全和编辑器只读写这两个文件，不读取或回退到 TXT。名称不区分大小写，重复名称或无效 JSON 会报错；允许空解法。入口位置和区域由 `level_catelog.json` 提供，不写入解法；旧 JSON 的 `position`、`area` 在读取时忽略，下次保存时移除。
 - 等待写作 `_秒数_`（如 `_3.5_`），时长精确到毫秒；旧 `_` 每个按 0.25 秒处理，`____` 可合并为 `_1_`；`scripts/merge_solution_waits.jai` 可批量合并两个 JSON 中相邻的等待，保留其他按键及 `note`。
 
 保存时先写临时文件再替换目标文件；保存失败会保留原数据和编辑内容供重试。
@@ -510,4 +510,4 @@ jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-si
 - `src/platform/windows/overlay.jai` 中的 `OVERLAY_HEIGHT_PERCENT` 和 `OVERLAY_OPACITY` 控制终端高度比例和不透明度；配色和字幕角色名颜色在 `src/ui/console_theme.jai`。
 - 内存地址定位、读写实现和游戏更新后的适配步骤见 [game-memory.md](game-memory.md)。
 - 代码风格检查使用 `jai -quiet scripts/format_style.jai`，添加 `- --write` 可应用成组声明/赋值对齐和 main 公共依赖的去重。范围为 `first.jai`、`src/`、`scripts/`；独立模块保留自己的依赖，第三方模块不参与。
-- 其他文档：[俯视相机、HUD 与大地图拍摄](map-capture.md)、[离线关卡格式](custom_levels.md)、[自动提取关卡名、区域和入口坐标](level-catalog.md)。
+- 其他文档：[俯视相机、HUD 与大地图拍摄](map-capture.md)、[离线关卡格式](custom_levels.md)、[自动提取关卡名、区域和入口坐标](level-catelog.md)。

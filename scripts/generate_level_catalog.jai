@@ -15,7 +15,7 @@ run :: (arguments: [] string) -> string {
     context.allocator = .{pool_allocator_proc, *pool};
     defer context.allocator = previous_allocator;
     input: string;
-    output    := tprint("%/../data/level-catalog.json", #filepath);
+    output    := tprint("%/../data/level_catelog.json", #filepath);
     check     := false;
     self_test := false;
     for i: 0..arguments.count - 1 {
@@ -149,7 +149,7 @@ catalog_add_set :: (catalog: *Catalog_Resources, source: string, area: string) -
 }
 
 // Parse member boundaries, never search arbitrary payload bytes for a field tag.
-// Supported Entity v25 / Level_Entry v25 layout is documented in level-catalog.md.
+// Supported Entity v25 / Level_Entry v25 layout is documented in level-catelog.md.
 parse_level_entrance :: (diff: string) -> string, Level_Entrance, string {
     entrance: Level_Entrance;
     cursor:   u64;

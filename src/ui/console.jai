@@ -626,7 +626,7 @@ tprint("undo [count], z[count]   Undo moves (default: 1). % ms; -fast: % ms.", U
        "                         Example: alias tp=back, alias pos=\"show position\"",
        "unalias <name>           Remove a temporary alias; restore the configured default.",
        "switch <level_name>      Teleport to an overworld entrance, then use TakeOrDrop.",
-       "                         Overworld only; uses level-catalog.json and User.keymap (default V).",
+       "                         Overworld only; uses level_catelog.json and User.keymap (default V).",
        "                         Example: switch mirror_21",
        "noclip [enable|disable]  Toggle W/S/A/D position movement; hold Shift for 2x speed.",
        "",

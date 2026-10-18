@@ -1,4 +1,4 @@
-LEVEL_CATALOG_FILE :: "data/level-catalog.json";
+LEVEL_CATALOG_FILE :: "data/level_catelog.json";
 
 // Entrances are independent of saved solutions, custom inputs and user markers.
 // Replace the owned snapshot only after validating the complete file.

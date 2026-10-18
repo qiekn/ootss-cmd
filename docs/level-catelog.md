@@ -1,12 +1,12 @@
 # 自动提取关卡名、区域和入口坐标
 
-[`data/level-catalog.json`](../data/level-catalog.json) 从游戏 `data/levels.package` 自动生成，不需要在地图上逐个标记，也不需要启动游戏。关卡目录只保留一个独立脚本 `scripts/generate_level_catalog.jai`，包含包读取、实体解析、生成和自检。
+[`data/level_catelog.json`](../data/level_catelog.json) 从游戏 `data/levels.package` 自动生成，不需要在地图上逐个标记，也不需要启动游戏。关卡目录只保留一个独立脚本 `scripts/generate_level_catalog.jai`，包含包读取、实体解析、生成和自检。
 
 ```powershell
 jai -quiet scripts/generate_level_catalog.jai - "<游戏安装目录>/data/levels.package"
 
 # 游戏更新后重新生成；也可以指定输出文件或只校验现有文件
-jai -quiet scripts/generate_level_catalog.jai - "<游戏安装目录>/data/levels.package" -o data/level-catalog.json
+jai -quiet scripts/generate_level_catalog.jai - "<游戏安装目录>/data/levels.package" -o data/level_catelog.json
 jai -quiet scripts/generate_level_catalog.jai - "<游戏安装目录>/data/levels.package" --check
 ```
 
@@ -40,7 +40,7 @@ jai -quiet scripts/generate_level_catalog.jai - "<游戏安装目录>/data/level
 
 `switch <level_name>` 和它的 Tab 补全直接读取此目录，名称不区分大小写，例如 `switch 3d_intro_heroes` 会使用入口 `[80, 74, 33]`。它只在当前场景为大世界 `overworld` 时生效：先检查目录和场景，将当前受控角色组的锚点传送到入口（保留组内相对位置），同步逻辑/显示 XYZ，再发送当前用户键位配置中的 `TakeOrDrop`（默认 V）触发入口。小关卡、菜单、未知名称、同名多入口或无效目录都会拒绝执行。写入前、各字段之间及发送按键前继续检查场景，避免排队期间换场景后套用大世界坐标。
 
-目录独立于个人标记、解法和自定义输入；`data/marker.json` 仍用于旧解法导入。优化构建会把新目录复制到 `bin/data/level-catalog.json`。
+目录独立于个人标记、解法和自定义输入。优化构建会把新目录复制到 `bin/data/level_catelog.json`。
 
 传送前先完成游戏激活；写入后留出入口检测更新的时间，再确认同一场景与传送目标并发送 V。完整受控组校验在写入阶段完成，V 前不再检查 `ACTIVE` 或整张实体列表是否与上一帧一致，避免原生更新误拦截按键。真实的场景、目标身份或坐标变化仍会中止按键，并在坐标变化时显示目标与实际位置。`go = switch;` 这样的配置别名使用同一流程。
 

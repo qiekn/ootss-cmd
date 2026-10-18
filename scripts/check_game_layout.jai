@@ -225,7 +225,7 @@ check_switch_catalog :: () {
     App.console_set_input(*state, "switch hi");
     App.console_complete(*state, .["high_entry"], .["custom_only"], .[]);
     check(trim(App.console_input(*state)) == "switch high_entry", "Complete catalog entrances.");
-    error = App.level_catalog_load(*database, tprint("%/../data/level-catalog.json", #filepath));
+    error = App.level_catalog_load(*database, tprint("%/../data/level_catelog.json", #filepath));
     check(!error.count && database.entries.count > 0, "Load the generated runtime catalog.");
     print("Runtime catalog: % validated entrances.\n", database.entries.count);
 }
