@@ -17,7 +17,7 @@ subtitle_font_size = 40;
 # Info rows follow file order;
 hud_enabled            = true;
 hud_show_notifications = true;
-hud_hide_on_focus_loss = true;
+hud_hide_on_focus_loss = false;
 
 # Top-left HUD items
 hud_show_level_name    = true;
@@ -77,6 +77,7 @@ go         = "switch"; # swtich level, e.g. swtich mirror_1
 map m = "move -z 1";
 map , = noclip;
 map o = "show subtitles";
+map f = "do -speed 1.8";
 # map > = "speed up";
 # map < = "speed down";
 # map e = 'noclip';
