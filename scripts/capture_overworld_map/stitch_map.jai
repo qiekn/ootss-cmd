@@ -1,9 +1,9 @@
 #!/usr/bin/env jai
 
-// jai -quiet scripts/stitch_map.jai - <capture-directory> <new-output-directory>
+// jai -quiet scripts/capture_overworld_map/stitch_map.jai - <capture-directory> <new-output-directory>
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     args := get_build_options().compile_time_command_line;
     if args.count>=3 && args.count%2==1 && (args[1]=="--png" || args[1]=="--jpg") {
         error := export_image(args);
@@ -102,11 +102,11 @@ stitch :: (directory:string,output:string) -> string {
     return "";
 }
 
-#load "../src/game/capture_plan.jai";
+#load "../../src/game/capture_plan.jai";
 #load "map_tiles.jai";
 #import "Basic";
 #import "Compiler";
 #import "File";
 #import "System";
-Json    :: #import,dir "../modules/Json";
+Json    :: #import,dir "../../modules/Json";
 Process :: #import "Process";

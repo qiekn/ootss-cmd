@@ -477,12 +477,12 @@ close editor            # 关闭，有未保存修改时确认
 
 ## 大地图拍摄
 
-大地图拍摄默认先在游戏中按 Q，再手动运行 `./scripts/capture_map.jai`：从 `(80,69,80)` 向外拍摄，每张只保存中心 9 × 9 个世界格子，相机间隔 9 格，外围画面丢弃；`crop_world_size` 在脚本顶部配置。当前全图为 550 张，需要更新并重启助手后重新拍摄。
+大地图拍摄默认先在游戏中按 Q，再手动运行 `./scripts/capture_overworld_map/capture_map.jai`：从 `(80,69,80)` 向外拍摄，每张只保存中心 9 × 9 个世界格子，相机间隔 9 格，外围画面丢弃；`crop_world_size` 在脚本顶部配置。当前全图为 550 张，需要更新并重启助手后重新拍摄。
 
 拍摄中暂停模拟时间，结束或暂停后恢复之前的倍率。最终输出 `map/map.jpg`，默认质量 92、最大边长 32768；分块仍是无损 PNG。只想将已有截图按原计划重新导出为大图，可运行：
 
 ```powershell
-jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
+jai -quiet scripts/capture_overworld_map/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
 ```
 
 完整说明见[俯视相机与拍摄](map-capture.md)。

@@ -88,10 +88,10 @@ hud_show_notifications = true;
 先启动新编译的 `ootss-cmd.exe` 和游戏，退出手动 freecam、关闭编辑器，在大世界按 Q 切到高度 80 的俯视视图。在 MSYS2 中执行：
 
 ```sh
-./scripts/capture_map.jai
+./scripts/capture_overworld_map/capture_map.jai
 ```
 
-PowerShell 中可用 `jai -quiet scripts/capture_map.jai`。不需要 `capture.sh`，也不用传 `-import_dir`。参数集中在 `scripts/capture_map.jai` 顶部的 `Capture_Settings`：
+PowerShell 中可用 `jai -quiet scripts/capture_overworld_map/capture_map.jai`。不需要 `capture.sh`，也不用传 `-import_dir`。参数集中在 `scripts/capture_overworld_map/capture_map.jai` 顶部的 `Capture_Settings`：
 
 ```jai
 Capture_Settings :: struct {
@@ -139,8 +139,8 @@ Capture_Settings :: struct {
 先在游戏内调整画质、隐藏不需要的游戏 UI，并用俯视模式试取景。然后退出 freecam，关闭编辑器，创建一个小区域的试拍计划：
 
 ```powershell
-jai -quiet scripts/capture_map.jai - plan .build/capture-pilot 76 77 84 85 18 --ground 0 --overlap 0.3 --settle-ms 700 --scene overworld
-jai -quiet scripts/capture_map.jai - start .build/capture-pilot
+jai -quiet scripts/capture_overworld_map/capture_map.jai - plan .build/capture-pilot 76 77 84 85 18 --ground 0 --overlap 0.3 --settle-ms 700 --scene overworld
+jai -quiet scripts/capture_overworld_map/capture_map.jai - start .build/capture-pilot
 ```
 
 参数顺序是 `目录 xmin ymin xmax ymax 相机绝对Z`。`--ground` 是用于换算截图比例的参考地面绝对 Z；它不修改地形。`--crop-world 9` 使用版本 3 的中心 9 格裁切。未指定时，`--overlap` 默认 0.3，范围 0.1–0.8；`--settle-ms` 默认 500，范围 100–10000，实际至少等待 200 ms，以预留隐藏 HUD 的时间。范围与高度仅为例子，不代表已经验证的正式版全图边界。
@@ -148,10 +148,10 @@ jai -quiet scripts/capture_map.jai - start .build/capture-pilot
 提交后返回游戏，待 Enter、修饰键和移动键释放才开始。无需持续按键。程序按蛇形路径逐点移动，等待画面稳定，再保存完整无损 PNG。
 
 ```powershell
-jai -quiet scripts/capture_map.jai - status .build/capture-pilot
-jai -quiet scripts/capture_map.jai - pause
-jai -quiet scripts/capture_map.jai - resume
-jai -quiet scripts/capture_map.jai - cancel
+jai -quiet scripts/capture_overworld_map/capture_map.jai - status .build/capture-pilot
+jai -quiet scripts/capture_overworld_map/capture_map.jai - pause
+jai -quiet scripts/capture_overworld_map/capture_map.jai - resume
+jai -quiet scripts/capture_overworld_map/capture_map.jai - cancel
 ```
 
 也可直接在控制台使用：
@@ -173,7 +173,7 @@ capture cancel
 安装 libwebp 命令行工具，使 `cwebp` 在 PATH 中；例如 MSYS2 UCRT64 的 `mingw-w64-ucrt-x86_64-libwebp`。拍摄本身不依赖 cwebp。
 
 ```powershell
-jai -quiet scripts/stitch_map.jai - .build/capture-pilot .build/map-pilot
+jai -quiet scripts/capture_overworld_map/stitch_map.jai - .build/capture-pilot .build/map-pilot
 ```
 
 输出目录必须不存在，避免覆盖原图或已有地图。工具拒绝未拍完或坐标不一致的任务；读取每张 PNG 时检查尺寸和解码结果。内存中只保留当前瓦片和单张源图，不创建一张占用巨大内存的全图。
@@ -181,8 +181,8 @@ jai -quiet scripts/stitch_map.jai - .build/capture-pilot .build/map-pilot
 只重新拼接已完成的拍摄时使用下面的命令，无需重新拍摄。此模式允许替换已有图片，无需 cwebp；先完整解码、拼接和编码，再替换输出文件：
 
 ```sh
-jai -quiet scripts/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
-jai -quiet scripts/stitch_map.jai - map/capture-world --png map/map.png --max-side 8192
+jai -quiet scripts/capture_overworld_map/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
+jai -quiet scripts/capture_overworld_map/stitch_map.jai - map/capture-world --png map/map.png --max-side 8192
 ```
 
 如果已经显示 `DONE: Capture complete`，但随后拼接或编码失败，使用上面的 `stitch_map.jai` 命令即可重试；不要无参数重跑 `capture_map.jai`，那会清理旧帧并重新拍摄。拼接按行显示进度，随后显示编码阶段。JPEG 使用编码库的原生缓冲文件写出，避免逐字节回调进入 Jai 的编译期执行器造成内存暴涨；写出后检查文件头、尺寸和结束标记，再替换旧图。
@@ -242,10 +242,10 @@ map.fitBounds(bounds);
 截图使用前台、无遮挡游戏客户区的桌面 BitBlt。保持窗口 / 无边框模式、完整客户区位于屏幕内；不支持在后台或被其他窗口遮挡时拍摄。游戏自身 UI、Steam 等进程内覆盖层、动态水面、粒子和昼夜变化仍会出现在图中。等待时间是固定延迟，不是游戏资源加载完成信号。先试拍小块区域，再决定高度、重叠率和等待时间。
 
 ```powershell
-jai -quiet scripts/check_camera_capture.jai -import_dir ../modules
-jai -quiet scripts/check_map_jpeg.jai
-jai -quiet scripts/check_world_crop.jai
-jai -quiet scripts/stitch_map.jai - .build/map-fixture .build/map-test-output
+jai -quiet scripts/capture_overworld_map/check_camera_capture.jai -import_dir ../../modules
+jai -quiet scripts/capture_overworld_map/check_map_jpeg.jai
+jai -quiet scripts/capture_overworld_map/check_world_crop.jai
+jai -quiet scripts/capture_overworld_map/stitch_map.jai - .build/map-fixture .build/map-test-output
 ```
 
 回归检查涵盖俯视四元数、键位、命令验证 / 补全、网格范围、奇数分辨率裁切、元数据往返精度、蛇形排序和 PNG 像素拼接，不查看图片。生成的合成测试地图是 2148×1608、四级共 29 张瓦片。游戏内存接口已在运行中的正式版进行只读验证；完整实景拍摄与视觉接缝仍需试拍验收。

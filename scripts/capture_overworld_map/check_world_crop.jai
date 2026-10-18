@@ -3,7 +3,7 @@
 // Synthetic world-coordinate gradients only. Never accesses or displays a game.
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     check_world_grid();
     check_crop_stitch();
     print("PASS: % world-crop checks.\n",checks);
@@ -147,12 +147,12 @@ check_crop_stitch :: () {
     check(write_entire_file(capture_frame_file(directory,0),saved),"Restore the original synthetic frame byte for byte.");
 }
 
-#load "../src/game/capture_plan.jai";
-#load "../src/game/capture_image.jai";
+#load "../../src/game/capture_plan.jai";
+#load "../../src/game/capture_image.jai";
 #load "map_tiles.jai";
 #import "Basic";
 #import "Compiler";
 #import "File";
 #import "Math";
 #import "System";
-Json :: #import,dir "../modules/Json";
+Json :: #import,dir "../../modules/Json";

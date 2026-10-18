@@ -3,7 +3,7 @@
 // Isolated memory-free camera controls, grid geometry and synthetic PNG checks.
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     check_controls();
     check_absolute_camera();
     check_grid();
@@ -341,13 +341,13 @@ check_scaled_png :: () {
     check(!error.count && cw*grid.columns==5376 && ch*grid.rows==4536,"World frames fit one PNG at half scale.");
 }
 
-#load "../src/game/capture_plan.jai";
+#load "../../src/game/capture_plan.jai";
 #load "map_tiles.jai";
 #import "Basic";
 #import "Compiler";
 #import "File";
 #import "System";
 #import "Math";
-App  :: #import,file "../src/main.jai";
+App  :: #import,file "../../src/main.jai";
 Json :: #import "Json";
 Win  :: #import "Windows";

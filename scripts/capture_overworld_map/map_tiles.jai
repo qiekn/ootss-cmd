@@ -236,7 +236,7 @@ Image            :: #import "stb_image";
 PNG              :: #import "stb_image_write";
 Resize           :: #import "stb_image_resize";
 Process          :: #import "Process";
-Json             :: #import,dir "../modules/Json";
+Json             :: #import,dir "../../modules/Json";
 map_png_callback :: (builder:*void,bytes:*void,count:s32) #c_call {
     push_context { append(cast(*String_Builder)builder,string.{data=cast(*u8)bytes,count=count}); }
 }

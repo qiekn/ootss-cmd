@@ -3,7 +3,7 @@
 // Generated pixels only: never opens the game or takes/displays screenshots.
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     check_order();
     check_export();
     print("PASS: % centered capture checks.\n",checks);
@@ -138,7 +138,7 @@ check_export :: () {
     check(!capture_atomic_json(tprint("%/manifest.json",directory),grid).count,"Restore complete fixture metadata.");
 }
 
-#load "../src/game/capture_plan.jai";
+#load "../../src/game/capture_plan.jai";
 #load "map_tiles.jai";
 #import "Basic";
 #import "Compiler";

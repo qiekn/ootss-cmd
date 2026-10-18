@@ -1,26 +1,27 @@
 #!/usr/bin/env jai
 
-// Edit these settings, then run ./scripts/capture_map.jai from MSYS2.
+// Edit these settings, then run ./scripts/capture_overworld_map/capture_map.jai from MSYS2.
 // Paths are relative to the project root. Each run replaces this capture.
 Capture_Settings :: struct {
-    directory:    string = "map/capture-world";
-    output:       string = "map/map.jpg";
+    // Upper ("3D") floor preset; the ground map uses map/capture-world with z=80 and ground=0.
+    directory:    string = "map/capture-upper";
+    output:       string = "map/upper-overworld.jpg";
     disable_fog:  bool = true;  // Temporarily hide exploration fog; restore the previous state afterward.
     max_side:     s64 = 32768;   // Final image only; never upscale or raise the camera.
     jpeg_quality: s32 = 92;  // 1-100; cropped cells are saved as lossless PNGs.
     plan:         Capture_Plan = .{
         version = 3,
-        // Retail Level_Entry bounds plus at least 10 world units of padding.
+        // Same XY footprint as the ground map: retail bounds plus at least 10 world units of padding.
         xmin             = -40, ymin = -20,
         xmax             = 180, ymax = 170,
-        z                = 80,
+        z                = 113,
         center_first     = true,
         center_x         = 80,
         center_y         = 69,
         freeze_time      = true,
-        require_map_view = true, // Press Q before starting; reuse its FOV at Z=80.
-        ground           = 0,
-        crop_world_size  = 9,    // Save only the center 9 x 9 world cells; move 9 cells per tile.
+        require_map_view = true, // Press Q on the upper floor; its map view sits at Z=113.
+        ground           = 33,
+        crop_world_size  = 5,    // Save only the center 5 x 5 world cells; move 5 cells per tile.
         settle_ms        = 200,
         scene            = "overworld",
     };
@@ -28,7 +29,7 @@ Capture_Settings :: struct {
 
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     error := run(get_build_options().compile_time_command_line);
     if error.count compiler_report(error);
 }
@@ -39,7 +40,7 @@ run :: (args: [] string) -> string {
         return run_plan(settings.directory,settings.plan,true,settings.output,settings.disable_fog,settings.max_side,settings.jpeg_quality);
     }
     if args[0]=="help" {
-        print("./scripts/capture_map.jai\n  Capture using Capture_Settings at the top of this script; replace map/map.jpg when complete.\n");
+        print("./scripts/capture_overworld_map/capture_map.jai\n  Capture using Capture_Settings at the top of this script; replace map/map.jpg when complete.\n");
         print("capture_map plan <directory> xmin ymin xmax ymax z [--ground 0 --overlap .3 --crop-world 9 --settle-ms 500 --scene overworld]\n");
         print("capture_map run <directory> xmin ymin xmax ymax z [same options] [--output map/map.png]\n");
         print("  run replaces the plan and previous frames, waits, then atomically replaces the image.\n");
@@ -228,9 +229,9 @@ Copy_Data :: struct {
     data:  *u8;
 }
 
-#load "../src/game/capture_plan.jai";
+#load "../../src/game/capture_plan.jai";
 #load "map_tiles.jai";
-#load "../src/platform/windows/console.jai";
+#load "../../src/platform/windows/console.jai";
 
 #import "Basic";
 #import "Compiler";
@@ -241,9 +242,9 @@ Copy_Data :: struct {
 #import "Windows_Utf8";
 
 Win     :: #import "Windows";
-Json    :: #import,dir "../modules/Json";
-Fog     :: #import,file "../src/game/fog_memory.jai";
-Process :: #import,file "../src/platform/windows/process.jai";
+Json    :: #import,dir "../../modules/Json";
+Fog     :: #import,file "../../src/game/fog_memory.jai";
+Process :: #import,file "../../src/platform/windows/process.jai";
 
 user32   :: #library,system "user32";
 kernel32 :: #library,system "kernel32";

@@ -3,7 +3,7 @@
 // Generated noise only; no game access, capture or image display.
 #run {
     set_build_options_dc(.{do_output=false});
-    set_working_directory(tprint("%/..",#filepath));
+    set_working_directory(tprint("%/../..",#filepath));
     check_large_jpeg();
     print("PASS: % JPEG export checks.\n",checks);
 }
@@ -84,7 +84,7 @@ check_large_jpeg :: () {
     check(map_validate_jpeg_file(output,width+1,height).count>0,"Reject mismatched JPEG dimensions.");
 }
 
-#load "../src/game/capture_plan.jai";
+#load "../../src/game/capture_plan.jai";
 #load "map_tiles.jai";
 #import "Basic";
 #import "Compiler";
