@@ -248,8 +248,8 @@ editor_jump_solution :: (position: s64) {
         console_write(*console, editor.status);
         return;
     }
+    // Jump uses the same absolute Rabbit rate as drag/wheel scrubbing.
     editor_seek(target, scrubbing = true);
-    editor.transport.scrub_rate          = 16;
     editor.transport.restart_before_seek = restart;
     console_write(*console, tprint("Jump to step % / %.", target, editor.timeline.keys.count));
     editor_set_status(tprint("Jump to step %.", target));

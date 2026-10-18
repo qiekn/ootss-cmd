@@ -623,8 +623,8 @@ check_jump_replay :: () {
             check(!App.editor_busy() && !App.editor.transport.scrubbing, "Jump to the current step sends no input or temporary speed change.");
             continue;
         }
-        check(App.editor.transport.scrub_rate == 16 && App.editor_transport_multiplier(*App.editor.transport, *App.editor.timeline) == 16,
-              "Both forward jump and restart/replay use absolute 16x timing.");
+        check(App.editor.transport.scrub_rate == 4 && App.editor_transport_multiplier(*App.editor.transport, *App.editor.timeline) == 4,
+              "Both forward jump and restart/replay use absolute Rabbit 4x timing.");
         for i: 0..300 {
             error := App.editor_transport_tick(*App.editor.transport, *App.editor.timeline, *App.editor.keymap,
                                                 cast(float64) i * 0.002, jump_emit);
