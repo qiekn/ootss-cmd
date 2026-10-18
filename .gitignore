@@ -6,11 +6,13 @@ bin/
 tests/
 
 *.exe
+*.pdb
+*.bak
+*.tmp
+
+*.local.json
+
 !/data/zork/dfrotz.exe
 /data/zork/*.[sS][aA][vV]
 /data/position_markers.json
-/data/position_markers.json.tmp
 /data/markers.json
-/data/markers.json.tmp
-/ootss-cmd.com
-*.pdb
