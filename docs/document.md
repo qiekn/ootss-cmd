@@ -101,6 +101,7 @@ map o = "show subtitles";
 | --- | --- | --- |
 | `game_path` | 空 | 包含 `sinking_star.exe` 的游戏安装目录，为空时从正在运行的游戏定位。带空格的路径用引号包围，推荐使用 `/`；相对路径以 exe 所在目录为基准 |
 | `show_startup_blow` | `true` | 是否在启动时播放 wave 动画；关闭后仍可手动 `blow` |
+| `solution_editor_minimize_on_open` | `false` | solution editor 打开时默认使用精简（最小化）视图；`edit solution` 重开同一记录时同样保持精简 |
 | `freecam_speed` | `12` | 自由摄像机速度，每秒世界单位 |
 | `freecam_sensitivity` | `0.1` | 每个鼠标计数转动的度数 |
 | `freecam_shift_multiplier` | `4` | 按住 Shift 时的速度倍率 |
@@ -448,7 +449,7 @@ close editor            # 关闭，有未保存修改时确认
 | Ctrl + 滚轮 | 调整格子宽度 |
 | Save / Ctrl + S | 打开保存确认 |
 | Reset | 重置游戏并恢复上次保存的解法，播放位置回到 0，丢弃未保存修改 |
-| `N` / Minimize / Edit | 在精简时间线和完整编辑器之间切换，保留播放位置和未保存修改 |
+| `N` / Minimize / Edit | 在精简时间线和完整编辑器之间切换，保留播放位置和未保存修改；新会话的默认视图由 `solution_editor_minimize_on_open` 决定 |
 | Exit | 关闭编辑器，有修改时先确认 |
 | Esc | 暂停播放，返回游戏输入 |
 

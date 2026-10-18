@@ -50,7 +50,8 @@ hud_config_equal :: (a: Hud_Config, b: Hud_Config) -> bool {
 }
 
 Console_Config :: struct {
-    show_startup_blow := true;
+    show_startup_blow                := true;
+    solution_editor_minimize_on_open := false; // Open new solution editor sessions in the compact view.
     hud:                       Hud_Config;
     game_path:                 string;
     subtitle_font_size:        float64 = 30;        // Font rows per game client height; smaller is larger.
@@ -254,6 +255,7 @@ console_config_assignment :: (config: *Console_Config, input: string) -> string 
     if equal_nocase(name, "freecam_shift_multiplier") return console_config_number("freecam_shift_multiplier", command, *config.freecam_shift_multiplier, 1000);
     if equal_nocase(name, "freecam_ctrl_multiplier") return console_config_number("freecam_ctrl_multiplier", command, *config.freecam_ctrl_multiplier, 1000);
     if equal_nocase(name, "show_startup_blow") return console_config_bool(name, command, *config.show_startup_blow);
+    if equal_nocase(name, "solution_editor_minimize_on_open") return console_config_bool(name, command, *config.solution_editor_minimize_on_open);
     console_alias_store(*config.aliases, name, command);
     return "";
 }

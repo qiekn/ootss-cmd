@@ -1,11 +1,17 @@
 # This file will be hot-reloaded.
 
-# Set to false to hide the startup jblow wave gif.
+# Game installation directory (contains sinking_star.exe). Use forward slashes.
+# Set to "" to detect the running game automatically (which means you need to open the game first).
+game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star";
+
+# Set to false to hide the startup jblow_wave.gif.
 show_startup_blow = false;
 
 # Smaller values make larger text.
 # e.g. 10 means 10 lines of text to full fill window height.
 subtitle_font_size = 40;
+
+# -----------------------------------------------------------------------------: HUD
 
 # HUD switches and top-to-bottom order.
 # Info rows follow file order;
@@ -16,34 +22,40 @@ hud_hide_on_focus_loss = true;
 # Top-left HUD items
 hud_show_level_name    = true;
 hud_show_position      = false;
-# hud_text               = "\nLet's complete this game firstly\nand then play it twice!";
-# hud_text               = "";                        # Blank line
-hud_text               = "\nCurrent player: @qiekn";  # Custom notes, You can modify it!
-hud_text               = "Cowabunga!\n";              # Multi-line
+hud_text               = "\nCurrent player: @qiekn";
+hud_text               = "Cowabunga!";
 
-# Free camera (freecam): movement speed in world units per second, mouse look
-# sensitivity in degrees per mouse count, and the speed multipliers applied
-# while holding Shift or Ctrl. All values must be positive.
+# -----------------------------------------------------------------------------: Free Camera
+
+# Free camera (freecam): movement speed in world units per second,
+# Mouse look sensitivity in degrees per mouse count,
+# Speed multipliers applied while holding Shift or Ctrl.
 freecam_speed = 8;
 freecam_sensitivity = 0.1;
 freecam_shift_multiplier = 4;
 freecam_ctrl_multiplier = 0.25;
 
-# Speed options for send / send_alt / play / do.
-# -fast, -superfast/-rabbit, -slow and -superslow/-turtle
-# equals to "do -speed <value>".
+# -----------------------------------------------------------------------------: Solution Editor
+
+# Speed multpliers for send / send_alt / play / do.
+# (equals to "do -speed <value>")
+#
+# -superslow/-turtle, -slow, -fast, -superfast/-rabbit,
 speed_superslow = 0.25;
 speed_slow      = 0.5;
 speed_fast      = 2;
 speed_superfast = 4;
 
-# Time stop (shorcut key: P)
-time_stop_alt_probability = 0.25; # easter egg version
-time_stop_no_audio = false;       # immediately or audio version
+# Open the solution editor minimized by default; (shortcut key: N)
+solution_editor_minimize_on_open = false;
 
-# Game installation directory (contains sinking_star.exe, not its data/ folder).
-# Use forward slashes; set to "" to locate the running game automatically.
-game_path = "E:/SteamLibrary/steamapps/common/Order of the Sinking Star";
+# -----------------------------------------------------------------------------: Pause Time
+
+# Time stop (shortcut key: P)
+time_stop_alt_probability = 0.25; # JOJO voice version
+time_stop_no_audio = false;       # if no audio, immediately pause
+
+# -----------------------------------------------------------------------------: Alias
 
 # Persistent aliases. Extra arguments are appended to the expanded command.
 
@@ -59,6 +71,7 @@ go         = "switch"; # swtich level, e.g. swtich mirror_1
 # Use alias name=command in the console for a temporary override.
 # unalias name removes that override and restores this file's definition.
 
+# -----------------------------------------------------------------------------: Keymap
 
 # Custom Keymaps
 map m = "move -z 1";

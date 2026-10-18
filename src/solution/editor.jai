@@ -73,7 +73,9 @@ editor_open_solution :: (level_name: string = "", custom_only := false) {
     if editor.open && editor.game == game &&
        editor.game_pid == game_window_pid(game) && same_record {
         overlay_hide();
-        editor_set_minimized(false);
+        // The configured default also covers reopening the same record, so
+        // `edit solution` does not un-minimize on every open.
+        if !console.config.solution_editor_minimize_on_open editor_set_minimized(false);
         editor_window_update();
         return;
     }
@@ -112,7 +114,7 @@ editor_open_solution :: (level_name: string = "", custom_only := false) {
     editor.focus_requested    = false;
     editor.focus_from_console = false;
     editor.ready_at           = 0;
-    editor_view.minimized     = false;
+    editor_view.minimized     = console.config.solution_editor_minimize_on_open;
     editor.game_speed_known   = false;
     editor_view_reset();
     if temporary editor_set_status("Temporary input. Record or edit, then Save with a custom name.");

@@ -15,6 +15,7 @@
     check_notifications();
     check_fonts();
     check_subtitle_size();
+    check_solution_editor_minimize_on_open();
     print("PASS: % config hot-reload checks.\n", checks);
 }
 
@@ -315,6 +316,25 @@ check_subtitle_size :: () {
           "Game height scales dialogue and smaller labels without applying DPI twice.");
     error = App.subtitles_view_resize(*view, 640, 200, 96, 0, App.console.config.subtitle_font_size);
     check(error.count > 0 && view.font_height == 108, "Missing game dimensions retain the loaded fonts.");
+}
+
+check_solution_editor_minimize_on_open :: () {
+    config: App.Console_Config;
+    defer App.console_config_free(*config);
+    check(!config.solution_editor_minimize_on_open, "New editor sessions default to the full view.");
+    error := App.console_config_parse(*config, "solution_editor_minimize_on_open=true;");
+    check(!error.count && config.solution_editor_minimize_on_open && !config.aliases.count,
+          "Open editor sessions minimized when configured.");
+    error = App.console_config_parse(*config, "SOLUTION_EDITOR_MINIMIZE_ON_OPEN=false;");
+    check(!error.count && !config.solution_editor_minimize_on_open && !config.aliases.count,
+          "The editor view switch is case-insensitive and uses the last definition.");
+    for value: string.["yes", "1", "minimized", ""] {
+        error = App.console_config_parse(*config, tprint("solution_editor_minimize_on_open=%;", value));
+        check(error.count > 0 && contains(error, "Line 1") && !config.solution_editor_minimize_on_open && !config.aliases.count,
+              "Invalid editor view values report their line without partially replacing config.");
+    }
+    error = App.console_config_parse(*config, "");
+    check(!error.count && !config.solution_editor_minimize_on_open, "Removing the editor view setting restores the default.");
 }
 
 check_fonts :: () {
