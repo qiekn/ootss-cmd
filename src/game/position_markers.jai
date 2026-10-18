@@ -1,6 +1,5 @@
-POSITION_MARKERS_FILE        :: "data/markers.json";
-LEGACY_POSITION_MARKERS_FILE :: "data/position_markers.json";
-POSITION_MARKER_REGISTERS    :: "abcdefghijklmnopqrstuvwxyz";
+POSITION_MARKERS_FILE     :: "data/markers.json";
+POSITION_MARKER_REGISTERS :: "abcdefghijklmnopqrstuvwxyz";
 
 Position_Marker :: struct {
     name: string;
@@ -51,22 +50,15 @@ position_markers_validate :: (markers: *Position_Markers) -> string {
     return "";
 }
 
-position_markers_load :: (markers: *Position_Markers, filename := POSITION_MARKERS_FILE,
-                          legacy_filename: string = "") -> string {
+position_markers_load :: (markers: *Position_Markers, filename := POSITION_MARKERS_FILE) -> string {
     position_markers_free(markers);
-    source := filename;
-    if !file_exists(source) {
-        legacy := legacy_filename;
-        if !legacy.count && filename == POSITION_MARKERS_FILE legacy = LEGACY_POSITION_MARKERS_FILE;
-        if !legacy.count || !file_exists(legacy) return "";
-        source = legacy;
-    }
-    success, loaded := Json.json_parse_file(source, Position_Markers_File);
+    if !file_exists(filename) return "";
+    success, loaded := Json.json_parse_file(filename, Position_Markers_File);
     defer {
         for entry: loaded.entries free(entry.name);
         array_free(loaded.entries);
     }
-    if !success return tprint("Could not parse %. The file was left unchanged.", source);
+    if !success return tprint("Could not parse %. The file was left unchanged.", filename);
     markers.next_register = loaded.next_register;
     for entry: loaded.entries {
         position: Game_Position;
@@ -78,9 +70,7 @@ position_markers_load :: (markers: *Position_Markers, filename := POSITION_MARKE
         }
         array_add(*markers.entries, .{name = copy_string(entry.name), position = position});
     }
-    error := position_markers_validate(markers);
-    if !error.count && source != filename error = position_markers_write(markers, filename);
-    return error;
+    return position_markers_validate(markers);
 }
 
 position_markers_write :: (markers: *Position_Markers, filename := POSITION_MARKERS_FILE) -> string {

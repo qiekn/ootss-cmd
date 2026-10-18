@@ -15,7 +15,7 @@ jai first.jai
 ```
 
 优化构建生成 `bin/ootss-cmd.exe`，并把 `data/`、`LICENSE` 和 `config.rc` 复制到 `bin/`。
-`fonts/` 只复制 `Meslo-LG-Mono-Nerd-Regular.ttf`；已有的 `bin/config.rc`、标记、解法和自定义脚本会保留。
+`fonts/` 只复制 `Meslo-LG-Mono-Nerd-Regular.ttf`；`bin/data/` 的 JSON 会被 `data/` 覆盖，`markers.json` 与 `.sav` 存档不复制；已有的 `bin/config.rc` 保留。
 
 ```powershell
 jai first.jai -optimized   # 可简写为 -o
@@ -318,7 +318,7 @@ move -view 1 0   # 沿屏幕右方最接近的网格方向移动一格
 
 - 省略坐标时使用 `show position` 的同一基准；显式指定名称不推进寄存器。
 - 名称不区分大小写，支持中文、字母、数字、`_`、`-`、`.`，最多 128 字节，Tab 可补全。
-- 标记保存在程序目录的 `data/markers.json`，与关卡入口文件 `data/marker.json` 分开。新文件不存在时自动迁移旧的 `data/position_markers.json`。
+- 标记保存在程序目录的 `data/markers.json`。关卡入口信息在 `data/level_catelog.json`，见[入口数据文档](level-catelog.md)。
 
 ### switch
 

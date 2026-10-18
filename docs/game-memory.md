@@ -15,7 +15,7 @@
 | `src/game/position_layout.jai` | 解析 Jai 反射元数据，验证五个 Vector3 字段并同步位置；读取场景名称 |
 | `src/game/level.jai` | 独立读取当前场景资源名，区分 Overworld 与小关，供无名称命令使用 |
 | `src/game/position_commands.jai` | 坐标、标记和 `switch` 命令；位移不发送方向键 |
-| `src/game/position_markers.jai` | 在 `data/markers.json` 保存标记和 a–z 寄存器，迁移旧文件 |
+| `src/game/position_markers.jai` | 在 `data/markers.json` 保存标记和 a–z 寄存器 |
 | `src/game/noclip.jai`、`src/platform/windows/noclip.jai` | 拦截物理 WASD 并排队移动；排除注入按键，失焦时清除待执行移动 |
 | `src/game/keymap.jai` | 读取实际键位，包括 `switch` 使用的 TakeOrDrop（默认 V） |
 | `src/platform/windows/input.jai` | 发送并释放按键，检查焦点和中断 |
@@ -349,7 +349,7 @@ jai -quiet tests/position_first.jai
 
 `.build/` 下的 Python 探查脚本（`position_probe.py`、`inspect_position_state.py`、`inspect_control_state.py`）和证据 JSON 都是调查时的临时产物，不是生产代码或测试的依赖。
 
-需要构建 GUI 时，优化构建输出到 `bin/`，避免替换仍在运行的根目录程序；打包保留安装目录已有的 `markers.json`、`position_markers.json`、`solutions.json`、`custom_inputs.json`、Zork 存档和 `config.rc`：
+需要构建 GUI 时，优化构建输出到 `bin/`，避免替换仍在运行的根目录程序；打包时用 `data/` 覆盖 `bin/data/` 的 JSON（解法、自定义输入、关卡目录、字幕），不复制 `markers.json` 和 `*.sav`（标记与 Zork 存档属于各安装），已有的 `config.rc` 保留：
 
 ```powershell
 jai -quiet first.jai -optimized -import_dir modules

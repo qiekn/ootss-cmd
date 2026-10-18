@@ -14,5 +14,4 @@ tests/
 
 !/data/zork/dfrotz.exe
 /data/zork/*.[sS][aA][vV]
-/data/position_markers.json
 /data/markers.json
