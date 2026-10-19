@@ -10,8 +10,8 @@ tests/
 *.bak
 *.tmp
 
+local.*
 *.local.json
 
 !/data/zork/dfrotz.exe
 /data/zork/*.[sS][aA][vV]
-/data/markers.json
