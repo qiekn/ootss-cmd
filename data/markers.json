@@ -1,0 +1,61 @@
+{
+  "next_register": 0,
+  "entries": [
+    {
+      "name": "start",
+      "position": [
+        80,
+        71,
+        0
+      ]
+    },
+    {
+      "name": "heroes1",
+      "position": [
+        84,
+        90,
+        0
+      ]
+    },
+    {
+      "name": "heroes2",
+      "position": [
+        83,
+        103,
+        0
+      ]
+    },
+    {
+      "name": "heroes3",
+      "position": [
+        74,
+        116,
+        0
+      ]
+    },
+    {
+      "name": "ns_collide",
+      "position": [
+        80,
+        147,
+        0
+      ]
+    },
+    {
+      "name": "promesst1",
+      "position": [
+        61,
+        70,
+        0
+      ]
+    },
+    {
+      "name": "promesst2",
+      "position": [
+        44,
+        70,
+        0
+      ]
+    }
+  ]
+}
