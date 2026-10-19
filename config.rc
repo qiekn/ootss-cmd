@@ -17,7 +17,7 @@ subtitle_font_size = 40;
 # Info rows follow file order;
 hud_enabled            = true;
 hud_show_notifications = true;
-hud_hide_on_focus_loss = false;
+hud_hide_on_focus_loss = true;
 
 # Top-left HUD items
 hud_show_level_name    = true;
@@ -53,7 +53,7 @@ solution_editor_minimize_on_open = false;
 
 # Time stop (shortcut key: P)
 time_stop_alt_probability = 0.25; # JOJO voice version
-time_stop_no_audio = false;       # if no audio, immediately pause
+time_stop_no_audio = true;        # if no audio, immediately pause
 
 # -----------------------------------------------------------------------------: Alias
 
