@@ -1582,7 +1582,7 @@
   {
     "name": "magic_rover",
     "note": "",
-    "solution": "LUUURUDDDLLLLL_1.6_UUURRRRRRRRRRRUXRRRLLLX_0.8_LDDDUUUL_0.8_LR_0.8_LLXLUDRRRRRRR_1.6_DXRRRRRRXR"
+    "solution": ""
   },
   {
     "name": "magic_shield",
@@ -2092,7 +2092,7 @@
   {
     "name": "remote_work",
     "note": "",
-    "solution": "RRDRXLXRULLLRRRRXDLLLLLDLURRDDDUURRDDLLLLDXDXUUUULU"
+    "solution": "!RRDR_1.5_XL_3.75_XRULLLRRRR_0.25_XDLLLLLDLURRDDDRRRUU_4_DDLLLLLDXD_3_XUUUUL"
   },
   {
     "name": "removal_v2",
@@ -2788,5 +2788,10 @@
     "name": "carry_simplified",
     "note": "",
     "solution": "LLCURULLCLLCLLLLUCLLLLULDDDD"
+  },
+  {
+    "name": "worlds_collide_alt",
+    "note": "",
+    "solution": "UUUXDLLDDXDDLDCUXLCDRULUURUXRUURUXRRXLUUURRRDCUUUUXRRRRDDDLLDLLLLLDVURRRRRRUULULLDVURRDRDDLLLLLLDVURRRUDLDDCRDRRDRRLUUURURRRUURU"
   }
 ]
