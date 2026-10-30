@@ -607,7 +607,7 @@
   {
     "name": "arcadia_surprise_big2",
     "note": "",
-    "solution": "UURURRRDDLDLLURURRDLULULLDRURDULDRURDRDLLULDULDURURRRR"
+    "solution": "UURRRRDLDLLULURRURDRDLULLDURDRRUUR"
   },
   {
     "name": "arcadiav2_big",
@@ -742,7 +742,7 @@
   {
     "name": "button_clone_journey",
     "note": "",
-    "solution": "LLDLLURDRRUULDLLDLULURDDRXURRDLDDRRULLULDURRXRULDRDURRDRULDXLLLLUUUXRRDDRULULDRDLLLLDLLLUURDLDDRRURULLUUUDDLLLDDRRRRRLULLUURURRRDDLDLLLRRXURRRRDRRRU"
+    "solution": "DLLLLLUXURDDRDLURRLUUULDRDRRRDDDLLUUXRRXDLLLLLDLULDLUXLURRLUXDRXDRRULLLULDRRRRURDRDLRRRRU"
   },
   {
     "name": "bypass_gates",
@@ -2803,5 +2803,10 @@
     "name": "3d_intro_heroes",
     "note": "",
     "solution": "LRRDLDDLLULDRDRRRRDCRDRRCRUCRRUURDLLULLDCRURRRCDRRLURRRDCDRRDCRRD"
+  },
+  {
+    "name": "arcadia_surprise_big",
+    "note": "",
+    "solution": "RDLULLRRDDLUURDDUUURDLDRULUULLDDDDRURRDLUURRRDRUUUU"
   }
 ]
