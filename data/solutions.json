@@ -1077,17 +1077,17 @@
   {
     "name": "falloff_4",
     "note": "",
-    "solution": "3 LLLLLLLDDLDRUUUUURRRRRRRRRRRDDLDRRLUURRRRDDUR"
+    "solution": "LLLLLLLDDLDRUUUUURRRRRRRRRRRDDLDRRLUURRRR_1.5_DDU_0.85_R"
   },
   {
     "name": "falloff_intro",
     "note": "",
-    "solution": "3 LLDDURRRRRRDDDDLLURRRURDLURRDRDRDLLUUDL"
+    "solution": "LLDD_0.75_URRRRRRDDDDLLURRRURDLURRDRDRDLLUUDL"
   },
   {
     "name": "falloff_kill_goblins_v6",
     "note": "",
-    "solution": "3 ULLUUUUULLUVLDDRRDDULLDLDDLDLDUUUVLLDDDDDUURUUUUUVLLDDDDRLLLUUULLUVLLLL"
+    "solution": "ULLUUUUULLUV_0.5_LDDRRDDULLDLDDDDLLUUU_1.5_V_1_LLDDDDDUURUUUUU_1.5_V_1_LLDDD_1_D_0.5_RLLLUUULLU_1.5_V_1_LLLL"
   },
   {
     "name": "far_cl_no_walls_pit",
@@ -1602,7 +1602,7 @@
   {
     "name": "magicians_assistant_v2",
     "note": "",
-    "solution": "2 LLLURRDLDRURDLLUURULDDLRRRDLLLLUUDRURULLDDDRURDRRRRRUUDDLUUUUULLURRLLLLLLDRRURRRRDDDRRUULULDDDDDDLLLDD 3 RDLULDRULUUUL"
+    "solution": "LLLURRDLDRURDLLUURULDDLRRRDLLLLUUDRURULLDDDRURDRRRRRUUDDLUUUUULLURRLLLLLLDRRURRRRDDDRRUULULDDDDDDLLLDDCRDLULDRULUUUL"
   },
   {
     "name": "make_a_right",
@@ -1747,7 +1747,7 @@
   {
     "name": "mountain_music",
     "note": "",
-    "solution": "5 UULLRRRRRRRDDRRRDDDDDRRRRRD"
+    "solution": "UULLRRRRRRRDDRRRDDDDDRRRRRD"
   },
   {
     "name": "movable_button",
@@ -1787,7 +1787,7 @@
   {
     "name": "musical_staircase_v2",
     "note": "",
-    "solution": "5 LLLLLLLDDDDDDDDRRRDDDRRRRUURRRLDDDDDLLLDDDLUUULLLDLLLLDDDLLLLLDDDDD"
+    "solution": "LLLLLLLDDDDDDDDRRRDDDRRRRUURRRLDDDDDLLLDDDLUUULLLDLLLLDDDLLLLLDDDDD"
   },
   {
     "name": "my_first_stack",
@@ -1872,7 +1872,7 @@
   {
     "name": "out_of_range_v4",
     "note": "",
-    "solution": "5 RDDDDDLLUULLULLLLLLUDUDUDLDRRUDRUULDLDRRRRDRRRRLLLDDUUUUDRRU"
+    "solution": "RDDDDDLLUULLULLLLLLU_0.25_D_0.25_U_0.25_D_0.25_U_0.25_D_0.25_LDRRUDRUULD_1_LD_0.25_RRRRDRRRRLLLDDUUUUDRRU"
   },
   {
     "name": "overwrite",
@@ -2337,7 +2337,7 @@
   {
     "name": "sticky",
     "note": "",
-    "solution": "5 RUUURRRRRUUULDLLLLDDDDDLLLLUDRRRRUUUUURRDDRDLL"
+    "solution": "RUUURRRRRUUULDLLLLDDDDDLLLLUDRRRRUUUUURRRDDDLL"
   },
   {
     "name": "stone_rescue_v3",
@@ -2492,7 +2492,7 @@
   {
     "name": "tippy_intro",
     "note": "",
-    "solution": "5 RRUUDRRURDLLRRRRRRRRRRULLDRRRRRRRRUDLURLDDRRRRRRUUURRDDDRR"
+    "solution": "RRUUDRRURDLLRRRRRRRRRRULLDRRRRRRRRUDLURLDDRRRRRRUUURRDDDRR"
   },
   {
     "name": "tippy_towers_1",
