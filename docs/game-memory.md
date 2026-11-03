@@ -4,6 +4,37 @@
 文中的 RVA、字段偏移、实体 ID 和坐标都是特定 Demo 或正式版构建的观测值，只作为版本证据。
 生产代码只依赖运行时校验通过的代码特征和游戏自带的 Jai 反射元数据，不保证任何偏移在新版本继续有效。
 
+## r67612 camera compatibility (2026-11-03)
+
+The installed Steam build 26249670 reports game revision r67612, built on
+2026-10-27. Its executable SHA-256 is
+`d802098b7cb85eadfc733b88d1554042fad950c572e916febea3f669a474a549`.
+
+The native camera update now holds the manager in R12 instead of R13. The
+additional SIB bytes change the gate to 34 bytes, the normal branch prefix to
+20 bytes, the camera-list load to 12 bytes, and the final write window to 37
+bytes. The list element load also uses R15 as its index. Decode the updated
+branch displacements and field operands at their new instruction positions;
+do not remove the cross-checks or merely relax the signature.
+
+Static evidence for this build: gate RVA `0x269E11`, normal branch `0x26A35B`,
+frozen branch `0x26A5C7`, list load `0x26A3A1`, final writes `0x26A5B4`, render
+arguments `0x26C7B6`, active-scene reference `0x8F914`, and camera-mode slot
+`0xB69810`. Independently decoded manager fields still agree at position
+`0x3D98`, orientation `0x3DB0`, projection `0x3DC0`, and camera list `0x538`.
+These RVAs document the investigation; runtime access still checks signatures,
+field relationships, writable sections, and all retained evidence bytes.
+
+Validation: an equivalent local repair to the v0.6 executable passed 222
+isolated native checks against a private mapped copy of this game executable,
+including invalidation of all 209 retained evidence bytes and rejection of
+contradictory fields, duplicate gates, and truncated code. The user subsequently
+confirmed freecam works in game with that repaired executable. These checks
+tested the repaired machine code and original runtime validators; the Jai source
+update and existing Jai regression scripts have not been compiled or run because
+the compiler was unavailable. A Jai build and source-level regression run remain
+required before release. Camera restoration was not separately verified.
+
 ## 实现入口
 
 | 文件 | 作用 |
