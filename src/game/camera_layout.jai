@@ -75,13 +75,13 @@ game_camera_code_current :: (memory: Process_Memory, layout: Game_Camera_Layout)
 }
 
 // The camera update's mode branch and pose fields are decoded from the native
-// instructions of the newest supported build (2026-10-17); older layouts are
+// instructions of the newest supported build (r67612, 2026-10-27); older layouts are
 // intentionally not kept. The evidence is cross-checked against the camera
 // list, the frozen write window, the render arguments and the active scene
 // reference, and the complete bytes are retained for session checks.
 game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, error: string) {
     layout: Game_Camera_Layout;
-    layout.profile = "retail-r13-2026-10-17b";
+    layout.profile = "retail-r67612-2026-10-27";
     unsupported :: "This game version's free-camera layout could not be verified.";
     slot, manager_error := game_entity_manager_slot(memory, *layout.manager);
     if manager_error.count return layout, manager_error;
@@ -93,7 +93,7 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
     // Native mode 0 follows the level, 1 reads the game's debug-camera input.
     // A nonzero mode other than 1 skips both pose writers (we use 2).
     gate := game_camera_find_code(code, s16.[
-        0x49,0x8d,0xad,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
+        0x49,0x8d,0xac,0x24,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
         0x48,0x85,0xc0, 0x0f,0x84,-1,-1,-1,-1,0x48,0x83,0xf8,1, 0x0f,0x85,-1,-1,-1,-1]);
     render := game_camera_find_code(code, s16.[
         0x4c,0x8d,0x80,-1,-1,-1,-1, 0xf3,0x0f,0x10,0x88,-1,-1,-1,-1,
@@ -102,27 +102,27 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
         0x4c,0x8b,0x2d,-1,-1,-1,-1, 0x49,0x8d,0x95,-1,-1,-1,-1,
         0x4d,0x8d,0x85,-1,-1,-1,-1, 0x31,0xc9,0xe8,-1,-1,-1,-1]);
     if gate < 0 || render < 47 || link < 0 return layout, unsupported;
-    normal   := gate + 23 + cast(s64)(cast(*s32)(code.data + gate + 19)).*;
-    frozen   := gate + 33 + cast(s64)(cast(*s32)(code.data + gate + 29)).*;
-    list_at  := normal + 69;
-    write_at := frozen - 17;
+    normal   := gate + 24 + cast(s64)(cast(*s32)(code.data + gate + 20)).*;
+    frozen   := gate + 34 + cast(s64)(cast(*s32)(code.data + gate + 30)).*;
+    list_at  := normal + 70;
+    write_at := frozen - 19;
     if !game_camera_code_matches(code, normal, s16.[
-           0x4c,0x89,0x74,0x24,-1, 0x49,0x83,0xbd,-1,-1,-1,-1,0, 0x0f,0x8e,-1,-1,-1,-1]) ||
+           0x4c,0x89,0x74,0x24,-1, 0x49,0x83,0xbc,0x24,-1,-1,-1,-1,0, 0x0f,0x8e,-1,-1,-1,-1]) ||
        !game_camera_code_matches(code, normal - 23, s16.[
            0x50,0xc3,0xa8,0x01,0x0f,0x85,-1,-1,-1,-1,0xf3,0x0f,0x10,0x1d,-1,-1,-1,-1,0xe9,-1,-1,-1,-1]) ||
-       !game_camera_code_matches(code, list_at, s16.[0x49,0x8b,0x85,-1,-1,-1,-1, 0x4c,0x8b,0x34,0xd8]) ||
+       !game_camera_code_matches(code, list_at, s16.[0x49,0x8b,0x84,0x24,-1,-1,-1,-1, 0x4a,0x8b,0x1c,0xf8]) ||
        !game_camera_code_matches(code, write_at, s16.[
-           0x41,0x0f,0x13,0x85,-1,-1,-1,-1, 0xf3,0x41,0x0f,0x11,0x95,-1,-1,-1,-1,
-           0x49,0x8b,0x45,0x00, 0x48,0x83,0xc0,0xfb, 0x48,0x83,0xf8,0x14, 0x0f,0x87,-1,-1,-1,-1]) ||
+           0x41,0x0f,0x13,0x84,0x24,-1,-1,-1,-1, 0xf3,0x41,0x0f,0x11,0x94,0x24,-1,-1,-1,-1,
+           0x49,0x8b,0x04,0x24, 0x48,0x83,0xc0,0xfb, 0x48,0x83,0xf8,0x14, 0x0f,0x87,-1,-1,-1,-1]) ||
        !game_camera_code_matches(code, render - 47, s16.[
            0x48,0x8d,0x90,-1,-1,-1,-1, 0x0f,0xb6,0x0d,-1,-1,-1,-1, 0xc0,0xe9,4, 0x80,0xe1,1,
            0x4c,0x8b,0x05,-1,-1,-1,-1, 0xf2,0x41,0x0f,0x10,0x40,0x38,0x0f,0x5b,0xc0,
            0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1]) return layout, unsupported;
-    layout.position    = (cast(*u32)(code.data + gate + 3)).*;
+    layout.position    = (cast(*u32)(code.data + gate + 4)).*;
     layout.orientation = (cast(*u32)(code.data + render + 3)).*;
     layout.projection  = (cast(*u32)(code.data + render + 11)).*;
-    layout.cameras     = (cast(*u32)(code.data + normal + 8)).*;
-    mode := cast(s64) base + gate + 14 + (cast(*s32)(code.data + gate + 10)).*;
+    layout.cameras     = (cast(*u32)(code.data + normal + 9)).*;
+    mode := cast(s64) base + gate + 15 + (cast(*s32)(code.data + gate + 11)).*;
     if mode <= 0 return layout, unsupported;
     layout.mode = cast(u64) mode;
     // Cross-check the camera list, the frozen branch's destination, the render
@@ -130,9 +130,9 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
     if layout.position < 0x380 || layout.position > 0x100000 ||
        layout.orientation != layout.position + 24 || layout.projection != layout.orientation + 16 ||
        layout.cameras < 0x380 || layout.cameras + 16 > layout.position ||
-       (cast(*u32)(code.data + normal + 59)).* != layout.cameras ||
-       (cast(*u32)(code.data + list_at + 3)).* != layout.cameras + 8 ||
-       (cast(*u32)(code.data + write_at + 4)).* != layout.position ||
+       (cast(*u32)(code.data + normal + 60)).* != layout.cameras ||
+       (cast(*u32)(code.data + list_at + 4)).* != layout.cameras + 8 ||
+       (cast(*u32)(code.data + write_at + 5)).* != layout.position ||
        (cast(*u32)(code.data + frozen - 4)).* != layout.position + 8 ||
        (cast(*u32)(code.data + render - 44)).* != layout.position ||
        (cast(*u32)(code.data + render + 19)).* != layout.projection + 4 ||
@@ -141,10 +141,10 @@ game_camera_layout :: (memory: Process_Memory) -> (layout: Game_Camera_Layout, e
        (cast(*u32)(code.data + link + 10)).* != layout.position ||
        (cast(*u32)(code.data + link + 17)).* != layout.orientation ||
        !process_module_contains(memory.module, layout.mode, 8) || layout.mode == slot return layout, unsupported;
-    if !game_camera_save_code(*layout.code[0], code, base, gate, 33) ||
-       !game_camera_save_code(*layout.code[1], code, base, normal, 19) ||
-       !game_camera_save_code(*layout.code[2], code, base, list_at, 11) ||
-       !game_camera_save_code(*layout.code[3], code, base, write_at, 35) ||
+    if !game_camera_save_code(*layout.code[0], code, base, gate, 34) ||
+       !game_camera_save_code(*layout.code[1], code, base, normal, 20) ||
+       !game_camera_save_code(*layout.code[2], code, base, list_at, 12) ||
+       !game_camera_save_code(*layout.code[3], code, base, write_at, 37) ||
        !game_camera_save_code(*layout.code[4], code, base, render - 47, 78) ||
        !game_camera_save_code(*layout.code[5], code, base, link, 28) ||
        !game_camera_code_current(memory, layout) return layout, unsupported;
