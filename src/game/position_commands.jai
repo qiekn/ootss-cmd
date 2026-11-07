@@ -329,14 +329,12 @@ console_change_game_position :: (state: *Console_State, requested: Game_Position
     changed:        bool;
     locator:        *Game_Manager_Locator;
     switch_locator: Game_Manager_Locator;
-    camera_layout:  *Game_Camera_Layout;
     if from_game locator = *noclip.locator;
     else if take_after locator = *switch_locator;
-    if from_game camera_layout = *noclip.camera_layout;
     error, changed = game_write_position_to(memory, requested, relative, instant = true,
                                              written_position = *destination, written_player = *player,
                                              required_scene   = ifx take_after then "overworld" else "", locator = locator,
-                                             view_relative    = view_relative, camera_layout = camera_layout);
+                                             view_relative    = view_relative, noclip_view = from_game && view_relative);
     if changed editor_on_game_position_changed();
     if error.count { console_write(state, error, .ERROR); return false; }
     if !already_in_game && !take_after {

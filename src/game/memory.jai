@@ -43,7 +43,8 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
                           written_position: *Game_Position = null, written_player: *Game_Player_Location = null,
                           expected_player:  *Game_Player_Location = null, expected_position: *Game_Position = null,
                           instant       := false, required_scene: string = "", locator: *Game_Manager_Locator = null,
-                          view_relative := false, camera_layout: *Game_Camera_Layout = null)
+                          view_relative := false, camera_layout: *Game_Camera_Layout = null,
+                          noclip_view := false)
                           -> (error: string, changed: bool) {
     if !game_position_valid(requested) return "Coordinates must be finite numbers between -1000000 and 1000000.", false;
     if view_relative && !relative return "View-relative movement requires a relative offset.", false;
@@ -66,17 +67,24 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
     }
     view:        Game_Camera_Snapshot;
     view_layout: Game_Camera_Layout;
+    grid_view:   Game_Grid_View;
     movement := requested;
     if view_relative {
-        if camera_layout && game_camera_code_current(memory, camera_layout.*) view_layout = camera_layout.*;
-        else {
-            view_layout, error = game_camera_layout(memory);
+        if noclip_view {
+            grid_view, error = game_grid_view_read(memory);
             if error.count return error, false;
-            if camera_layout camera_layout.* = view_layout;
+            movement, error = game_camera_ground_move(grid_view.orientation, requested, grid = true);
+        } else {
+            if camera_layout && game_camera_code_current(memory, camera_layout.*) view_layout = camera_layout.*;
+            else {
+                view_layout, error = game_camera_layout(memory);
+                if error.count return error, false;
+                if camera_layout camera_layout.* = view_layout;
+            }
+            view, error = game_camera_snapshot(memory, view_layout);
+            if error.count return error, false;
+            movement, error = game_camera_ground_move(view.orientation, requested, grid = true);
         }
-        view, error = game_camera_snapshot(memory, view_layout);
-        if error.count return error, false;
-        movement, error = game_camera_ground_move(view.orientation, requested, grid = true);
         if error.count return error, false;
     }
     reader: Game_Position_Reader;
@@ -94,7 +102,8 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         }
     }
     if required_scene.count && sample.player.manager != scene.manager return "The scene changed before teleport. Nothing was written.", false;
-    if view_relative && (sample.player.manager != view.scene.manager || sample.player.slot != view.scene.locator.slot) {
+    view_scene := ifx noclip_view then grid_view.scene else view.scene;
+    if view_relative && (sample.player.manager != view_scene.manager || sample.player.slot != view_scene.locator.slot) {
         return "The camera and player belong to different scenes. Nothing was written.", false;
     }
     // Freeze the whole selected set before writing. Absolute placement translates
@@ -135,12 +144,16 @@ game_write_position_to :: (memory: Process_Memory, requested: Game_Position, rel
         }
         target_index += 1;
     }
-    if view_relative && !game_camera_grid_view_current(memory, view_layout, view, requested, movement) {
+    if view_relative && !(ifx noclip_view then game_grid_view_current(memory, grid_view, requested, movement)
+                                       else game_camera_grid_view_current(memory, view_layout, view, requested, movement)) {
         return "The camera direction changed before movement. Nothing was written; try again.", false;
     }
-    checked_scene := ifx required_scene.count then *scene else ifx view_relative then *view.scene else null;
+    checked_scene := ifx required_scene.count then *scene else ifx view_relative then *view_scene else null;
     checked_name  := scene_name;
-    if view_relative && !required_scene.count checked_name = .{data = view.name.data, count = cast(s64) view.scene.name.count};
+    if view_relative && !required_scene.count {
+        checked_name = ifx noclip_view then .{data = grid_view.name.data, count = cast(s64) grid_view.scene.name.count}
+                                      else .{data = view.name.data, count = cast(s64) view.scene.name.count};
+    }
     changed: bool;
     error, changed = game_commit_positions(*reader, sample, targets, instant,
                                            checked_scene, checked_name);

@@ -5,7 +5,6 @@ Noclip_State :: struct {
     game:                     Win.HWND;
     pid:                      u32;
     locator:                  Game_Manager_Locator;
-    camera_layout:            Game_Camera_Layout;
     down, consumed, repeat:   [4] bool;
     last_direction:           s64;
     queue:                    [64] u8;
@@ -120,7 +119,6 @@ noclip_update :: (state: *Console_State, now: float64) {
         noclip.game          = game;
         noclip.pid           = pid;
         noclip.locator       = .{};
-        noclip.camera_layout = .{};
     }
     if !game || !pid || Win.GetForegroundWindow() != game || overlay.quit_requested || editor_save_prompt.active ||
        state.pending_position_change || state.pending_send.count || process_console_should_exit() {

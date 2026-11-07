@@ -31,6 +31,77 @@ Game_Camera_Snapshot :: struct {
     mode:        s64;
 }
 
+// Grid movement needs the active scene's orientation, but not the native
+// freecam mode gate. The October 30 build changed that gate while retaining
+// the independent scene-link and render references to the camera fields.
+Game_Grid_View :: struct {
+    scene:       Game_Scene_Location;
+    name:        [128] u8;
+    orientation: [4] float;
+    offset:      u64;
+    code:        [2] Game_Camera_Code;
+}
+
+game_grid_view_read :: (memory: Process_Memory) -> (view: Game_Grid_View, error: string) {
+    view: Game_Grid_View;
+    invalid :: "This game version's grid camera orientation could not be verified.";
+    slot, error := game_entity_manager_slot(memory, *view.scene.locator);
+    if error.count return view, error;
+    code, rva, code_error := process_read_module_code(memory);
+    if code_error.count return view, code_error;
+    defer free(code.data);
+    link := game_camera_find_code(code, s16.[
+        0x4c,0x8b,0x2d,-1,-1,-1,-1, 0x49,0x8d,0x95,-1,-1,-1,-1,
+        0x4d,0x8d,0x85,-1,-1,-1,-1, 0x31,0xc9,0xe8,-1,-1,-1,-1]);
+    render := game_camera_find_code(code, s16.[
+        0x4c,0x8d,0x80,-1,-1,-1,-1, 0xf3,0x0f,0x10,0x88,-1,-1,-1,-1,
+        0xf3,0x0f,0x10,0x98,-1,-1,-1,-1, 0xf3,0x0f,0x10,0x90,-1,-1,-1,-1]);
+    if link < 0 || render < 0 return view, invalid;
+    position    := (cast(*u32)(code.data + link + 10)).*;
+    orientation := (cast(*u32)(code.data + link + 17)).*;
+    if position < 0x380 || position > 0x100000 || orientation != position + 24 ||
+       orientation != (cast(*u32)(code.data + render + 3)).* ||
+       orientation + 16 > 0x100000 ||
+       cast(s64)(memory.module.base + rva) + link + 7 + (cast(*s32)(code.data + link + 3)).* != cast(s64) slot ||
+       !game_camera_save_code(*view.code[0], code, memory.module.base + rva, link, 28) ||
+       !game_camera_save_code(*view.code[1], code, memory.module.base + rva, render, 31) return view, invalid;
+    view.offset = orientation;
+    name, scene_error := game_read_scene_from(memory, *view.scene.locator, *view.scene);
+    defer free(name);
+    if scene_error.count return view, scene_error;
+    if !equal_nocase(name, "overworld") && !game_scene_is_level(name) return view, "Enter the overworld or a level before using noclip.";
+    for c: name view.name[it_index] = c;
+    if !process_memory_range_valid(view.scene.manager, view.offset + 16) ||
+       !process_read_memory(memory.handle, view.scene.manager + view.offset, *view.orientation, 16) ||
+       !game_camera_orientation_valid(view.orientation) ||
+       !game_grid_view_code_current(memory, view) ||
+       !game_scene_location_current(memory, view.scene, name) return view, invalid;
+    return view, "";
+}
+
+game_grid_view_code_current :: (memory: Process_Memory, view: Game_Grid_View) -> bool {
+    for check: view.code {
+        current: [96] u8;
+        if check.count <= 0 || check.count > current.count ||
+           !process_module_contains(memory.module, check.address, cast(u64) check.count) ||
+           !process_read_memory(memory.handle, check.address, *current, cast(u64) check.count) return false;
+        for i: 0..check.count-1 if current[i] != check.bytes[i] return false;
+    }
+    return true;
+}
+
+game_grid_view_current :: (memory: Process_Memory, view: Game_Grid_View,
+                           requested: Game_Position, movement: Game_Position) -> bool {
+    name: string = .{data = view.name.data, count = cast(s64) view.scene.name.count};
+    if !game_grid_view_code_current(memory, view) || !game_scene_location_current(memory, view.scene, name) return false;
+    orientation: [4] float;
+    if !process_read_memory(memory.handle, view.scene.manager + view.offset, *orientation, 16) return false;
+    current, error := game_camera_ground_move(orientation, requested, grid = true);
+    if error.count return false;
+    for value: current if value != movement[it_index] return false;
+    return game_grid_view_code_current(memory, view) && game_scene_location_current(memory, view.scene, name);
+}
+
 game_camera_code_matches :: (code: [] u8, offset: s64, pattern: [] s16) -> bool {
     if offset < 0 || pattern.count > code.count || offset > code.count - pattern.count return false;
     for byte: pattern if byte >= 0 && code[offset + it_index] != byte return false;
