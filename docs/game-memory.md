@@ -355,7 +355,7 @@ jai -quiet tests/position_first.jai
 jai -quiet first.jai -optimized -import_dir modules
 ```
 
-## 俯视相机与拍摄接口
+## 自由摄像机与时间控制
 
 ### 时间倍率与 Q 视图（2026-10-10）
 
@@ -363,31 +363,30 @@ jai -quiet first.jai -optimized -import_dir modules
 
 `speed_memory.jai` 从连续的两次 `mulsd`、转换 float32、写 dt、累加并写回时钟的完整指令链解码地址，再核对另一处将两个 double 初始化为 `[1, 1]` 的指令。新版本在 float32 转换和 dt 写入之间增加了 30 字节暂停分支，因此同时识别旧的 48 字节链和新的 78 字节链，保留完整分支证据；任一模式内或跨模式存在多个匹配都拒绝。`scripts/inspect_speed_code.jai` 可只读导出 `.text` 辅助复核。地址必须位于可写且不可执行的模块数据段。后续读写核对保存的完整代码证据，只写基础倍率的 8 字节；原生快慢键逻辑保持有效。原生倍率每帧切换为 0.25 / 1 / 4，基础倍率在已检查的路径没有额外 clamp；公开 `speed` 命令仍限制为 0–4，内部临时控制允许最高 16×。
 
-查询只申请读权限。修改会话保存原值和自己最后写入的值；正常清理恢复原值，外部已改变倍率时不覆盖对方的值。代码变动或读写失败时保留恢复状态并报错。拍摄另持有独立会话，暂停、取消、完成、正常退出时释放，既有 `speed 1.25` 等设置可精确恢复。未在本次开发中写入真实游戏时间或执行截图；隔离内存的恢复路径已测试，游戏内效果由用户手动验收。
+查询只申请读权限。修改会话保存原值和自己最后写入的值；正常清理恢复原值，外部已改变倍率时不覆盖对方的值。代码变动或读写失败时保留恢复状态并报错。未在本次开发中写入真实游戏时间或执行截图；隔离内存的恢复路径已测试，游戏内效果由用户手动验收。
 
 编辑器也持有独立的临时倍率会话：播放档位乘以原基础倍率，正向拖动/滚轮和 `jump` 使用绝对 Rabbit 4×。`jump` 的目标在当前位置之前时，先发重置键再从头重放；反向拖动仍使用原撤销计时。暂停、完成、失焦、拖动松开或滚轮停止时恢复原值。右上角在播放/拖动/跳转期间显示最近一次验证的实际游戏倍率，停止后恢复所选档位。独立发送和普通编辑器播放通过只读会话采样基础倍率，使用累积的基准时间驱动按键和等待；倍率变化保留已走过的等待进度。无法验证倍率或基础倍率为零时停止正向播放并释放按键。
 
-用户手动按 Q 后只读采样：位置约 `[79.968,68.990,80]`、四元数 `[-0.5,0.5,0.5,0.5]`、FOV/near/far `[0.478175,8,200]`、native mode `0`。`Camera_Control.orthoness` 位于 `0x378`，当前实体均为 0；`fov_expansion` 位于 `0x37c`，均为 1。原生非零 orthoness 路径会平移相机并缩窄 FOV（当前函数 RVA `0x2c1d20`），不适合在固定高度 80 直接替代为正交投影。默认拍摄复用用户预先打开的 Q 视图，校验原始朝向与高度，保留 FOV，首张精确设置为 `(80,69,80)`，继续使用透视中心裁切。
+用户手动按 Q 后只读采样：位置约 `[79.968,68.990,80]`、四元数 `[-0.5,0.5,0.5,0.5]`、FOV/near/far `[0.478175,8,200]`、native mode `0`。`Camera_Control.orthoness` 位于 `0x378`，当前实体均为 0；`fov_expansion` 位于 `0x37c`，均为 1。原生非零 orthoness 路径会平移相机并缩窄 FOV（当前函数 RVA `0x2c1d20`），不适合在固定高度 80 直接替代为正交投影。
 
 ```powershell
 jai -quiet scripts/inspect_speed.jai -import_dir ../modules
 jai -quiet scripts/check_speed.jai -import_dir ../modules
-jai -quiet scripts/capture_overworld_map/check_centered_capture.jai -import_dir ../../modules
 ```
 
-第一个命令只读真实进程；后两个只操作隔离内存和生成的 PNG，验证时间控制、快捷键、自定义倍率、恢复失败、中心环序和两种拼图路径。`scripts/inspect_render_controls.jai` 是只读调查工具，可输出 Q 视图及反射字段。
+第一个命令只读真实进程；第二个只操作隔离内存，验证时间控制、快捷键、自定义倍率和恢复失败。`scripts/inspect_render_controls.jai` 是只读调查工具，可输出 Q 视图及反射字段。
 
 `show camera` 使用已验证的 camera layout 只读查询。`set camera` 在既有 freecam 会话内直接写入绝对 float32 XYZ，保留小数；没有通过 delta 相减再相加来换算绝对位置。
 
-`lock` 保留已验证的冻结相机会话，清除待移动状态、释放鼠标捕获并停止消费新的移动键；已消费按键的 keyup 仍按原状态处理。`unlock` 恢复原 freecam 模式的控制。两条命令在提交和执行时均要求 freecam 已开启，不能隐式创建相机会话。锁定期间继续检查原场景、相机实体和姿态，失焦或身份变化时沿既有清理流程恢复跟随。快速输入提交导致的短暂焦点过渡（控制台隐藏、游戏窗口尚在激活）不再立即结束会话：存在待处理的快速提交时，会话保持到其激活期限；其余短暂失焦允许 0.5 秒宽限，超过后才沿既有清理流程停止。`freecam -topdown` 使用同一进程、同一场景的受控组锚点，将相机 X/Y 置于其上方，保留高度并保证至少 10 个世界单位的间距；水平朝向沿用进入时的视角并吸附到最近的 90°，pan 与 topdown 的 WASD 平移按屏幕方向换算为最近的网格轴（Q/E 仍沿世界 Z）；拍摄会话使用固定的北朝上姿态并跳过角色居中。
+`lock` 保留已验证的冻结相机会话，清除待移动状态、释放鼠标捕获并停止消费新的移动键；已消费按键的 keyup 仍按原状态处理。`unlock` 恢复原 freecam 模式的控制。两条命令在提交和执行时均要求 freecam 已开启，不能隐式创建相机会话。锁定期间继续检查原场景、相机实体和姿态，失焦或身份变化时沿既有清理流程恢复跟随。快速输入提交导致的短暂焦点过渡（控制台隐藏、游戏窗口尚在激活）不再立即结束会话：存在待处理的快速提交时，会话保持到其激活期限；其余短暂失焦允许 0.5 秒宽限，超过后才沿既有清理流程停止。`freecam -topdown` 使用同一进程、同一场景的受控组锚点，将相机 X/Y 置于其上方，保留高度并保证至少 10 个世界单位的间距；水平朝向沿用进入时的视角并吸附到最近的 90°，pan 与 topdown 的 WASD 平移按屏幕方向换算为最近的网格轴（Q/E 仍沿世界 Z）。
 
-noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面坐标轴，选取最近的一对正交网格轴，保持整数步长及受控组间距。写入前复核相机代码、实体身份、方向和玩家所属场景；期间场景检查沿用整组写入的逐字段验证。无法读取相机时拒绝视角相对移动，显式世界坐标命令保持独立。相机角度恰在两条网格轴之间时优先选择 X 为右轴，不宣称复现游戏内部所有转向阈值。`scripts/check_camera_controls.jai`、`scripts/capture_overworld_map/check_camera_capture.jai` 和 `scripts/check_position_switch.jai` 使用隔离状态及合成内存验证这些行为。
+noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面坐标轴，选取最近的一对正交网格轴，保持整数步长及受控组间距。写入前复核相机代码、实体身份、方向和玩家所属场景；期间场景检查沿用整组写入的逐字段验证。无法读取相机时拒绝视角相对移动，显式世界坐标命令保持独立。相机角度恰在两条网格轴之间时优先选择 X 为右轴，不宣称复现游戏内部所有转向阈值。`scripts/check_camera_controls.jai`、`scripts/check_camera.jai` 和 `scripts/check_position_switch.jai` 使用隔离状态及合成内存验证这些行为。
 
-`-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型；拍摄比例使用已验证的垂直 FOV。
+`-topdown` 使用四元数 `[-0.5, 0.5, 0.5, 0.5]`，将相机局部 +X 映射到世界 -Z、屏幕右侧映射到 +X、屏幕上方映射到 +Y。该姿态在原生相机冻结并稳定后应用，退出仍恢复原视图。它不改变投影类型。
 
 2026-10-16 游戏更新（正式版 SHA-256 `0B78355D928DED4F3703F6FF454F8D75AD69A45212F9765709E84418CC79D2C9`）把跟随分支的列表装载前移了 10 字节、更换了分支前的序言指令，并移除了原先是证据的 mode / position 引用。`camera_layout.jai` 新增 `retail-r15-2026-10` 配置：列表装载位于 `normal+65`、分支序言为新的 23 字节签名、以 `normal+55` 的摄像机列表引用替代旧的 `normal+65` 引用；旧的正式版配置保留为回退。此构建模块大小 `0x112e000`、`.text` 6625206 字节；探索迷雾指令位于 RVA `0x42290b`（单字节开关仍在 `+11`）、类型元数据在 `0x6b1078`、上传指令在 `0x423b22`（`upload_disp=0x5e0`，`0x5e0+0x184=0x764` 与标志栈位移一致）。该版本把标志存储的栈位移改成 `0x764`，它只有 4 字节对齐，而旧匹配器错误地要求 dword 存储 8 字节对齐，使唯一匹配被当成缺失。`fog_instruction_matches` 现将 dword 存储放宽为 4 字节对齐、指针槽仍要求 8 字节对齐，`mirror == stack + 8` 与上传位移一致性校验保持不变；`scripts/inspect_fog.jai` 增加标志存储候选与上传匹配输出，供下次更新对照。2026-10-16 版本上 `check_fog.jai` 32 项、`check_camera_controls.jai` 273 项回归通过，生产只读复检读到 `enabled=1`。
 
-2026-10-17 游戏更新（正式版 SHA-256 `04EC997FB6C34BD205D55AEF9F46CC7F59ED7C84AE5186BB443CAA269E0BCF26`，文件 `12270080` 字节，映像 `0x112e000`，`.text` 6626182 字节）把跟随分支的场景基址寄存器从 `r15` 换成 `r12`：SIB 编码使相关指令各长一字节，模式分支入口位于 RVA `0x261262`，列表装载从 `normal+65` 移到 `normal+69`，冻结写入窗口从 `frozen-17` 移到 `frozen-19`；模式分支结构、`normal-23` 的 23 字节序言、渲染参数与活动场景引用保持原形。`camera_layout.jai` 新增 `retail-r12-2026-10-17` 配置并优先尝试，`retail-r15-2026-10` 及更早配置保留为回退；每种配置仍交叉验证模式分支、列表、冻结跳转、渲染参数和当前场景引用，保存完整字节并拒绝歧义。只读复检：manager 槽 RVA `0xB5B600`、相机 position / orientation / projection `0x3D98` / `0x3DB0` / `0x3DC0`、相机列表 `0x538`、模式槽 RVA `0xB5C990`；场景与五个位置字段 `0x00` / `0xA0` / `0x1D0` / `0x348` / `0x330`、探索迷雾（指令 RVA `0x422cdb`、类型元数据 `0x6b1090`、上传 RVA `0x423ef2`）和时间倍率（倍率 RVA `0x7f4050`、dt `0x7f6020`、时钟 `0x7f6028`）保持有效。离线检查 410 项、`check_camera_controls.jai` 273 项、`check_camera_capture.jai` 264 项、`check_centered_capture.jai` 159673 项、`check_fog.jai` 32 项、`check_speed.jai` 79 项全部通过；普通与优化构建均编译成功。只读采样时原生相机模式曾读到 2、随后回到 0；开启 freecam 需要模式 0，若提示原生相机模式已被占用，先退出游戏内当前相机视图。freecam 与拍摄的实际画面由用户手动验收。
+2026-10-17 游戏更新（正式版 SHA-256 `04EC997FB6C34BD205D55AEF9F46CC7F59ED7C84AE5186BB443CAA269E0BCF26`，文件 `12270080` 字节，映像 `0x112e000`，`.text` 6626182 字节）把跟随分支的场景基址寄存器从 `r15` 换成 `r12`：SIB 编码使相关指令各长一字节，模式分支入口位于 RVA `0x261262`，列表装载从 `normal+65` 移到 `normal+69`，冻结写入窗口从 `frozen-17` 移到 `frozen-19`；模式分支结构、`normal-23` 的 23 字节序言、渲染参数与活动场景引用保持原形。`camera_layout.jai` 新增 `retail-r12-2026-10-17` 配置并优先尝试，`retail-r15-2026-10` 及更早配置保留为回退；每种配置仍交叉验证模式分支、列表、冻结跳转、渲染参数和当前场景引用，保存完整字节并拒绝歧义。只读复检：manager 槽 RVA `0xB5B600`、相机 position / orientation / projection `0x3D98` / `0x3DB0` / `0x3DC0`、相机列表 `0x538`、模式槽 RVA `0xB5C990`；场景与五个位置字段 `0x00` / `0xA0` / `0x1D0` / `0x348` / `0x330`、探索迷雾（指令 RVA `0x422cdb`、类型元数据 `0x6b1090`、上传 RVA `0x423ef2`）和时间倍率（倍率 RVA `0x7f4050`、dt `0x7f6020`、时钟 `0x7f6028`）保持有效。离线检查 410 项、`check_camera_controls.jai` 273 项、`check_fog.jai` 32 项、`check_speed.jai` 79 项全部通过；普通与优化构建均编译成功。只读采样时原生相机模式曾读到 2、随后回到 0；开启 freecam 需要模式 0，若提示原生相机模式已被占用，先退出游戏内当前相机视图。freecam 的实际画面由用户手动验收。
 
 2026-10-17 晚更新（正式版 SHA-256 `0AE10A513DAE25286FE93D0DB4FA8A2DF9A473BC07E1734E12BC1AD30166DB1C`，文件 `12327936` 字节，映像 `0x113c000`，`.text` 6684054 字节）：跟随分支的场景基址寄存器从 `r12` 换成 `r13`，无 SIB 编码使相关指令各短一字节，模式分支入口位于 RVA `0x26a10d`，gate 33 字节、`normal` 序言 19 字节、列表装载仍在 `normal+69`、冻结写入窗口回到 `frozen-17`；模式分支结构、`normal-23` 的 23 字节序言、渲染参数与活动场景引用保持原形。`camera_layout.jai` 改为只保留 `retail-r13-2026-10-17b` 一份配置：demo 与旧正式版配置（rbx、r15、r15-2026-10、r12）一并删除，项目自本次起只支持最新版本；配置交叉验证模式分支、列表、冻结跳转、渲染参数和当前场景引用，保存完整字节并拒绝歧义。时间倍率的 78 字节暂停门链未变（RVA `0x262430`），但 1x 默认值初始化副本改用对齐 `movaps` 存储（RVA `0x3558bc`，源 `0x140769b70`、目标 native `0x140802020`）；`speed_memory.jai` 改为只接受对齐 `movaps` 存储并要求唯一匹配（不再保留旧 `movups` 回退），`check_speed.jai` 改为“拒绝旧 movups 初始化形式”与“拒绝重复初始化证据”检查，`inspect_speed_code.jai` 增加初始化形式候选输出，供下次更新对照。指令解码所得：活动场景引用槽 RVA `0xB69600`、相机 position / orientation / projection `0x3D98` / `0x3DB0` / `0x3DC0`、相机列表 `0x538`、模式槽 RVA `0xB6A808`；场景与五个位置字段 `0x00` / `0xA0` / `0x1D0` / `0x348` / `0x330`、探索迷雾（指令 RVA `0x430d6b`、类型元数据 `0x6bf090`、上传 RVA `0x431f94`）保持有效；时间倍率地址：倍率 `0x802028`、原生 `0x802020`、dt `0x804018`、时钟 `0x804020`。
 
@@ -414,6 +413,10 @@ noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面�
 
 在 `magic_tower` 的只读复检中，相机模式为 `0`、相机列表包含两个已验证的 `Camera_Control`，四元数和投影 `[0.645772, 0.2, 200]` 通过校验；基础、原生及组合时间倍率均为 `1x`。此关的字幕未命中现有映射，是独立的数据问题，不影响相机验证。`check_speed.jai` 原有测试在拒绝旧初始化形式后复用了失败返回的布局；现于恢复夹具后重新解析，再验证速度写入所有权，运行时速度代码未改动。
 
-`check_game_layout.jai` 连同当前 EXE 共 721 项、`check_camera_controls.jai` 273 项、`check_camera_capture.jai` 264 项、`check_centered_capture.jai` 159673 项、`check_position_switch.jai` 142 项、`check_fog.jai` 32 项、`check_speed.jai` 82 项均通过，普通与优化构建成功。全项目格式检查仍报告 `src/game/commands.jai`、`src/ui/console.jai` 和 `scripts/qiekn/find_all_no_solution_levels.jai` 的既有格式问题，本次修改文件未被报告；未改动这些无关文件。没有自动写真实游戏内存或发送输入，重启助手后的 `freecam`、`freecam -topdown`、`freecam off` 实际效果与视角恢复由用户手动验收。
+`check_game_layout.jai` 连同当前 EXE 共 721 项、`check_camera_controls.jai` 273 项、`check_position_switch.jai` 142 项、`check_fog.jai` 32 项、`check_speed.jai` 82 项均通过，普通与优化构建成功。全项目格式检查仍报告 `src/game/commands.jai`、`src/ui/console.jai` 和 `scripts/qiekn/find_all_no_solution_levels.jai` 的既有格式问题，本次修改文件未被报告；未改动这些无关文件。没有自动写真实游戏内存或发送输入，重启助手后的 `freecam`、`freecam -topdown`、`freecam off` 实际效果与视角恢复由用户手动验收。
 
-自动拍摄独占同一个会话，逐帧检查相机身份与姿态；完整帧和元数据分别原子保存。全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [地图拍摄文档](map-capture.md)、`scripts/capture_overworld_map/check_camera_capture.jai` 与 `scripts/check_hud.jai`。
+全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [自由摄像机与 HUD 文档](camera.md)、`scripts/check_camera.jai` 与 `scripts/check_hud.jai`。
+
+地图拍摄功能已移除：相机接管任务、截图、拼接、瓦片工具及相关命令不再提供。自由摄像机的姿态、绝对坐标、输入及视图恢复检查保留在 `scripts/check_camera.jai`；相机布局、锁定控制、HUD、时间倍率与时停仍独立维护。
+
+移除后的检查：`check_camera.jai` 83 项、`check_camera_controls.jai` 272 项、`check_game_layout.jai` 连同当前 EXE 721 项、`check_speed.jai` 72 项、`check_time_stop.jai` 149 项、`check_hud.jai` 100 项、`check_solutions.jai` 599 项、`check_position_switch.jai` 142 项、`check_fog.jai` 32 项均通过；普通与优化构建成功。

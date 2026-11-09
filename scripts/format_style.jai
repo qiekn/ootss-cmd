@@ -175,7 +175,7 @@ style_duplicate_import :: (filename: string, line: string) -> bool {
     // These shared files also compile as independent modules or script fragments.
     if !(begins_with(filename,"src/") || begins_with(filename,"src\\")) ||
        ends_with(filename,"main.jai") || ends_with(filename,"process.jai") ||
-       ends_with(filename,"fog_memory.jai") || ends_with(filename,"capture_plan.jai") || ends_with(filename,"capture_image.jai") return false;
+       ends_with(filename,"fog_memory.jai") return false;
     for module:string.["Basic","String","System","Math","Windows_Utf8","File","File_Utilities"]
         if line==tprint("#import \"%\";",module) return true;
     for item:string.["Win","Input","Simp","Json"] {

@@ -152,7 +152,6 @@ CONSOLE_COMMANDS :: Console_Command.[
     .{name = "lock",          run = command_lock             },
     .{name = "unlock",        run = command_unlock           },
     .{name = "hud",           run = command_hud              },
-    .{name = "capture",       run = command_capture          },
     .{name = "open",          run = command_open             },
     .{name = "close",         run = command_close            },
     .{name = "edit",          run = command_edit             },
@@ -272,7 +271,6 @@ command_set :: (console: *Console_State, arguments: string) {
     cursor: s64;
     subject := console_next_argument(arguments, *cursor);
     if equal_nocase(subject, "camera") {
-        if capture_active() { console_write(console, "Pause capture before setting the camera.", .ERROR); return; }
         position, error := console_parse_coordinates(slice(arguments, cursor, arguments.count-cursor), "xyz", 3);
         if error.count { console_write(console, tprint("% Usage: set camera <x> <y> <z>", error), .ERROR); return; }
         if !console_position_command_ready(console) return;
@@ -893,10 +891,6 @@ console_execute_command :: (console: *Console_State, source: string, remember :=
             if command.name != "z" || line[length] < #char "0" || line[length] > #char "9" continue;
         }
         arguments := trim(slice(line, length, line.count - length));
-        if capture_active() && command.name!="capture" && command.name!="show" && command.name!="hud" &&
-           command.name!="q" && command.name!="quit" && command.name!="toggle" && command.name!="help" {
-            capture_pause("Capture paused by a helper command");
-        }
         command.run(console, arguments);
         if command.name == "toggle" && console.pending_action == .CONSOLE_MODE {
             // Resizing preserves the current presentation, including images and subtitle scroll.

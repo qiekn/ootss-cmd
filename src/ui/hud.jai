@@ -22,7 +22,6 @@ Hud_State :: struct {
     expires, next_frame, next_sample, retry_at, next_resolve: float64;
     reader:                                                   Game_Position_Reader;
     pid:                                                      u32;
-    suppressed:                                               bool;
 }
 hud: Hud_State;
 
@@ -278,7 +277,7 @@ hud_update :: (now: float64) {
 }
 
 hud_update_for_focus :: (now: float64, foreground: Win.HWND) {
-    if !hud.enabled || hud.suppressed || overlay.visible || !overlay.game || HudIsIconic(overlay.game) {
+    if !hud.enabled || overlay.visible || !overlay.game || HudIsIconic(overlay.game) {
         hud_hide();
         return;
     }

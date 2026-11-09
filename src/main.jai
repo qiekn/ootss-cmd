@@ -25,7 +25,6 @@ Json  :: #import "Json";
 #load "platform/windows/shortcuts.jai";
 #load "platform/windows/noclip.jai";
 #load "platform/windows/freecam.jai";
-#load "platform/windows/capture.jai";
 #load "platform/windows/hud.jai";
 #load "platform/windows/editor.jai";
 #load "platform/windows/time_audio.jai";
@@ -37,9 +36,6 @@ Json  :: #import "Json";
 #load "game/camera_layout.jai";
 #load "game/camera.jai";
 #load "game/freecam.jai";
-#load "game/capture_plan.jai";
-#load "game/capture_image.jai";
-#load "game/capture.jai";
 #load "game/level.jai";
 #load "game/level_catalog.jai";
 #load "game/position_reader.jai";
@@ -102,7 +98,6 @@ main :: () {
     }
     defer hud_deinit();
     defer freecam_deinit();
-    defer capture_deinit();
     defer zork_deinit();
     if !tray_init(overlay.window) {
         show_error("Unable to create the system tray icon.");
@@ -264,7 +259,6 @@ main :: () {
         console_run_pending_fog(*console);
         console_run_pending_speed(*console);
         time_stop_update();
-        capture_update(seconds_since_init());
         freecam_update(*console, seconds_since_init());
         if !console.pending_send.count && !console.pending_position_change && !console.pending_freecam_change && !console.pending_fog_change && !console.pending_speed_change && !console.pending_jump console.submission = .{};
         zork_update(*console);

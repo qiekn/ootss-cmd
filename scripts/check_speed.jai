@@ -1,6 +1,6 @@
 #!/usr/bin/env jai
 
-// Isolated fixture memory only. No game access, input, focus changes or captures.
+// Isolated fixture memory only. No game access, input or focus changes.
 #run {
     set_build_options_dc(.{do_output=false});
     check_commands();
@@ -39,10 +39,6 @@ check_commands :: () {
     App.command_speed(*state,"1.25");
     check(state.pending_speed_change && state.pending_speed_value==1.25,"Queue an exact custom multiplier.");
     state.pending_speed_change = false;
-    App.capture.phase          = .MOVE;
-    App.command_speed(*state,"2");
-    check(!state.pending_speed_change,"Capture exclusively owns speed changes.");
-    App.capture.phase = .IDLE;
     App.console_set_input(*state,"spe");
     App.console_complete(*state,.[],.[],.[]);
     check(App.console_input(*state)=="speed ","Speed command completion.");
@@ -67,12 +63,6 @@ check_commands :: () {
     bindings := App.Command_Shortcut.[.{vk=0xdd,command="custom",consume=true}];
     consume,trigger = App.shortcut_filter_key(*keys,bindings,0xdd,true,false,keys.game,speed_keys=true);
     check(consume && trigger && keys.queue[0].index==0,"Explicit user mapping overrides the built-in speed bracket.");
-    pose: App.Game_Camera_Snapshot=.{position=.[80,69,80],orientation=App.GAME_CAMERA_TOPDOWN};
-    check(App.capture_map_view_valid(pose,80),"Accept the observed Q view geometry.");
-    pose.position[2]=40;
-    check(!App.capture_map_view_valid(pose,80),"Reject a different camera height before capture.");
-    pose.position[2]=80; pose.orientation=.[0,0,0,1];
-    check(!App.capture_map_view_valid(pose,80),"Reject the regular oblique camera.");
 }
 
 put :: (bytes: [] u8, offset: s64, value: $T) { (cast(*T)(bytes.data+offset)).*=value; }
@@ -113,6 +103,8 @@ check_memory :: () {
     ignored,bad = App.game_speed_layout_from_code(bytes,base);
     check(bad.count>0,"Reject duplicate initialization evidence.");
     memset(bytes.data+320,0,22);
+    layout,error = App.game_speed_layout_from_code(bytes,base);
+    check(!error.count,"Revalidate the restored fixture before testing speed ownership.");
     put(bytes,520,cast(float64)1.25);
     session: App.Game_Speed_Session=.{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=1.25,last=1.25,writable=true};
     check(!App.game_speed_set(*session,0).count && (cast(*float64)(bytes.data+520)).*==0,"Pause an isolated time multiplier.");
@@ -123,18 +115,7 @@ check_memory :: () {
     bytes[32]^=1;
     check(!App.game_speed_close(*session).count && (cast(*float64)(bytes.data+520)).*==1.25,"Restore the exact previous custom speed after validation recovers.");
     check(!App.game_speed_close(*session).count,"Closing twice is safe.");
-    for action:0..2 {
-        put(bytes,520,cast(float64)1.75);
-        App.capture_speed = .{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=1.75,last=1.75,writable=true};
-        check(!App.game_speed_set(*App.capture_speed,0).count,"Capture owns its independent saved multiplier.");
-        App.hud.enabled   = false;
-        App.capture.phase = .MOVE;
-        if action==0 App.capture_pause("isolated test pause");
-        if action==1 { App.capture.pending=copy_string("cancel"); App.capture_requests(); }
-        if action==2 App.capture_deinit();
-        check(!App.capture_speed.memory.handle && (cast(*float64)(bytes.data+520)).*==1.75,"Pause, cancel and shutdown restore the exact pre-capture speed.");
-        App.capture_clear();
-    }
+    put(bytes,520,cast(float64)1.75);
     session = .{memory=.{handle=Win.GetCurrentProcess()},layout=layout,original=1.75,last=1.75,writable=true};
     check(!App.game_speed_set(*session,0).count,"Acquire multiplier ownership.");
     put(bytes,520,cast(float64)2);

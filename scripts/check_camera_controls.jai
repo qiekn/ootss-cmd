@@ -83,11 +83,7 @@ check_commands :: () {
     App.command_lock(*state, "");
     check(state.pending_action == .NONE, "Save confirmation blocks camera changes.");
     App.editor_save_prompt.active = false;
-    App.capture.phase             = .MOVE;
-    App.command_lock(*state, "");
-    check(state.pending_action == .NONE, "Capture owns camera controls exclusively.");
-    App.capture.phase         = .IDLE;
-    state.pending_camera_lock = .LOCK;
+    state.pending_camera_lock     = .LOCK;
     App.command_freecam(*state, "-topdown");
     check(state.pending_camera_lock == .NONE, "A later freecam command cannot inherit a canceled lock.");
     state.pending_action      = .NONE;

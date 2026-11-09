@@ -86,10 +86,6 @@ time_stop_choose_alternate :: (probability: float64) -> bool {
 time_stop_toggle :: (game: Win.HWND, pid: u32) {
     if !game || game != find_game_window() || process_window_pid(game) != pid || Win.GetForegroundWindow() != game ||
        editor_save_prompt.active || editor_wait_edit.active return;
-    if capture_active() || capture_speed.memory.handle {
-        console_write(*console, "Pause map capture before stopping time.", .ERROR);
-        return;
-    }
     if editor.open {
         editor_pause();
         if editor.speed_override.memory.handle || editor.transport.held.scan || editor.transport.time_held return;
@@ -132,7 +128,7 @@ time_stop_update :: () {
     foreground  := Win.GetForegroundWindow();
     interrupted := time_stop.phase == .STOPPING && foreground != time_stop.game &&
                    foreground != overlay.window && foreground != editor_window.handle;
-    if !valid || interrupted || editor_save_prompt.active || capture_active() {
+    if !valid || interrupted || editor_save_prompt.active {
         error := time_stop_cancel();
         if error.count console_write(*console, error, .ERROR);
         return;

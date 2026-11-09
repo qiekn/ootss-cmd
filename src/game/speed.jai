@@ -31,9 +31,6 @@ command_speed :: (state: *Console_State, arguments: string) {
     request,value,error := speed_parse(arguments);
     if error.count { console_write(state,error,.ERROR); return; }
     if !console_position_command_ready(state) return;
-    if request!=.QUERY && (capture_active() || capture_speed.memory.handle) {
-        console_write(state,"Pause or cancel map capture before changing time speed.",.ERROR); return;
-    }
     state.pending_speed_change  = true;
     state.pending_speed_request = request;
     state.pending_speed_value   = value;
@@ -58,7 +55,6 @@ console_run_pending_speed :: (state: *Console_State) {
         console_write(state, "Restore the editor's temporary speed before changing the base speed.", .ERROR);
         return;
     }
-    if request!=.QUERY && (capture_active() || capture_speed.memory.handle) { console_write(state,"Pause capture and restore its time control before changing speed.",.ERROR); return; }
     if speed_session.memory.handle && (game!=speed_game || pid!=speed_pid || process_memory_has_exited(speed_session.memory)) {
         error := game_speed_close(*speed_session);
         if error.count { console_write(state,error,.ERROR); return; }

@@ -66,7 +66,6 @@ freecam_filter_key :: (vk: u32, down: bool, injected: bool, foreground: Win.HWND
     if was_down return freecam.consumed[index];
     if !freecam.enabled || freecam.locked || !freecam.game || foreground != freecam.game || editor_save_prompt.active return false;
     freecam.consumed[index] = true;
-    if capture.owns_camera { capture.pause_requested = true; return true; }
     // Configured shortcuts have already had priority. Shift and Ctrl only scale
     // the speed; Alt and Win chords are consumed without moving, so modified
     // movement keys never leak into character movement while freecam owns them.
@@ -119,7 +118,6 @@ freecam_speed :: (state: *Console_State) -> float64 {
 }
 
 command_freecam :: (state: *Console_State, arguments: string) {
-    if capture_active() { console_write(state, "Pause or cancel capture before changing the camera.", .ERROR); return; }
     requested:              s32 = -1;
     pan, topdown, explicit: bool;
     cursor:                 s64;
@@ -163,7 +161,6 @@ command_unlock :: (state: *Console_State, arguments: string) {
 
 console_queue_camera_lock :: (state: *Console_State, arguments: string, locked: bool) {
     if arguments.count { console_write(state, ifx locked then "Usage: lock" else "Usage: unlock", .ERROR); return; }
-    if capture_active() { console_write(state, "Pause or cancel capture before changing the camera.", .ERROR); return; }
     if !console_position_command_ready(state) return;
     if editor_save_prompt.active { console_write(state, "Finish the save confirmation first.", .ERROR); return; }
     if !freecam.enabled || freecam.stopping { console_write(state, "Enable freecam before using lock or unlock.", .ERROR); return; }
@@ -187,11 +184,6 @@ freecam_set_locked :: (locked: bool) -> string {
 }
 
 freecam_center_topdown :: () -> (error: string, changed: bool) {
-    // Capture supplies its own positions and must not depend on a selected Guy.
-    if capture.owns_camera {
-        error, changed := game_camera_move(*freecam.session, .[0, 0, 0], GAME_CAMERA_TOPDOWN);
-        return error, changed;
-    }
     reader: Game_Position_Reader;
     defer game_position_reader_close(*reader);
     reader.memory  = freecam.session.memory;
@@ -210,8 +202,7 @@ freecam_center_topdown :: () -> (error: string, changed: bool) {
 }
 
 // Look straight down while keeping the view's horizontal facing, snapped to the
-// nearest quarter turn so the level stays axis-aligned on screen. Capture keeps
-// the fixed north-up pose for map tiles.
+// nearest quarter turn so the level stays axis-aligned on screen.
 freecam_topdown_orientation :: (orientation: [4] float) -> [4] float {
     yaw, _ := game_camera_angles(orientation);
     return game_camera_orientation(floor(yaw / (PI64 / 2) + 0.5) * (PI64 / 2), -PI64 / 2);
@@ -277,7 +268,6 @@ console_run_pending_freecam :: (state: *Console_State) {
         console_write(state, "Camera mode change cancelled before starting.", .ERROR);
         return;
     }
-    if capture_active() { state.pending_camera_write = false; console_write(state, "Pause capture before changing the camera.", .ERROR); return; }
     if freecam.enabled && !console_submission_target_matches(state.submission, freecam.game, freecam.pid) {
         state.pending_camera_write = false;
         console_write(state, "Camera command cancelled: the target game changed.", .ERROR);
@@ -434,7 +424,7 @@ freecam_update :: (state: *Console_State, now: float64) {
         if error.count { console_write(state, error, .ERROR); freecam_stop(state); }
         return;
     }
-    if capture.owns_camera || foreground != freecam.game || editor_save_prompt.active || state.pending_send.count || state.pending_position_change {
+    if foreground != freecam.game || editor_save_prompt.active || state.pending_send.count || state.pending_position_change {
         freecam_clear_motion();
         return;
     }

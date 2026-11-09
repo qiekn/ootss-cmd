@@ -5,6 +5,7 @@
 #run {
     set_build_options_dc(.{do_output = false});
     check_signatures();
+    check_camera_layout();
     check_switch_catalog();
     for filename: get_build_options().compile_time_command_line check_image(filename);
     print("PASS: % isolated scene/camera/switch checks; no game writes or input.\n", checks);
@@ -88,6 +89,93 @@ check_signatures :: () {
     install(image, 0x1200-15, 0x3000, App.GAME_MANAGER_RETAIL_SIGNATURE);
     slot, error = App.game_entity_manager_slot(memory);
     check(error.count > 0 && !slot, "Do not match a retail signature crossing the code-section end.");
+}
+
+check_camera_layout :: () {
+    image := NewArray(0x5000, u8);
+    defer free(image.data);
+    put(image, 0, cast(u16) 0x5a4d);
+    put(image, 0x3c, cast(u32) 0x80);
+    put(image, 0x80, cast(u32) 0x4550);
+    put(image, 0x84, cast(u16) 0x8664);
+    put(image, 0x86, cast(u16) 2);
+    put(image, 0x94, cast(u16) 0xf0);
+    put(image, 0x98, cast(u16) 0x20b);
+    for byte: ".text" image[0x188 + it_index] = byte;
+    put(image, 0x190, cast(u32) 0x1000);
+    put(image, 0x194, cast(u32) 0x1000);
+    put(image, 0x1ac, cast(u32) 0x60000020);
+    for byte: ".data" image[0x1b0 + it_index] = byte;
+    put(image, 0x1b8, cast(u32) 0x1000);
+    put(image, 0x1bc, cast(u32) 0x3000);
+    put(image, 0x1d4, cast(u32) 0xc0000040);
+    memory: App.Process_Memory = .{handle = Win.GetCurrentProcess(),
+                                 module = .{base = cast(u64) image.data, size = cast(u64) image.count}};
+    install(image, 0x1050, 0x3000, App.GAME_MANAGER_RETAIL_SIGNATURE);
+    // Latest r12 update, with r15 as the loop index and rbx as the camera.
+    for byte: u8.[
+        0x49,0x8d,0xac,0x24,0x98,0x3d,0,0, 0x48,0x8b,0x05,0,0,0,0,
+        0x48,0x85,0xc0, 0x0f,0x84,0,0,0,0, 0x48,0x83,0xf8,1, 0x0f,0x85,0,0,0,0]
+        image[0x1100 + it_index] = byte;
+    put(image, 0x110b, cast(s32)(0x3008 - 0x110f));
+    put(image, 0x1114, cast(s32)(0x1300 - 0x1118));
+    put(image, 0x111e, cast(s32)(0x1500 - 0x1122));
+    for byte: u8.[
+        0x50,0xc3,0xa8,1,0x0f,0x85,0,0,0,0, 0xf3,0x0f,0x10,0x1d,0,0,0,0,0xe9,0,0,0,0,
+        0x4c,0x89,0x74,0x24,0x68, 0x49,0x83,0xbc,0x24,0x38,5,0,0,0, 0x0f,0x8e,0,0,0,0]
+        image[0x1300 - 23 + it_index] = byte;
+    for byte: u8.[
+        0x49,0xff,0xc7, 0x4d,0x3b,0xbc,0x24,0x38,5,0,0, 0x0f,0x8d,0,0,0,0,
+        0x49,0x8b,0x84,0x24,0x40,5,0,0, 0x4a,0x8b,0x1c,0xf8]
+        image[0x1300 + 53 + it_index] = byte;
+    for byte: u8.[
+        0x41,0x0f,0x13,0x84,0x24,0x98,0x3d,0,0, 0xf3,0x41,0x0f,0x11,0x94,0x24,0xa0,0x3d,0,0,
+        0x49,0x8b,0x04,0x24, 0x48,0x83,0xc0,0xfb, 0x48,0x83,0xf8,0x14, 0x0f,0x87,0,0,0,0]
+        image[0x1500 - 19 + it_index] = byte;
+    for byte: u8.[
+        0x48,0x8d,0x90,0x98,0x3d,0,0, 0x0f,0xb6,0x0d,0,0,0,0, 0xc0,0xe9,4, 0x80,0xe1,1,
+        0x4c,0x8b,0x05,0,0,0,0, 0xf2,0x41,0x0f,0x10,0x40,0x38,0x0f,0x5b,0xc0,
+        0x0f,0x28,0xc8,0x0f,0xc6,0xc8,0x55,0xf3,0x0f,0x5e,0xc1,
+        0x4c,0x8d,0x80,0xb0,0x3d,0,0, 0xf3,0x0f,0x10,0x88,0xc0,0x3d,0,0,
+        0xf3,0x0f,0x10,0x98,0xc4,0x3d,0,0, 0xf3,0x0f,0x10,0x90,0xc8,0x3d,0,0]
+        image[0x1700 - 47 + it_index] = byte;
+    layout, error := App.game_camera_layout(memory);
+    check(!error.count && layout.profile == "retail-r12-2026-10-31" && layout.position == 0x3d98 &&
+          layout.orientation == 0x3db0 && layout.projection == 0x3dc0 && layout.cameras == 0x538 &&
+          layout.mode == memory.module.base + 0x3008, "Decode the latest r12 camera layout from isolated instructions.");
+    for evidence: layout.code for i: 0..evidence.count - 1 {
+        at := evidence.address - memory.module.base + cast(u64) i;
+        image[at] ^= 1;
+        check(!App.game_camera_code_current(memory, layout), "Retain all branch, list, write and render evidence in a session.");
+        image[at] ^= 1;
+    }
+    for at: s64.[0x1104, 0x1309, 0x133c, 0x134a, 0x14f2, 0x14fc, 0x16d4, 0x1703, 0x170b, 0x1713, 0x171b] {
+        image[at] ^= 4;
+        rejected, rejected_error := App.game_camera_layout(memory);
+        check(rejected_error.count > 0, "Reject conflicts between update, loop, frozen writes, render and active-scene fields.");
+        image[at] ^= 4;
+    }
+    for i: 0..33 image[0x1800 + i] = image[0x1100 + i];
+    rejected, rejected_error := App.game_camera_layout(memory);
+    check(rejected_error.count > 0, "Reject two camera mode gates.");
+    for i: 0..33 image[0x1800 + i] = 0;
+    // Each boundary ends one byte before a required evidence window completes.
+    for end: u32.[0x1050 + 27, 0x1100 + 33, 0x1300 + 19, 0x1300 + 81, 0x1500 + 17, 0x1700 + 30] {
+        put(image, 0x190, end - 0x1000);
+        rejected, rejected_error = App.game_camera_layout(memory);
+        check(rejected_error.count > 0, "Reject truncated camera evidence without reading beyond .text.");
+    }
+    put(image, 0x190, cast(u32) 0x1000);
+    put(image, 0x1114, cast(s32)(0x2500 - 0x1118));
+    rejected, rejected_error = App.game_camera_layout(memory);
+    check(rejected_error.count > 0, "Reject an out-of-code normal branch destination.");
+    put(image, 0x1114, cast(s32)(0x1300 - 0x1118));
+    put(image, 0x110b, cast(s32)(0x1800 - 0x110f));
+    rejected, rejected_error = App.game_camera_layout(memory);
+    check(rejected_error.count > 0, "Reject a mode slot in executable code.");
+    put(image, 0x110b, cast(s32)(0x3008 - 0x110f));
+    layout, error = App.game_camera_layout(memory);
+    check(!error.count, "Restoring the fixture restores the validated layout.");
 }
 
 check_image :: (filename: string) {

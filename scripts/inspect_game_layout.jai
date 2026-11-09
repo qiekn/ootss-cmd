@@ -49,7 +49,10 @@ inspect :: () -> string {
         print("Camera profile=%, fields: position=0x%, orientation=0x%, projection=0x%, list=0x%, mode RVA=0x%\n",
               layout.profile,hex(layout.position), hex(layout.orientation), hex(layout.projection), hex(layout.cameras), hex(layout.mode-memory.module.base));
         snapshot, snapshot_error := App.game_camera_snapshot(memory, layout);
-        print("Camera position=%, mode=%, error=%\n", snapshot.position, snapshot.mode, snapshot_error);
+        print("Camera position=%, orientation=%, projection=%, mode=%, cameras=%, error=%\n",
+              snapshot.position, snapshot.orientation, snapshot.projection, snapshot.mode, snapshot.list.count, snapshot_error);
+        for evidence: layout.code print("  Camera evidence RVA=0x%, bytes=%\n",
+                                        hex(evidence.address - memory.module.base), evidence.count);
     }
     fog,fog_error := Fog.fog_inspect(window);
     print("Production fog: % %\n",fog,fog_error);

@@ -178,7 +178,6 @@ editor_playback_game_rate :: () -> (rate: float64, error: string) {
         if reverse return 1, ""; // Keep undo timing independent of speed, even if the display query fails.
         return rate, error;
     }
-    if capture_active() || capture_speed.memory.handle return 0, "Pause map capture before accelerated playback.";
     if !editor.speed_override.memory.handle {
         error := game_speed_open(*editor.speed_override, editor.game);
         if error.count return 0, error;

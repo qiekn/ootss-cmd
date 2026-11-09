@@ -126,7 +126,7 @@ map o = "show subtitles";
 HUD 用 `hud_enabled` 控制总开关，`hud_show_level_name`、`hud_show_position`、`hud_show_notifications` 分别控制关卡名、坐标和通知。
 每条 `hud_text = "custom text";` 新增一行自定义文字，可以重复写多条，`hud_text = "";` 保留一个空行；信息行按各项在文件中的先后顺序排列，把坐标配置移到关卡名配置上方即可先显示坐标。
 引号中的文字支持 `\n` 换行，例如 `hud_text = "First line\n\nSecond line";` 会在两段之间留一行空白；开头、结尾的换行会保留，`\\n` 显示字面上的 `\n`。
-`hud_hide_on_focus_loss` 只控制左上角信息，失焦不会隐藏通知；终端打开、截图及 HUD 总开关仍按原规则隐藏两处面板。详细规则见 [HUD 配置](map-capture.md#hud)。
+`hud_hide_on_focus_loss` 只控制左上角信息，失焦不会隐藏通知；终端打开及 HUD 总开关仍按原规则隐藏两处面板。详细规则见 [HUD 配置](camera.md#hud)。
 
 ### 别名
 
@@ -264,7 +264,7 @@ undo 100 -fast -delay 20ms
 
 `speed 1.25` 设置游戏基础时间倍率，`speed 0` 暂停、`speed 1` 恢复正常，也支持 `up` / `down` / `reset`。
 游戏前台且编辑器关闭时，`[` / `]` 按 `0.25、0.5、1、1.25、1.5、1.75、2、3、4` 切换；命令支持范围内任意倍率，例如 `speed 3.5`。
-原生快慢键仍会叠乘，细节见[游戏时间倍率](map-capture.md#游戏时间倍率)。
+原生快慢键仍会叠乘，细节见[游戏时间倍率](camera.md#游戏时间倍率)。
 
 ### show level
 
@@ -475,18 +475,6 @@ close editor            # 关闭，有未保存修改时确认
 - 连续按键会先停止旧音轨，再播放新音轨；停止音效期间再按 P 会取消即将发生的暂停，恢复音效期间再按 P 会取消本次恢复并保留最初的倍率。
 - 离开游戏会取消尚未完成的时停；退出助手会恢复其控制的速度。自定义 P 映射优先。删除配置项恢复默认值；无效概率或布尔值会使整份新配置被拒绝，保留旧设置。
 
-## 大地图拍摄
-
-大地图拍摄默认先在游戏中按 Q，再手动运行 `./scripts/capture_overworld_map/capture_map.jai`：从 `(80,69,80)` 向外拍摄，每张只保存中心 9 × 9 个世界格子，相机间隔 9 格，外围画面丢弃；`crop_world_size` 在脚本顶部配置。当前全图为 550 张，需要更新并重启助手后重新拍摄。
-
-拍摄中暂停模拟时间，结束或暂停后恢复之前的倍率。最终输出 `map/map.jpg`，默认质量 92、最大边长 32768；分块仍是无损 PNG。只想将已有截图按原计划重新导出为大图，可运行：
-
-```powershell
-jai -quiet scripts/capture_overworld_map/stitch_map.jai - map/capture-world --jpg map/map.jpg --max-side 32768 --quality 92
-```
-
-完整说明见[俯视相机与拍摄](map-capture.md)。
-
 ## 数据文件
 
 程序目录下的 `data/`：
@@ -510,4 +498,4 @@ jai -quiet scripts/capture_overworld_map/stitch_map.jai - map/capture-world --jp
 - `src/platform/windows/overlay.jai` 中的 `OVERLAY_HEIGHT_PERCENT` 和 `OVERLAY_OPACITY` 控制终端高度比例和不透明度；配色和字幕角色名颜色在 `src/ui/console_theme.jai`。
 - 内存地址定位、读写实现和游戏更新后的适配步骤见 [game-memory.md](game-memory.md)。
 - 代码风格检查使用 `jai -quiet scripts/format_style.jai`，添加 `- --write` 可应用成组声明/赋值对齐和 main 公共依赖的去重。范围为 `first.jai`、`src/`、`scripts/`；独立模块保留自己的依赖，第三方模块不参与。
-- 其他文档：[俯视相机、HUD 与大地图拍摄](map-capture.md)、[离线关卡格式](custom_levels.md)、[自动提取关卡名、区域和入口坐标](level-catelog.md)。
+- 其他文档：[自由摄像机、HUD 与游戏时间](camera.md)、[离线关卡格式](custom_levels.md)、[自动提取关卡名、区域和入口坐标](level-catelog.md)。
