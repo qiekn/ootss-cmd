@@ -672,7 +672,7 @@
   {
     "name": "bard_triangle",
     "note": "",
-    "solution": "5 RRUURLL 8 R 5 RR 8 RRRRRRRRRRR 5 RRRRRDDRRRDDDRRRUUUUUUUUURRRRRRRRDDDDDDDLLUULL 8 D 5 R 8 URRRRRRRRRR 5 RRRDDDDRRUUURRRRRRRUURLL 8 R 5 R 8 U 5 LLLLDDRRRRRRRRRUUUUUULLLLRURRRDDDDDDLLLLLLLLUURDDDRUUUDRU 8 D 5 DD 8 D 5 DDDRR"
+    "solution": "RRUURLLCRCRRCRRRRRRRRRRRCRRRRRDDRRRDDDRRRUUUUUUUUURRRRRRRRDDDDDDDLLUULLCDCRCURRRRRRRRRRCRRRDDDDRRUUURRRRRRRUURLLCRCRCUCLLLLDDRRRRRRRRRUUUUUULLLLRURRRDDDDDDLLLLLLLLUURDDDRUUUDRUCDCDDCDCDDDRR"
   },
   {
     "name": "base_jump",
@@ -1402,7 +1402,7 @@
   {
     "name": "high_shelf_v2",
     "note": "",
-    "solution": "5 RRUUURUDLLLLUDRRLLRRDRDDUUDDDDRRR"
+    "solution": "RRUUURUDLLLLUDRRLLRRDRDDUUDDDDRRR"
   },
   {
     "name": "highway",
@@ -2497,12 +2497,12 @@
   {
     "name": "tippy_towers_1",
     "note": "",
-    "solution": "5 RRRRRDDDDDDLLLLLURDRRRRR"
+    "solution": "RRRRRDDDDDDLLLLLURDRRRRR"
   },
   {
     "name": "tippy_towers_4",
     "note": "",
-    "solution": "5 UUUULLLLLLDDDDDURDRURRRDDRRRRUUUUU"
+    "solution": "UUUULLLLLLDDDDDURDRURRRDDRRRRUUUUU"
   },
   {
     "name": "to_kill_a_goblin",
@@ -2813,5 +2813,15 @@
     "name": "falloff_dragons",
     "note": "",
     "solution": "LLLUDLURRDX_0.75_R_1_L_1_LLUU"
+  },
+  {
+    "name": "no_charm",
+    "note": "",
+    "solution": "LLLLDDLLURDRRUULDRDLULDDDDLDRCDD_0.15_DCUUUURRRRRRRRRDDDCUCUUUUULLLLLLLLCLLCRRRR"
+  },
+  {
+    "name": "stones_below_v3",
+    "note": "",
+    "solution": "CDLDRDDLDLULURUUUDDRRRUULUUUDRUUUUCDRRRCDDCRRCLUURRDDDLURRUDLLUUULDDRUURRLCR_2_U_1.5_UURCDDDDDLLLLLL"
   }
 ]
