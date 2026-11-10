@@ -1,3 +1,5 @@
+#!/bin/env jai
+
 we_are_building_release_version := false;
 
 output_name := "ootss-cmd";
@@ -5,9 +7,7 @@ output_path : string;
 
 #run {
     build();
-
     set_build_options_dc(.{do_output=false});
-    disable_runtime_console();
 }
 
 build :: () {
@@ -54,6 +54,7 @@ build :: () {
     }
 
     set_build_options(options, w);
+    disable_runtime_console(w);
 
     compiler_begin_intercept(w);
     add_build_file("src/main.jai", w);
