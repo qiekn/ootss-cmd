@@ -772,7 +772,7 @@
   {
     "name": "catching_fire_v2",
     "note": "",
-    "solution": "1 L 4 D 1 DU 4 R 1 RDLD 4 R 1 RUU 4 LD 1 RDD 4 DLLL 1 RDLL 4 L 1 LD"
+    "solution": "LCLDLDRRLUURRDDUULDDCDDDLLLCRRDLLLDCL"
   },
   {
     "name": "catching_up_v2",
@@ -1172,7 +1172,7 @@
   {
     "name": "frame_advance_v5",
     "note": "",
-    "solution": "4 LDD 1 DD 4 L 1 ULLDLDDRRR 4 D 1 URD 4 L 1 UU 4 LLDD 1 ULDDDURRRDLLULDLLLURRUR 4 DDR 1 DD 4 RRRRRRRRRR 1 UUUURRRRDDLLULDDDUURRRDDLLUUUURDDDDLLLLLL 4 RR"
+    "solution": "RDDLRDLUULLDLDDRRRURDCDDDDD_0.65_RRRRRRRRRRCLLLLUUURRDLLDDRUUDDRLURLLUURRURDDDDRRRRULLULDDUUUURRDDDDLLLLLLCRR"
   },
   {
     "name": "friendly_nudges",
@@ -1927,7 +1927,7 @@
   {
     "name": "priest_traverse_e_fence",
     "note": "",
-    "solution": "4  4 LL 8 DLL 4 D 1 UULD 8 L 4 L 1 RDDRU 4  4 LR 1 RUULDLDDLURUULD 4 L 4 L 8 L 4 L 4 L 8 L 4 L 4 L 8 L 4 L 4 L 8 L 4 L 4 L 8 L 4 L 4 L 8 L 4 LD 8 U 1 RRRDDRUDLLLLL"
+    "solution": "DRU 4 LL 1 LUURD 8 DLLL 1 LULD 4  4 DLLL 8 L 4 LL 8 L 4  4 LL 8 L 4 LL 8 L 4  4 LL 8 L 4 LL 8 LUD 4 D 4 LU 1 LDD"
   },
   {
     "name": "priest_two_warriors_v3",
