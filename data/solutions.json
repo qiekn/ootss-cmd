@@ -1117,7 +1117,7 @@
   {
     "name": "fire_stairs_v2",
     "note": "",
-    "solution": "4 R 5 RU 4 DDL 5 RRDDLLLLUUULLLLU 4 D 5 LL"
+    "solution": "RCRUCDDLCRR_0.5_DDLLLL_0.5_UUULLL_0.5_LUCDCLL"
   },
   {
     "name": "first_diversions",
@@ -1907,22 +1907,22 @@
   {
     "name": "priest_3d_goblin_pass",
     "note": "",
-    "solution": "1 UU 4 RUUU 1 RRRRRDD 4 DD 1 RUUURDDLDRL 4 U 1 RRRRUURL 4 UU 1 RURRDLULDLDRRRRRRRDR 4 U"
+    "solution": "UUCRUUUCRRRRRDDCDDCRUUURDDLDRLCUCRRRRUURLCUUCRURRDLULDLDRRRRRRRDRUD"
   },
   {
     "name": "priest_3d_intro_dragon_v4",
     "note": "",
-    "solution": "4 DD 1 RDRDLULD 4 DRRRRDDDDD 1 DDUDRDDLLLLLULDRRRRRRUULDDDD 4 DRRRRDDDR 1 D"
+    "solution": "DDCRRDLULDDCDRRRRDDDDDCDDUDRDDLLLLLULDRRRRRRUULDDDDCDRRRRDDDRCD"
   },
   {
     "name": "priest_button_3d_revised",
     "note": "",
-    "solution": "1 RD 4 UUUL 1 RU 4 L 1 DDL 4 L 1 DLDRRRD 4 D 1 RRR 4 U 1 RUUUURRU"
+    "solution": "RDCUUULCRUCLCDDLCLCDLDRRRDCDCRRRCUCRUUUURRU"
   },
   {
     "name": "priest_descent_simpler",
     "note": "",
-    "solution": "4 LLLLDLLULLLDLDLDDDDDRRRRRRU"
+    "solution": "LLLLDLLULLLDLDLDDDDDRRRRRRU"
   },
   {
     "name": "priest_traverse_e_fence",
@@ -1937,7 +1937,7 @@
   {
     "name": "priest_warrior_descent",
     "note": "",
-    "solution": "1 R 4 R 1 RRRR 4 D 1 RRDRRR 4 RRRR 1 RDDDRR 4 DDRR 1 RUUULD 4 UL 1 UU 4 R 1 URRRDDDDDRUULUUR 4 L 1 UR 4 RR 1 RRRDDDDRRDDRRULLDLULUUU 4 R 1 RRRR 4 RRU 1 UURU 4 RUU"
+    "solution": "RCRCRRRRCDCRRDRRRCRRRRCRDDDRRCDDRRCRUUULUURRRDDDDDRUULUUURRCULUURRRRRCRRRDDCRCDDDDRRRRULLDLLUUUURRRRCRRUCUURUCRUU"
   },
   {
     "name": "priest_water_back_place_v3",
@@ -2853,5 +2853,10 @@
     "name": "sky_druid_one",
     "note": "",
     "solution": " 1 RUUUUUULURRURD 6 UUURURRRRRD 9 UUULURRRRURDD 6 L 1 LDRRRURDDRDL 6 L 9 DLDR 6 D 1 ULDDDRDLLDLU 6 D 1 UDDRRRR 9 RRULLLLLULDDDDDLD"
+  },
+  {
+    "name": "priest_bottom_v2",
+    "note": "",
+    "solution": " 4 LLLLDDRDD 1 RRUULUUR 4 UUUU 1 RRRRDDRRR 2 RLLLURUUU 4 LLLLLLUU 1 RRRRR 4 DDDDDRRRRRRRRRRRRUUUUL 1 U 4  4 DRRRRRUU 1 R 4 URRD 1 R 4  4 DDRR 2 URDDLDDDRURRRRRULU 4 LU 1 DRR 4 URRRRDDL 1 R 4  4 DRRRRU 2 RDDLDRURRRRR 1 R 4 DDRRRUUULL 1 U 4  4 RUU 2 RRULULDL 1 R 4 URRD 1 R 4  4 UR 2 URUU 1 UU 2 LDDDRRDDD 4 DDD"
   }
 ]
