@@ -417,7 +417,7 @@ noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面�
 
 ### 2026-11-11 构建兼容
 
-正式版 EXE SHA-256 为 `978B302FD0952E4EA8D869553AEC875D9C635278A7D0F8CDB752F5A797A370AA`，文件 `12370944` 字节，映像 `0x1147000`，`.text` RVA `0x1000`、大小 `6721766` 字节。修复前只有相机配置失效；当前场景、受控玩家及五个位置字段、探索迷雾和基础时间倍率的只读检查仍然通过。
+正式版 EXE SHA-256 为 `978B302FD0952E4EA8D869553AEC875D9C635278A7D0F8CDB752F5A797A370AA`，文件 `12370944` 字节，映像 `0x1147000`，`.text` RVA `0x1000`、大小 `6721766` 字节。修复前相机配置与时间倍率两项失效；当前场景、受控玩家及五个位置字段、探索迷雾的只读检查仍然通过。
 
 相机更新基址寄存器从 `r12` 换回 `r13`，无 SIB 编码使模式 gate 从 34 字节回到 33 字节、正常分支开头从 20 字节回到 19 字节、冻结位置写入从 19 字节回到 17 字节，模式槽与冻结写入的相对位置随之前移一字节；列表循环仍用 `r15` 索引、把 `Camera_Control` 装入 `rbx`，列表装载窗口位于 `normal+54`（27 字节，含 `inc r15`、第二次 count 比较、`jge` 与两次装载）。渲染参数与活动场景引用的指令形态未变。生产配置直接替换为 `retail-r13-2026-11-11`，不保留旧相机回退。
 
@@ -438,6 +438,14 @@ noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面�
 新增 `scripts/inspect_camera_code.jai`（只读）：一次输出 r13 模式 gate 的候选、解码出的 position/mode/normal/frozen RVA、两个分支与渲染窗口的字节，以及渲染与活动场景引用的匹配位置，供下次更新直接对照。只读复检在 `end1` 读到相机 mode `0`、3 个已验证的 `Camera_Control`、四元数 `[-0.411,0.413,0.573,0.576]` 与投影 `[0.611,0.2,200]`，全部通过校验。
 
 `check_game_layout.jai` 连同当前 EXE 共 707 项、`check_camera.jai` 83 项、`check_camera_controls.jai` 272 项、`check_fog.jai` 32 项、`check_speed.jai` 72 项、`check_position_switch.jai` 142 项、`check_hud.jai` 100 项均通过，优化构建成功。根目录调试构建因正在运行的 `ootss-cmd.exe` 被占用而链接失败（LNK1104），未结束该进程；重启助手后再做一次调试构建即可。本次未写入真实游戏内存、未发送输入，`freecam`、`freecam -topdown`、`freecam off` 与视角恢复需手动验收。
+
+#### 同版本的时间倍率修复
+
+`speed` 与编辑器倍率在同一版本一起失效，报错为 “time multiplier evidence is missing or ambiguous”。78 字节暂停门链本身没有变化（RVA `0x26A5A0`，`gap = 30`），失效的是独立初始化证据：1x 默认值副本又改回未对齐 `movups`（`0F 11`）存储，位置在 RVA `0x341315`（`movaps` 装载 `0F 28 05` → `0F 11 05` 存储 → `lea r12,[rsp+0x2B0]`）。生产代码上一轮只接受对齐 `movaps`（`0F 29`），因此唯一初始化证据匹配失败。
+
+`speed_memory.jai` 改为只接受 `movups` 形式（仍要求唯一匹配，不保留 `movaps` 回退）；`check_speed.jai` 的对应检查改为“拒绝旧 `movaps` 初始化形式”。指令解码所得：倍率 RVA `0x80D090`、原生倍率 `0x80D088`、模拟 dt `0x80F058`、累计时钟 `0x80F060`、初始化源 `0x774330`（store 目标 `0x80D088` 只有 8 字节对齐，因此必须是 `movups`）。只读复检读到基础、原生及组合倍率均为 `1x`。
+
+这提醒：`inspect_speed.jai` 与 `inspect_game_layout.jai` 覆盖的是不同能力，只读诊断必须逐项运行，不能用其中一项通过推断其他项正常。
 
 全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [自由摄像机与 HUD 文档](camera.md)、`scripts/check_camera.jai` 与 `scripts/check_hud.jai`。
 

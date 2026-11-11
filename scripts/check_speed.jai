@@ -73,7 +73,7 @@ check_memory :: () {
     chain := u8.[0xf2,0x0f,0x59,0x05,0,0,0,0,0xf2,0x0f,0x59,0x05,0,0,0,0,
         0xf2,0x0f,0x5a,0xc0,0xf3,0x0f,0x11,0x05,0,0,0,0,0xf3,0x0f,0x5a,0xc0,
         0xf2,0x0f,0x58,0x05,0,0,0,0,0xf2,0x0f,0x11,0x05,0,0,0,0];
-    initial := u8.[0x0f,0x28,0x05,0,0,0,0,0x0f,0x29,0x05,0,0,0,0,0x4c,0x8d,0xa4,0x24,0,0,0,0];
+    initial := u8.[0x0f,0x28,0x05,0,0,0,0,0x0f,0x11,0x05,0,0,0,0,0x4c,0x8d,0xa4,0x24,0,0,0,0];
     memcpy(bytes.data+32,chain.data,chain.count);
     memcpy(bytes.data+128,initial.data,initial.count);
     put(bytes,36,cast(s32)(520-40)); put(bytes,44,cast(s32)(512-48));
@@ -94,11 +94,11 @@ check_memory :: () {
     ignored,bad = App.game_speed_layout_from_code(bytes,base);
     check(bad.count>0,"Reject ambiguous time update chains.");
     memset(bytes.data+256,0,48);
-    // The superseded movups initialization form must no longer be accepted.
-    bytes[136] = 0x11;
-    layout,error = App.game_speed_layout_from_code(bytes,base);
-    check(error.count>0,"Reject the superseded movups initialization form.");
+    // The superseded movaps initialization form must no longer be accepted.
     bytes[136] = 0x29;
+    layout,error = App.game_speed_layout_from_code(bytes,base);
+    check(error.count>0,"Reject the superseded movaps initialization form.");
+    bytes[136] = 0x11;
     memcpy(bytes.data+320,bytes.data+128,22);
     ignored,bad = App.game_speed_layout_from_code(bytes,base);
     check(bad.count>0,"Reject duplicate initialization evidence.");

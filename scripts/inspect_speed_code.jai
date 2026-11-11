@@ -24,7 +24,7 @@ inspect :: () -> string {
         print("\n");
     }
     // Candidate 1x-default initialization copies: movaps load, 16-byte rip
-    // store, and the stack lea that sat beside the supported forms.
+    // store (0f 11 movups or 0f 29 movaps), and the stack lea beside them.
     for i: 0..code.count - 22 {
         if code[i] != 0x0f || code[i+1] != 0x28 || code[i+2] != 0x05 ||
            code[i+7] != 0x0f || (code[i+8] != 0x11 && code[i+8] != 0x29) || code[i+9] != 0x05 ||
