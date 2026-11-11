@@ -2863,5 +2863,10 @@
     "name": "monster_stack",
     "note": "",
     "solution": "CDDDRRUUUUD 4 L 7 UUUURRDDDDDDRRRU 4 RUL 7 LLLU 1 DDDLLLUUUURULLLDDDDL 4 U 7 DD"
+  },
+  {
+    "name": "falling_blocker_v3",
+    "note": "",
+    "solution": "DRURDDULLXLURRURDDLDXDRRRRDRULLLULDD"
   }
 ]
