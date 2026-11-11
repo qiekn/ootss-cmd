@@ -415,6 +415,30 @@ noclip 和 `move -view` 从当前相机四元数的屏幕右方向导出地面�
 
 `check_game_layout.jai` 连同当前 EXE 共 721 项、`check_camera_controls.jai` 273 项、`check_position_switch.jai` 142 项、`check_fog.jai` 32 项、`check_speed.jai` 82 项均通过，普通与优化构建成功。全项目格式检查仍报告 `src/game/commands.jai`、`src/ui/console.jai` 和 `scripts/qiekn/find_all_no_solution_levels.jai` 的既有格式问题，本次修改文件未被报告；未改动这些无关文件。没有自动写真实游戏内存或发送输入，重启助手后的 `freecam`、`freecam -topdown`、`freecam off` 实际效果与视角恢复由用户手动验收。
 
+### 2026-11-11 构建兼容
+
+正式版 EXE SHA-256 为 `978B302FD0952E4EA8D869553AEC875D9C635278A7D0F8CDB752F5A797A370AA`，文件 `12370944` 字节，映像 `0x1147000`，`.text` RVA `0x1000`、大小 `6721766` 字节。修复前只有相机配置失效；当前场景、受控玩家及五个位置字段、探索迷雾和基础时间倍率的只读检查仍然通过。
+
+相机更新基址寄存器从 `r12` 换回 `r13`，无 SIB 编码使模式 gate 从 34 字节回到 33 字节、正常分支开头从 20 字节回到 19 字节、冻结位置写入从 19 字节回到 17 字节，模式槽与冻结写入的相对位置随之前移一字节；列表循环仍用 `r15` 索引、把 `Camera_Control` 装入 `rbx`，列表装载窗口位于 `normal+54`（27 字节，含 `inc r15`、第二次 count 比较、`jge` 与两次装载）。渲染参数与活动场景引用的指令形态未变。生产配置直接替换为 `retail-r13-2026-11-11`，不保留旧相机回退。
+
+| 证据 | 本次构建观测 |
+| --- | --- |
+| 活动场景指针槽 RVA | `0xB744D0`，引用位于 `0x99CA9` |
+| 模式 gate / 模式槽 RVA | `0x27263C` / `0xB75848` |
+| 正常分支 / 列表装载 RVA | `0x272B7A` / `0x272BB0` |
+| 冻结写入 / 冻结分支 RVA | `0x272DD3` / `0x272DE4` |
+| 渲染参数证据 RVA | `0x274FB9`（渲染读取位于 `0x274FE8`） |
+| 相机 position / orientation / projection | `0x3D98` / `0x3DB0` / `0x3DC0` |
+| 相机列表 count / data | `0x538` / `0x540` |
+| 五个玩家位置字段 | `0x00` / `0xA0` / `0x1D0` / `0x348` / `0x330` |
+| 探索迷雾指令 / 类型 / 上传 RVA | `0x439D8B` / `0x6C9100` / `0x43AFB4` |
+
+六段相机证据保存 `33/42/27/34/78/28` 字节；`normal-23` 的 23 字节序言与 19 字节正常分支开头合并成一段 42 字节窗口。字段交叉验证相应改为 `gate+3` 取 position、`normal+8` 取列表、`write_at+4` 取冻结位置写入目标、`list_at+4`（`list_at = normal+69`）取列表数据指针。
+
+新增 `scripts/inspect_camera_code.jai`（只读）：一次输出 r13 模式 gate 的候选、解码出的 position/mode/normal/frozen RVA、两个分支与渲染窗口的字节，以及渲染与活动场景引用的匹配位置，供下次更新直接对照。只读复检在 `end1` 读到相机 mode `0`、3 个已验证的 `Camera_Control`、四元数 `[-0.411,0.413,0.573,0.576]` 与投影 `[0.611,0.2,200]`，全部通过校验。
+
+`check_game_layout.jai` 连同当前 EXE 共 707 项、`check_camera.jai` 83 项、`check_camera_controls.jai` 272 项、`check_fog.jai` 32 项、`check_speed.jai` 72 项、`check_position_switch.jai` 142 项、`check_hud.jai` 100 项均通过，优化构建成功。根目录调试构建因正在运行的 `ootss-cmd.exe` 被占用而链接失败（LNK1104），未结束该进程；重启助手后再做一次调试构建即可。本次未写入真实游戏内存、未发送输入，`freecam`、`freecam -topdown`、`freecam off` 与视角恢复需手动验收。
+
 全局 HUD 使用独立只读 `Game_Position_Reader` 显示当前关卡及玩家坐标，复用受控组锚点规则，不向编辑器录制加入连续位置采样。场景读取可复用已验证的指令定位信息，仍重新读取 manager、名称和选择状态。参见 [自由摄像机与 HUD 文档](camera.md)、`scripts/check_camera.jai` 与 `scripts/check_hud.jai`。
 
 地图拍摄功能已移除：相机接管任务、截图、拼接、瓦片工具及相关命令不再提供。自由摄像机的姿态、绝对坐标、输入及视图恢复检查保留在 `scripts/check_camera.jai`；相机布局、锁定控制、HUD、时间倍率与时停仍独立维护。
