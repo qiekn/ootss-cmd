@@ -697,7 +697,7 @@
   {
     "name": "blind_spot_v2",
     "note": "",
-    "solution": "LDRDLLULURRURDDLLLDURRRDXLDDDDRRR"
+    "solution": "LDRDLLULDURXRRURDD_1.5_D_0.75_XLDDDDRRR"
   },
   {
     "name": "boat_priest_v3",
@@ -2867,6 +2867,21 @@
   {
     "name": "falling_blocker_v3",
     "note": "",
-    "solution": "DRURDDULLXLURRURDDLDXDRRRRDRULLLULDD"
+    "solution": "DRURDDULLXLURRURDDLDXDRRRRDRULLLULDDD_1_D_0.5_XD_0.5_XL"
+  },
+  {
+    "name": "pillars",
+    "note": "",
+    "solution": "CUUUUURRRRRLLLLLDDDDLUURUUUUUUURDDDUUULLLLDDDDLLLLDDDDRRRDDDDDCU_0.35_X_0.25_XL_0.35_XRRUUU"
+  },
+  {
+    "name": "long_platform_v2",
+    "note": "",
+    "solution": "LDLDRRRURDLLLLLXRRRRRURDCLLLLLLLLLLLLLDDXXRUUVCRDLLLLLLULDRDLDLXURDDLDRRRRRRRLLLLLLLLDDDCDDXXRRDDDVULCRULDL"
+  },
+  {
+    "name": "triple_gate",
+    "note": "",
+    "solution": "RDDRDLLLRUUULLDDDURRURDDLLLUURRURDDDRRRULLULDDRRRD_1_DDRRUURRXRXRRRR"
   }
 ]
