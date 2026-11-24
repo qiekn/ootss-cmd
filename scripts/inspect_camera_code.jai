@@ -46,16 +46,16 @@ inspect :: () -> string {
     if slot_error.count print("Scene slot: %\n", slot_error);
     else print("Scene slot RVA=0x%\n", hex(slot - memory.module.base));
 
-    gates := matches(code, s16.[0x49,0x8d,0xad,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
+    gates := matches(code, s16.[0x49,0x8d,0xac,0x24,-1,-1,-1,-1, 0x48,0x8b,0x05,-1,-1,-1,-1,
                                 0x48,0x85,0xc0, 0x0f,0x84,-1,-1,-1,-1, 0x48,0x83,0xf8,1,
                                 0x0f,0x85,-1,-1,-1,-1]);
-    print("\n== r13 mode gate (%): \n", gates.count);
+    print("\n== mode gate (%): \n", gates.count);
     for at: gates {
-        dump(code, at, 33, rva);
-        position := (cast(*u32)(code.data + at + 3)).*;
-        mode     := cast(s64) at + 14 + (cast(*s32)(code.data + at + 10)).*;
-        normal   := at + 23 + cast(s64)(cast(*s32)(code.data + at + 19)).*;
-        frozen   := at + 33 + cast(s64)(cast(*s32)(code.data + at + 29)).*;
+        dump(code, at, 34, rva);
+        position := (cast(*u32)(code.data + at + 4)).*;
+        mode     := cast(s64) at + 15 + (cast(*s32)(code.data + at + 11)).*;
+        normal   := at + 24 + cast(s64)(cast(*s32)(code.data + at + 20)).*;
+        frozen   := at + 34 + cast(s64)(cast(*s32)(code.data + at + 30)).*;
         print("  position=0x%, mode RVA=0x%, normal RVA=0x%, frozen RVA=0x%\n",
               hex(position), hex(rva + cast(u64) mode), hex(rva + cast(u64) normal), hex(rva + cast(u64) frozen));
         if normal > 0 && normal < code.count {

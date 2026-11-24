@@ -5,6 +5,7 @@
     set_build_options_dc(.{do_output=false});
     check_signature();
     check_upload();
+    check_parameter_source();
     check_session();
     check_commands();
     print("PASS: % fog checks.\n",checks);
@@ -17,8 +18,13 @@ check :: (ok: bool, message: string) {
 }
 
 SAMPLE :: u8.[0xf3,0x0f,0x5d,0xc1,0xc7,0x84,0x24,0x84,0x07,0,0,1,0,0,0,
-    0x48,0x8b,0x94,0x24,0x20,0x01,0,0,0xf3,0x0f,0x10,0x8a,0x3c,0x03,0,0,
-    0xf3,0x0f,0x11,0x8c,0x24,0x8c,0x07,0,0];
+    0xf3,0x41,0x0f,0x10,0x8e,0x3c,0x03,0,0,
+    0xf3,0x0f,0x11,0x8c,0x24,0x8c,0x07,0,0,0x49,0x8d,0x86,0x30,0x03,0,0];
+
+UPLOAD_SAMPLE :: u8.[0x4c,0x89,0x4c,0x24,0x20,
+    0xc6,0x44,0x24,0x30,0,0xc6,0x44,0x24,0x28,0,
+    0x48,0x8d,0x0d,0,0,0,0,0x48,0x8d,0x15,0,0,0,0,
+    0x45,0x31,0xc0,0x41,0xb9,0xe0,0x01,0,0,0xe8,0,0,0,0];
 
 check_signature :: () {
     bytes: [128] u8;
@@ -31,11 +37,12 @@ check_signature :: () {
     bytes[16]=2;
     check(Fog.fog_find_instruction(bytes)<0,"Reject an unknown immediate value.");
     bytes[16]=1;
-    bytes[24]=0x10;
-    check(Fog.fog_find_instruction(bytes)==5,"Accept a relocated temporary stack slot.");
-    bytes[24]=0x11;
-    check(Fog.fog_find_instruction(bytes)<0,"Reject an unaligned temporary stack slot.");
-    bytes[24]=0x20;
+    bytes[34]=0x8d;
+    check(Fog.fog_find_instruction(bytes)<0,"Reject a different neighboring stack field.");
+    bytes[34]=0x8c;
+    bytes[20]=0x48;
+    check(Fog.fog_find_instruction(bytes)<0,"Reject an unexpected settings register load.");
+    bytes[20]=0xf3;
     bytes[12]=0;
     check(Fog.fog_find_instruction(bytes)<0,"Reject a different stack field.");
     memcpy(bytes.data+5,SAMPLE.data,SAMPLE.count);
@@ -44,21 +51,74 @@ check_signature :: () {
 }
 
 check_upload :: () {
-    pattern := u8.[0x48,0x8d,0x84,0x24,0,0x06,0,0,0x48,0x89,0x44,0x24,0x20,
-        0xc6,0x44,0x24,0x30,0,0xc6,0x44,0x24,0x28,0,
-        0x48,0x8d,0x0d,0,0,0,0,0x48,0x8d,0x15,0,0,0,0,
-        0x45,0x31,0xc0,0x41,0xb9,0xe0,0x01,0,0,0xe8];
+    pattern := UPLOAD_SAMPLE;
     bytes: [512] u8;
     memcpy(bytes.data+140,pattern.data,pattern.count);
     check(Fog.fog_find_upload(bytes,0)==140,"Discover the upload without a fixed instruction distance.");
     bytes[140+26]=0xa7;
     check(Fog.fog_find_upload(bytes,0)==140,"Allow relocated RIP-relative references.");
-    bytes[140+42]=0xd0;
+    bytes[140+34]=0xd0;
     check(Fog.fog_find_upload(bytes,0)<0,"Reject a different parameter upload size.");
-    bytes[140+42]=0xe0;
+    bytes[140+34]=0xe0;
     memcpy(bytes.data+250,pattern.data,pattern.count);
     check(Fog.fog_find_upload(bytes,0)<0,"Reject ambiguous nearby uploads.");
     check(Fog.fog_find_upload(.[],0)<0 && Fog.fog_find_upload(bytes,-1)<0,"Reject empty code and invalid search offsets.");
+}
+
+put    :: (bytes: [] u8, at: s64, value: $T) { (cast(*T)(bytes.data+at)).* = value; }
+branch :: (bytes: [] u8, displacement: s64, target: s64) { put(bytes,displacement,cast(s32)(target-displacement-4)); }
+
+check_parameter_source :: () {
+    bytes: [2048] u8;
+    upload :: 1536;
+    memcpy(bytes.data,SAMPLE.data,SAMPLE.count);
+    memcpy(bytes.data+upload,UPLOAD_SAMPLE.data,UPLOAD_SAMPLE.count);
+    producers := s64.[upload-0x395,upload-0x287,upload-0x24c,upload-0x1ea];
+    lea       := u8.[0x4c,0x8d,0x8c,0x24,0,6,0,0];
+    for at: producers memcpy(bytes.data+at,lea.data,lea.count);
+    first  := u8.[0x84,0xdb,0x0f,0x85,0,0,0,0,0xf3,0x41,0x0f,0x10,0x0c,0x24,0xe9,0,0,0,0];
+    second := u8.[0xf3,0x0f,0x5e,0xc1,0x84,0xdb,0x0f,0x85,0,0,0,0,0xe9,0,0,0,0];
+    third  := u8.[0x0f,0x85,0,0,0,0];
+    fourth := u8.[0x75,6,0x0f,0x8b,0,0,0,0];
+    memcpy(bytes.data+producers[0]+8,first.data,first.count);
+    memcpy(bytes.data+producers[1]+8,second.data,second.count);
+    memcpy(bytes.data+producers[2]+8,third.data,third.count);
+    memcpy(bytes.data+producers[3]+8,fourth.data,fourth.count);
+    branch(bytes,producers[0]+12,upload-0xae);
+    branch(bytes,producers[0]+23,upload-0xa6);
+    branch(bytes,producers[1]+16,upload-0xae);
+    branch(bytes,producers[1]+21,producers[0]+16);
+    branch(bytes,producers[2]+10,upload-0xba);
+    branch(bytes,producers[3]+12,upload-0xef);
+    gate := u8.[0x80,0x3d,0,0,0,0,0,0x74,0x57];
+    memcpy(bytes.data+upload-0x60,gate.data,gate.count);
+    cursor := u8.[0x48,0x8b,0x84,0x24,0xb8,0x1c,0,0];
+    memcpy(bytes.data+upload-0x57,cursor.data,cursor.count);
+    batch := u8.[0x48,0x8d,0x0d,0,0,0,0,0x48,0x89,0x8c,0xc4,0xc0,0x1c,0,0,
+        0x48,0x8b,0x84,0x24,0xb8,0x1c,0,0,0xc7,0x84,0x84,0xc0,0x20,0,0,0,0,0,0,
+        0x48,0x8b,0x84,0x24,0xb8,0x1c,0,0,0xc7,0x84,0x84,0xc0,0x22,0,0,0xe0,1,0,0,
+        0x48,0x8b,0x84,0x24,0xb8,0x1c,0,0,0x4c,0x89,0x8c,0xc4,0xc0,0x24,0,0,
+        0x48,0xff,0x84,0x24,0xb8,0x1c,0,0,0xeb,0x2b];
+    memcpy(bytes.data+upload-0x4f,batch.data,batch.count);
+    branch(bytes,upload-0x4f+3,1800);
+    branch(bytes,upload+25,1800);
+    start,count := Fog.fog_parameter_source(bytes,0,upload);
+    check(start==producers[0] && count==960,"Verify all four r9 producers and both 480-byte upload paths.");
+    for at: s64.[7,29,producers[0]+4,producers[1]+4,producers[2]+4,producers[3]+4,
+                 producers[0]+12,producers[0]+23,producers[1]+16,producers[1]+21,
+                 producers[2]+10,producers[3]+12,upload-0x60+8,upload-0x4f+46,upload+25,upload+34] {
+        bytes[at] ^= 1;
+        rejected,ignored := Fog.fog_parameter_source(bytes,0,upload);
+        check(rejected<0,tprint("Reject conflicting fog evidence at byte %.",at));
+        bytes[at] ^= 1;
+    }
+    rejected,ignored := Fog.fog_parameter_source(.[],0,upload);
+    check(rejected<0,"Reject empty parameter evidence.");
+    rejected,ignored = Fog.fog_parameter_source(.{data=bytes.data,count=upload+42},0,upload);
+    check(rejected<0,"Reject a truncated upload call.");
+    bytes[11]=0;
+    start,count = Fog.fog_parameter_source(bytes,0,upload);
+    check(start==producers[0],"An already-disabled fog switch retains valid pointer evidence.");
 }
 
 check_session :: () {
@@ -76,9 +136,14 @@ check_session :: () {
     check(Win.VirtualQuery(page,*info,size_of(Win.MEMORY_BASIC_INFORMATION))>0 && info.Protect==Win.PAGE_READWRITE,
           "Restore the original page protection after a code write.");
     check(!Fog.fog_session_disable(*session).count && session.changed,"Repeated disable retains ownership.");
-    page[19]=0x10;
-    check(Fog.fog_session_close(*session).count>0 && page[11]==0,"Even a supported stack-slot change invalidates an active session.");
-    page[19]=SAMPLE[19];
+    session.parameter_address = cast(u64)(page+128);
+    session.parameter_count   = 8;
+    page[128]=1;
+    check(Fog.fog_session_close(*session).count>0 && page[11]==0,"A changed parameter-pointer path invalidates an active session.");
+    page[128]=0;
+    page[29]=0x88;
+    check(Fog.fog_session_close(*session).count>0 && page[11]==0,"A changed neighboring stack field invalidates an active session.");
+    page[29]=SAMPLE[29];
     page[0]=0;
     check(Fog.fog_session_close(*session).count>0 && session.memory.handle!=null && page[11]==0,
           "Foreign code changes block restoration and retain retry state.");

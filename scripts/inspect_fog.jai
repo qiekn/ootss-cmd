@@ -77,7 +77,7 @@ print_hex :: (code: [] u8, offset: s64, count: s64) {
 }
 
 scan_fog_flag_writes :: (code: [] u8, rva: u64) {
-    print("flag stores preceded by minsd or followed by the parameter load:\n");
+    print("flag stores preceded by minss or followed by the parameter load:\n");
     for at: 0..code.count-15 {
         if code[at]!=0xc7 || code[at+1]!=0x84 || code[at+2]!=0x24 continue;
         if code[at+7]!=1 || code[at+8]!=0 || code[at+9]!=0 || code[at+10]!=0 continue;
@@ -85,7 +85,7 @@ scan_fog_flag_writes :: (code: [] u8, rva: u64) {
         follower := code[at+11]==0x48 && code[at+12]==0x8b && code[at+13]==0x94 && code[at+14]==0x24;
         if !prefix && !follower continue;
         stack := (cast(*u32)(code.data + at + 3)).*;
-        print("  RVA 0x% stack=0x% minsd=% follower=%\n     ",
+        print("  RVA 0x% stack=0x% minss=% follower=%\n     ",
               hex(rva+cast(u64)at), hex(stack), prefix, follower);
         print_hex(code, max(at-12,0), 72);
     }
@@ -94,21 +94,13 @@ scan_fog_flag_writes :: (code: [] u8, rva: u64) {
 scan_fog_upload_sites :: (code: [] u8, rva: u64) {
     print("fog upload matches (complete fixed bytes):\n");
     total, shown: s64;
-    for at: 0..code.count-47 {
-        if code[at]!=0x48 || code[at+1]!=0x8d || code[at+2]!=0x84 || code[at+3]!=0x24 continue;
-        if code[at+8]!=0x48 || code[at+9]!=0x89 || code[at+10]!=0x44 || code[at+11]!=0x24 || code[at+12]!=0x20 continue;
-        if code[at+13]!=0xc6 || code[at+14]!=0x44 || code[at+15]!=0x24 || code[at+16]!=0x30 || code[at+17]!=0 continue;
-        if code[at+18]!=0xc6 || code[at+19]!=0x44 || code[at+20]!=0x24 || code[at+21]!=0x28 || code[at+22]!=0 continue;
-        if code[at+23]!=0x48 || code[at+24]!=0x8d || code[at+25]!=0x0d continue;
-        if code[at+30]!=0x48 || code[at+31]!=0x8d || code[at+32]!=0x15 continue;
-        if code[at+37]!=0x45 || code[at+38]!=0x31 || code[at+39]!=0xc0 continue;
-        if code[at+40]!=0x41 || code[at+41]!=0xb9 || code[at+42]!=0xe0 || code[at+43]!=1 || code[at+44]!=0 || code[at+45]!=0 continue;
-        if code[at+46]!=0xe8 continue;
+    for at: 0..code.count-43 {
+        if code[at]!=0x4c || code[at+1]!=0x89 continue;
+        if !Fog.fog_upload_matches(.{data=code.data+at,count=43}) continue;
         total += 1;
         if shown >= 20 continue;
         shown += 1;
-        disp := (cast(*u32)(code.data + at + 4)).*;
-        print("  RVA 0x% disp=0x%\n", hex(rva+cast(u64)at), hex(disp));
+        print("  RVA 0x%, params pointer from r9\n", hex(rva+cast(u64)at));
     }
     print("  upload matches: total=%, shown=%\n", total, shown);
 }
@@ -125,3 +117,4 @@ hex :: (value:$T)->string { return tprint("%",formatInt(value,base=16)); }
 #import "Compiler";
 #import "String";
 App :: #import,file "../src/main.jai";
+Fog :: #import,file "../src/game/fog_memory.jai";
