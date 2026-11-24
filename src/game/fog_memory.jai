@@ -4,7 +4,10 @@ Fog_Session :: struct {
     instruction:        u64;
     metadata, upload:   u64;
     code:               [40] u8;
-    upload_code:        [47] u8;
+    upload_code:        [43] u8;
+    parameter_address:  u64;
+    parameter_code:     [1024] u8;
+    parameter_count:    s64;
     writable:           bool;
     changed:            bool;
     protection_pending: bool;
@@ -34,13 +37,15 @@ fog_session_open :: (session: *Fog_Session, window: Win.HWND, writable := true) 
     if upload_offset<0 return "Fog layout: nearby parameter upload is missing or ambiguous.";
     // The uploaded Fog_Voxelization_Params and the flag's stack slot must agree:
     // the flag displacement sits exactly at the struct's 0x184 field offset.
-    stack_disp  := (cast(*u32)(code.data+offset+7)).*;
-    upload_disp := (cast(*u32)(code.data+upload_offset+4)).*;
-    if upload_disp + 0x184 != stack_disp return "Fog layout: stack and upload displacements disagree.";
+    parameter_start, parameter_count := fog_parameter_source(code, offset, upload_offset);
+    if parameter_start < 0 return "Fog layout: parameter pointer branches and upload disagree.";
     session.* = .{memory=memory, instruction=address, metadata=metadata,
                   upload = memory.module.base+rva+cast(u64)upload_offset, writable=writable};
     for byte: session.code session.code[it_index]=code[offset+it_index];
     for byte: session.upload_code session.upload_code[it_index]=code[upload_offset+it_index];
+    session.parameter_address = memory.module.base + rva + cast(u64) parameter_start;
+    session.parameter_count   = parameter_count;
+    for i: 0..parameter_count-1 session.parameter_code[i] = code[parameter_start+i];
     keep = true;
     return "";
 }
@@ -96,10 +101,18 @@ fog_session_read :: (session: *Fog_Session) -> (value: u8, error: string) {
     for byte: session.code if it_index!=FOG_IMMEDIATE && byte!=bytes[it_index]
         return 0,"Fog instruction evidence changed; no bytes overwritten.";
     if session.upload {
-        upload: [47] u8;
+        upload: [43] u8;
         if !Process.process_read_memory(session.memory.handle,session.upload,*upload,upload.count)
             return 0,"Fog upload evidence became unreadable.";
         for byte: session.upload_code if byte!=upload[it_index] return 0,"Fog upload evidence changed; no bytes overwritten.";
+    }
+    if session.parameter_address {
+        parameters: [1024] u8;
+        if session.parameter_count <= 0 || session.parameter_count > parameters.count ||
+           !Process.process_read_memory(session.memory.handle, session.parameter_address, *parameters, cast(u64) session.parameter_count)
+            return 0,"Fog parameter pointer evidence became unreadable.";
+        for i: 0..session.parameter_count-1 if parameters[i] != session.parameter_code[i]
+            return 0,"Fog parameter pointer evidence changed; no bytes overwritten.";
     }
     return bytes[FOG_IMMEDIATE], "";
 }
@@ -141,10 +154,8 @@ fog_instruction_matches :: (bytes: [] u8) -> bool {
         else if bytes[it_index] != byte return false;
     }
     stack  := (cast(*u32)(bytes.data+7)).*;
-    slot   := (cast(*u32)(bytes.data+19)).*;
-    mirror := (cast(*u32)(bytes.data+36)).*;
+    mirror := (cast(*u32)(bytes.data+29)).*;
     if stack<0x20 || stack>0x4000 || stack%4!=0 return false; // A dword store keeps 4-byte alignment.
-    if slot<0x20 || slot>0x4000 || slot%8!=0 return false;    // The pointer slot keeps 8-byte alignment.
     return mirror == stack + 8;
 }
 
@@ -170,23 +181,84 @@ fog_find_instruction :: (code: [] u8) -> s64 {
 fog_upload_matches :: (bytes: [] u8) -> bool {
     if bytes.count != FOG_UPLOAD.count return false;
     for byte: FOG_UPLOAD {
-        if byte < 0 continue; // The stack displacement and RIP-relative addresses vary.
+        if byte < 0 continue; // RIP-relative addresses vary.
         if bytes[it_index] != byte return false;
     }
-    disp := (cast(*u32)(bytes.data+4)).*;
-    return disp >= 0x20 && disp <= 0x4000 && disp%8 == 0;
+    return true;
 }
 
 fog_find_upload :: (code: [] u8, instruction: s64) -> s64 {
     if instruction<0 || code.count<FOG_UPLOAD.count || instruction>code.count-FOG_UPLOAD.count return -1;
     found: s64=-1;
     for at: instruction..min(code.count-FOG_UPLOAD.count,instruction+0x4000) {
-        if code[at]!=0x48 || code[at+1]!=0x8d continue; // FOG_UPLOAD's fixed first bytes.
+        if code[at]!=0x4c || code[at+1]!=0x89 continue; // FOG_UPLOAD's fixed first bytes.
         if !fog_upload_matches(.{data=code.data+at,count=FOG_UPLOAD.count}) continue;
         if found>=0 return -1;
         found = at;
     }
     return found;
+}
+
+// In the 2026-11-24 build the params pointer is kept in r9 through four
+// floating-point conversion branches. All four producers must select the same
+// reflected stack block, and both the immediate and deferred uploads use r9.
+// Retain the entire intervening code, including branches, until restoration.
+fog_parameter_source :: (code: [] u8, instruction: s64, upload: s64) -> (start: s64, count: s64) {
+    start := upload - 0x395;
+    count := 0x395 + FOG_UPLOAD.count;
+    if instruction < 0 || instruction > code.count-FOG_INSTRUCTION.count || start <= instruction ||
+       !fog_instruction_matches(.{data=code.data+instruction,count=FOG_INSTRUCTION.count}) ||
+       !fog_code_matches(code, upload, FOG_UPLOAD) || start < 0 || start > code.count - count return -1,0;
+    stack     := (cast(*u32)(code.data+instruction+7)).*;
+    producers := s64.[upload-0x395, upload-0x287, upload-0x24c, upload-0x1ea];
+    for at: producers {
+        if !fog_code_matches(code, at, s16.[0x4c,0x8d,0x8c,0x24,-1,-1,-1,-1]) return -1,0;
+        displacement := (cast(*u32)(code.data+at+4)).*;
+        if displacement < 0x20 || displacement > 0x4000 || displacement%8 || displacement + 0x184 != stack return -1,0;
+    }
+    if !fog_code_matches(code, producers[0]+8, s16.[0x84,0xdb,0x0f,0x85,-1,-1,-1,-1,
+           0xf3,0x41,0x0f,0x10,0x0c,0x24,0xe9,-1,-1,-1,-1]) ||
+       !fog_code_matches(code, producers[1]+8, s16.[0xf3,0x0f,0x5e,0xc1,0x84,0xdb,0x0f,0x85,-1,-1,-1,-1,0xe9,-1,-1,-1,-1]) ||
+       !fog_code_matches(code, producers[2]+8, s16.[0x0f,0x85,-1,-1,-1,-1]) ||
+       !fog_code_matches(code, producers[3]+8, s16.[0x75,0x06,0x0f,0x8b,-1,-1,-1,-1]) ||
+       fog_branch_target(code, producers[0]+12) != upload-0xae ||
+       fog_branch_target(code, producers[0]+23) != upload-0xa6 ||
+       fog_branch_target(code, producers[1]+16) != upload-0xae ||
+       fog_branch_target(code, producers[1]+21) != producers[0]+16 ||
+       fog_branch_target(code, producers[2]+10) != upload-0xba ||
+       fog_branch_target(code, producers[3]+12) != upload-0xef return -1,0;
+    // je selects the direct upload; the other branch records the same pointer
+    // and 480-byte size in the renderer's deferred upload arrays.
+    if !fog_code_matches(code, upload-0x60, s16.[0x80,0x3d,-1,-1,-1,-1,0,0x74,0x57]) ||
+       !fog_code_matches(code, upload-0x57, s16.[0x48,0x8b,0x84,0x24,-1,-1,-1,-1]) ||
+       !fog_code_matches(code, upload-0x4f, s16.[
+           0x48,0x8d,0x0d,-1,-1,-1,-1,0x48,0x89,0x8c,0xc4,-1,-1,-1,-1,
+           0x48,0x8b,0x84,0x24,-1,-1,-1,-1,0xc7,0x84,0x84,-1,-1,-1,-1,0,0,0,0,
+           0x48,0x8b,0x84,0x24,-1,-1,-1,-1,0xc7,0x84,0x84,-1,-1,-1,-1,0xe0,1,0,0,
+           0x48,0x8b,0x84,0x24,-1,-1,-1,-1,0x4c,0x89,0x8c,0xc4,-1,-1,-1,-1,
+           0x48,0xff,0x84,0x24,-1,-1,-1,-1,0xeb,0x2b]) ||
+       fog_branch_target(code, upload-0x4f+3) != fog_branch_target(code, upload+25) return -1,0;
+    batch  := code.data + upload - 0x4f;
+    cursor := (cast(*u32)(batch+19)).*;
+    buffer := (cast(*u32)(batch+11)).*;
+    if cursor < 0x20 || cursor > 0x4000 || cursor%8 || buffer != cursor+8 ||
+       (cast(*u32)(code.data+upload-0x53)).* != cursor ||
+       (cast(*u32)(batch+38)).* != cursor || (cast(*u32)(batch+57)).* != cursor ||
+       (cast(*u32)(batch+73)).* != cursor ||
+       (cast(*u32)(batch+26)).* != buffer+0x400 || (cast(*u32)(batch+45)).* != buffer+0x600 ||
+       (cast(*u32)(batch+65)).* != buffer+0x800 return -1,0;
+    return start,count;
+}
+
+fog_code_matches :: (code: [] u8, at: s64, pattern: [] s16) -> bool {
+    if at < 0 || pattern.count > code.count || at > code.count-pattern.count return false;
+    for byte: pattern if byte >= 0 && code[at+it_index] != byte return false;
+    return true;
+}
+
+// Displacement offsets are used only after their complete instruction matches.
+fog_branch_target :: (code: [] u8, displacement: s64) -> s64 {
+    return displacement + 4 + (cast(*s32)(code.data+displacement)).*;
 }
 
 #scope_file
@@ -254,16 +326,15 @@ Fog_Member       :: struct {
 #assert(size_of(Fog_Type) == 32);
 #assert(size_of(Fog_Member) == 64);
 FOG_IMMEDIATE :: 11;
-// Local stack displacements are linker- and build-dependent: the 2026-10 game
-// update moved the whole block by -0x20 (e.g. 0x784 -> 0x764). -1 entries mark
-// displacements; fog_instruction_matches validates them and their relations.
+// The 2026-11-24 build keeps the fog settings in r14 rather than reloading a
+// stack pointer. Displacements still vary; their typed relationships are checked.
 FOG_INSTRUCTION :: s16.[0xf3,0x0f,0x5d,0xc1, 0xc7,0x84,0x24,-1,-1,-1,-1, 1,0,0,0,
-    0x48,0x8b,0x94,0x24,-1,-1,-1,-1, 0xf3,0x0f,0x10,0x8a,0x3c,0x03,0,0,
-    0xf3,0x0f,0x11,0x8c,0x24,-1,-1,-1,-1];
-FOG_UPLOAD :: s16.[0x48,0x8d,0x84,0x24,-1,-1,-1,-1, 0x48,0x89,0x44,0x24,0x20,
+    0xf3,0x41,0x0f,0x10,0x8e,0x3c,0x03,0,0,
+    0xf3,0x0f,0x11,0x8c,0x24,-1,-1,-1,-1,0x49,0x8d,0x86,0x30,0x03,0,0];
+FOG_UPLOAD :: s16.[0x4c,0x89,0x4c,0x24,0x20,
     0xc6,0x44,0x24,0x30,0, 0xc6,0x44,0x24,0x28,0,
     0x48,0x8d,0x0d,-1,-1,-1,-1, 0x48,0x8d,0x15,-1,-1,-1,-1,
-    0x45,0x31,0xc0, 0x41,0xb9,0xe0,0x01,0,0, 0xe8];
+    0x45,0x31,0xc0, 0x41,0xb9,0xe0,0x01,0,0, 0xe8,-1,-1,-1,-1];
 
 #import "Basic";
 #import "String";

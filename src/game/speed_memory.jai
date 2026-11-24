@@ -37,9 +37,8 @@ game_speed_layout_from_code :: (code: [] u8, base: u64) -> (layout: Game_Speed_L
     if at == -2 || gated == -2 || (at >= 0 && gated >= 0) return layout,"Ambiguous time multiplier evidence.";
     gap: s64;
     if gated >= 0 { at = gated; gap = 30; }
-    // The 2026-11-11 build stores the 1x defaults with an unaligned movups
-    // store again; only this form is supported.
-    init := game_camera_find_code(code, s16.[0x0f,0x28,0x05,-1,-1,-1,-1,0x0f,0x11,0x05,-1,-1,-1,-1,
+    // The 2026-11-24 build uses an aligned movaps store for the 1x defaults.
+    init := game_camera_find_code(code, s16.[0x0f,0x28,0x05,-1,-1,-1,-1,0x0f,0x29,0x05,-1,-1,-1,-1,
         0x4c,0x8d,0xa4,0x24,-1,-1,-1,-1]);
     if at < 0 || init < 0 return layout,"Unsupported game build: time multiplier evidence is missing or ambiguous.";
     layout.multiplier  = game_speed_rip(code,base,at,4,8);
@@ -47,7 +46,7 @@ game_speed_layout_from_code :: (code: [] u8, base: u64) -> (layout: Game_Speed_L
     layout.delta       = game_speed_rip(code,base,at+20+gap,4,8);
     layout.clock       = game_speed_rip(code,base,at+32+gap,4,8);
     layout.initial     = game_speed_rip(code,base,init,3,7);
-    if layout.multiplier != layout.native_rate+8 || layout.multiplier%8 || layout.delta%4 || layout.clock%8 ||
+    if layout.multiplier != layout.native_rate+8 || layout.native_rate%16 || layout.initial%16 || layout.delta%4 || layout.clock%8 ||
        layout.delta==layout.multiplier || layout.delta==layout.native_rate || layout.clock==layout.multiplier ||
        layout.clock==layout.native_rate || layout.clock==layout.delta ||
        game_speed_rip(code,base,at+40+gap,4,8)!=layout.clock ||
